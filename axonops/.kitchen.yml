@@ -1,0 +1,218 @@
+---
+driver:
+  name: vagrant
+  memory: 2048
+  cpus: 2
+
+provisioner:
+  name: chef_zero
+  product_name: chef
+  chef_license: accept
+
+verifier:
+  name: shell
+
+platforms:
+  - name: ubuntu-20.04
+    driver:
+      box: bento/ubuntu-20.04
+  - name: ubuntu-22.04
+    driver:
+      box: bento/ubuntu-22.04
+  - name: ubuntu-24.04
+    driver:
+      box: bento/ubuntu-24.04
+  - name: debian-11
+    driver:
+      box: bento/debian-11
+  - name: debian-12
+    driver:
+      box: bento/debian-12
+  - name: almalinux-8
+    driver:
+      box: bento/almalinux-8
+  - name: almalinux-9
+    driver:
+      box: bento/almalinux-9
+  - name: rockylinux-8
+    driver:
+      box: bento/rockylinux-8
+  - name: rockylinux-9
+    driver:
+      box: bento/rockylinux-9
+
+suites:
+  - name: default
+    run_list:
+      - recipe[axonops::default]
+    verifier:
+      inspec_tests:
+        - test/integration/default
+    attributes:
+
+  - name: agent
+    run_list:
+      - recipe[axonops::agent_test]
+    attributes:
+      axonops:
+        agent:
+          enabled: true
+          type: "saas"
+          key: "test-agent-key"
+          organization: "test-org"
+          listen_address: "0.0.0.0"
+          listen_port: 9916
+
+  - name: server
+    run_list:
+      - recipe[axonops::server_test]
+    verifier:
+      inspec_tests:
+        - test/integration/server
+    attributes:
+      axonops:
+        deployment_mode: "self-hosted"
+        server:
+          enabled: true
+          listen_address: "0.0.0.0"
+          listen_port: 8080
+        elasticsearch:
+          embedded: true
+          heap_size: "512m"
+        cassandra_server:
+          embedded: true
+          cluster_name: "AxonOps Cluster"
+          heap_size: "512m"
+
+  - name: cassandra
+    run_list:
+      - recipe[axonops::cassandra_test]
+    verifier:
+      inspec_tests:
+        - test/integration/cassandra
+    attributes:
+      cassandra:
+        install: true
+        cluster_name: "Test Cluster"
+        listen_address: "localhost"
+        rpc_address: "localhost"
+        seeds:
+          - "localhost"
+        num_tokens: 16
+        heap_size: "512M"
+        data_dir: "/data/cassandra/data"
+        commitlog_dir: "/data/cassandra/commitlog"
+        saved_caches_dir: "/data/cassandra/saved_caches"
+        hints_dir: "/data/cassandra/hints"
+
+  - name: dashboard
+    run_list:
+      - recipe[axonops::dashboard_test]
+    verifier:
+      inspec_tests:
+        - test/integration/dashboard
+    attributes:
+      axonops:
+        deployment_mode: "self-hosted"
+        server:
+          enabled: true
+        dashboard:
+          enabled: true
+          port: 3000
+          ssl_enabled: false
+
+  - name: configure
+    run_list:
+      - recipe[axonops::configure_test]
+    verifier:
+      inspec_tests:
+        - test/integration/configure
+    attributes:
+      axonops:
+        deployment_mode: "self-hosted"
+        api:
+          key: "test-api-key"
+          organization: "test-org"
+        alerts:
+          endpoints:
+            test_slack:
+              type: "slack"
+              webhook_url: "https://hooks.slack.com/test"
+              channel: "#alerts"
+          rules:
+            high_cpu:
+              metric: "cpu_usage"
+              threshold: 90
+              duration: "5m"
+              severity: "critical"
+        service_checks:
+          cassandra_health:
+            type: "cassandra_node_status"
+            interval: "60s"
+        backups:
+          daily:
+            type: "local"
+            schedule: "0 2 * * *"
+            retention: 7
+            destination: "/backup/cassandra"
+
+  - name: full-stack
+    run_list:
+      - recipe[axonops::full_stack_test]
+    verifier:
+      inspec_tests:
+        - test/integration/server
+        - test/integration/cassandra
+        - test/integration/agent
+        - test/integration/dashboard
+        - test/integration/configure
+    attributes:
+      axonops:
+        deployment_mode: "self-hosted"
+        server:
+          enabled: true
+        dashboard:
+          enabled: true
+        agent:
+          enabled: true
+          type: "self-hosted"
+        api:
+          key: "full-stack-test-key"
+          organization: "test-org"
+      cassandra:
+        install: true
+        cluster_name: "Full Stack Test"
+
+  - name: offline
+    run_list:
+      - recipe[axonops::offline_test]
+    verifier:
+      inspec_tests:
+        - test/integration/agent
+    attributes:
+      axonops:
+        offline_mode: true
+        package_source: "/tmp/packages"
+        agent:
+          enabled: true
+          package_path: "/tmp/packages/axon-agent_1.0.0_amd64.deb"
+    driver:
+      pre_create_command: |
+        mkdir -p /tmp/packages
+        # In real scenario, packages would be pre-downloaded here
+
+  - name: resources
+    run_list:
+      - recipe[axonops::server]
+      - recipe[test::resources]
+    verifier:
+      inspec_tests:
+        - test/integration/resources
+    attributes:
+      axonops:
+        deployment_mode: "self-hosted"
+        server:
+          enabled: true
+        api:
+          key: "resource-test-key"
+          organization: "test-org"

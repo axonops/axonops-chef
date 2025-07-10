@@ -1,0 +1,33 @@
+# Dockerfile for testing the AxonOps cookbook
+FROM ubuntu:20.04
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    build-essential \
+    ruby \
+    ruby-dev \
+    rubygems \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Chef
+RUN wget https://packages.chef.io/files/stable/chef/17.10.0/ubuntu/20.04/chef_17.10.0-1_amd64.deb && \
+    dpkg -i chef_17.10.0-1_amd64.deb && \
+    rm chef_17.10.0-1_amd64.deb
+
+# Set up working directory
+WORKDIR /cookbook
+
+# Copy cookbook files
+COPY . .
+
+# Install Ruby dependencies
+RUN gem install bundler && bundle install
+
+# Run tests
+CMD ["bundle", "exec", "rspec"]

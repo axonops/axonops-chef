@@ -1,0 +1,167 @@
+# Chef cookbook .gitignore
+
+# Test Kitchen
+.kitchen/
+.kitchen.local.yml
+kitchen.local.yml
+test/fixtures/data_bags/
+test/fixtures/environments/
+
+# Vagrant
+.vagrant/
+*.box
+Vagrantfile.local
+
+# Bundler
+.bundle/
+vendor/
+Gemfile.lock
+bin/*
+.bin/
+# Don't ignore our vagrant wrapper
+!bin/vagrant-wrapper
+
+# Chef Zero
+nodes/
+clients/
+
+# Chef Infra
+Berksfile.lock
+.zero-knife.rb
+Policyfile.lock.json
+
+# Cookstyle
+.cookstyle.yml
+
+# RSpec
+.rspec
+spec/reports/
+coverage/
+.coverage/
+*.orig
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+*.sw[a-z]
+*.bak
+REVISION
+TAGS*
+tmtags
+*_flymake.*
+*_flymake
+*.tmproj
+.project
+.settings
+mkmf.log
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.atom/
+.brackets.json
+
+# Documentation
+.yardoc/
+doc/
+_yardoc/
+.inch/
+
+# Testing artifacts
+validation.pem
+spec/fixtures/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+tmp/
+
+# Log files
+*.log
+logs/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local chef configuration
+.chef/
+*.pem
+encrypted_data_bag_secret
+
+# Build artifacts
+*.tar.gz
+*.zip
+pkg/
+
+# Ruby
+*.gem
+.rvmrc
+.ruby-version
+.ruby-gemset
+.rbenv-version
+
+# Python (for any helper scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Backup files
+*.backup
+*.old
+
+# macOS
+.AppleDouble
+.LSOverride
+Icon
+.DocumentRevisions-V100
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# Linux
+.directory
+.Trash-*
+.nfs*
+
+# Terraform (if using for testing)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc

@@ -1,0 +1,15 @@
+[Service]
+User=<%= @user %>
+Group=<%= @group %>
+
+# Resource limits
+<% @limits.each do |key, value| -%>
+<%= key %>=<%= value %>
+<% end -%>
+
+# Restart configuration
+Restart=on-failure
+RestartSec=30s
+
+# Environment
+Environment="AXON_HOME=/var/lib/axonops"

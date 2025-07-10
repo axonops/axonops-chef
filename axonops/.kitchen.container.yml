@@ -1,0 +1,86 @@
+---
+# Container-based testing configuration (works with Docker or Podman)
+driver:
+  name: docker
+  privileged: true
+  use_sudo: false
+  volume:
+    - /sys/fs/cgroup:/sys/fs/cgroup:ro
+  # For Podman compatibility
+  docker_binary: <%= ENV['CONTAINER_BINARY'] || 'docker' %>
+
+provisioner:
+  name: chef_zero
+  product_name: chef
+  chef_license: accept
+  multiple_converge: 2
+  enforce_idempotency: true
+
+verifier:
+  name: shell
+
+platforms:
+  - name: ubuntu-22.04
+    driver_config:
+      image: ubuntu:22.04
+      platform: linux/amd64
+      run_command: /sbin/init
+      provision_command:
+        - apt-get update
+        - apt-get install -y systemd systemd-sysv sudo
+        - systemctl set-default multi-user.target
+  
+  - name: ubuntu-20.04
+    driver_config:
+      image: ubuntu:20.04
+      platform: linux/amd64
+      run_command: /sbin/init
+      provision_command:
+        - apt-get update
+        - apt-get install -y systemd systemd-sysv sudo
+        - systemctl set-default multi-user.target
+
+  - name: debian-12
+    driver_config:
+      image: debian:12
+      platform: linux/amd64
+      run_command: /sbin/init
+      provision_command:
+        - apt-get update
+        - apt-get install -y systemd systemd-sysv sudo
+        - systemctl set-default multi-user.target
+
+  - name: almalinux-9
+    driver_config:
+      image: almalinux:9
+      platform: linux/amd64
+      run_command: /usr/lib/systemd/systemd
+      provision_command:
+        - yum install -y systemd sudo
+        - systemctl set-default multi-user.target
+
+# Focused test suites for containers
+suites:
+  - name: agent
+    run_list:
+      - recipe[axonops::agent]
+    verifier:
+      command: bash -c 'cd /tmp/kitchen && test/integration/agent/agent_shell_test.sh'
+    attributes:
+      axonops:
+        agent:
+          enabled: true
+          type: "saas"
+          key: "test-agent-key"
+          organization: "test-org"
+  
+  - name: server
+    run_list:
+      - recipe[axonops::server]
+    attributes:
+      axonops:
+        deployment_mode: "self-hosted"
+        server:
+          enabled: true
+          listen_address: "0.0.0.0"
+          listen_port: 8080
