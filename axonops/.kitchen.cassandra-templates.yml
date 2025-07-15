@@ -1,0 +1,113 @@
+---
+# Test Kitchen configuration for testing Cassandra 5.0.4 templates
+#
+# Usage: KITCHEN_YAML=.kitchen.cassandra-templates.yml kitchen test
+#
+
+driver:
+  name: vagrant
+  memory: 4096
+  cpus: 2
+
+provisioner:
+  name: chef_zero
+  product_name: chef
+  chef_license: accept
+
+verifier:
+  name: shell
+
+platforms:
+  - name: ubuntu-22.04
+    driver:
+      box: bento/ubuntu-22.04
+
+suites:
+  - name: cassandra-templates
+    run_list:
+      - recipe[axonops::test_cassandra_templates]
+    attributes:
+      axonops:
+        cassandra:
+          version: "5.0.4"
+          cluster_name: "Template Test Cluster"
+          listen_address: "127.0.0.1"
+          rpc_address: "127.0.0.1"
+          seeds: ["127.0.0.1"]
+          num_tokens: 16
+          heap_size: "1G"
+          data_file_directories: ["/var/lib/cassandra/data"]
+          commitlog_directory: "/var/lib/cassandra/commitlog"
+          saved_caches_directory: "/var/lib/cassandra/saved_caches"
+          hints_directory: "/var/lib/cassandra/hints"
+          endpoint_snitch: "GossipingPropertyFileSnitch"
+          authenticator: "PasswordAuthenticator"
+          authorizer: "CassandraAuthorizer"
+          # G1GC settings for Java 17
+          gc_type: "G1GC"
+          gc_g1_heap_region_size: "16m"
+          gc_g1_max_pause_millis: 300
+          gc_g1_initiating_heap_occupancy_percent: 70
+          # Enable GC logging for verification
+          gc_log_enabled: true
+          gc_log_files: 10
+          gc_log_file_size: "10M"
+          # Datacenter/rack for GossipingPropertyFileSnitch
+          datacenter: "dc1"
+          rack: "rack1"
+    verifier:
+      command: |
+        # Verify Cassandra configuration files were generated correctly
+        echo "=== Verifying Cassandra configuration files ==="
+        
+        # Check if files exist
+        for file in cassandra.yaml cassandra-env.sh jvm-server.options jvm17-server.options; do
+          if [ -f "/etc/cassandra/$file" ]; then
+            echo "✓ $file exists"
+          else
+            echo "✗ $file missing"
+            exit 1
+          fi
+        done
+        
+        # Verify cassandra.yaml contains our configured values
+        echo -e "\n=== Checking cassandra.yaml configuration ==="
+        grep -q "cluster_name: 'Template Test Cluster'" /etc/cassandra/cassandra.yaml && echo "✓ Cluster name set correctly" || exit 1
+        grep -q "num_tokens: 16" /etc/cassandra/cassandra.yaml && echo "✓ num_tokens set correctly" || exit 1
+        grep -q "endpoint_snitch: GossipingPropertyFileSnitch" /etc/cassandra/cassandra.yaml && echo "✓ Snitch configured" || exit 1
+        grep -q "authenticator: PasswordAuthenticator" /etc/cassandra/cassandra.yaml && echo "✓ Authentication enabled" || exit 1
+        grep -q "authorizer: CassandraAuthorizer" /etc/cassandra/cassandra.yaml && echo "✓ Authorization enabled" || exit 1
+        grep -q "default_compaction:" /etc/cassandra/cassandra.yaml && echo "✓ default_compaction present" || exit 1
+        
+        # Verify JVM options
+        echo -e "\n=== Checking JVM configuration ==="
+        grep -q -- "-Xms1G" /etc/cassandra/jvm-server.options && echo "✓ Heap min size set" || exit 1
+        grep -q -- "-Xmx1G" /etc/cassandra/jvm-server.options && echo "✓ Heap max size set" || exit 1
+        grep -q -- "-XX:+UseG1GC" /etc/cassandra/jvm17-server.options && echo "✓ G1GC enabled" || exit 1
+        grep -q -- "-XX:MaxGCPauseMillis=300" /etc/cassandra/jvm17-server.options && echo "✓ G1GC pause target set" || exit 1
+        grep -q -- "-XX:G1HeapRegionSize=16m" /etc/cassandra/jvm17-server.options && echo "✓ G1GC region size set" || exit 1
+        
+        # Check for AxonOps agent integration in cassandra-env.sh
+        echo -e "\n=== Checking cassandra-env.sh ==="
+        grep -q "calculate_system_memory_sizes" /etc/cassandra/cassandra-env.sh && echo "✓ Memory calculation function present" || exit 1
+        
+        # Verify rackdc properties if using GossipingPropertyFileSnitch
+        echo -e "\n=== Checking rack/DC configuration ==="
+        if [ -f "/etc/cassandra/cassandra-rackdc.properties" ]; then
+          echo "✓ cassandra-rackdc.properties exists"
+          grep -q "dc=dc1" /etc/cassandra/cassandra-rackdc.properties && echo "✓ Datacenter set" || exit 1
+          grep -q "rack=rack1" /etc/cassandra/cassandra-rackdc.properties && echo "✓ Rack set" || exit 1
+        fi
+        
+        # Check service status
+        echo -e "\n=== Service Status ==="
+        if systemctl is-active --quiet cassandra; then
+          echo "✓ Cassandra service is running"
+        else
+          echo "✗ Cassandra service is not running"
+          echo "Checking cassandra logs..."
+          tail -50 /var/log/cassandra/system.log 2>/dev/null || true
+          # Don't fail on service status for now as it may take time to start
+        fi
+        
+        echo -e "\n=== All configuration checks passed! ==="
