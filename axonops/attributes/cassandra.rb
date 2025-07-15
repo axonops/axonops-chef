@@ -13,14 +13,16 @@ default['cassandra']['install_dir'] = '/opt/cassandra'
 default['cassandra']['user'] = 'cassandra'
 default['cassandra']['group'] = 'cassandra'
 default['cassandra']['skip_java_install'] = false
+default['cassandra']['force_fresh_install'] = false # DANGEROUS: Override safety check for existing installations
 
 # Data Directories
-default['cassandra']['data_root'] = '/data/cassandra'
-default['cassandra']['directories']['data'] = ["#{node['cassandra']['data_root']}/data"]
-default['cassandra']['directories']['hints'] = "#{node['cassandra']['data_root']}/hints"
-default['cassandra']['directories']['saved_caches'] = "#{node['cassandra']['data_root']}/saved_caches"
-default['cassandra']['directories']['commitlog'] = "#{node['cassandra']['data_root']}/commitlog"
+default['cassandra']['data_root'] = '/var/lib/cassandra'
+default['cassandra']['directories']['data'] = '/var/lib/cassandra/data'
+default['cassandra']['directories']['hints'] = '/var/lib/cassandra/hints'
+default['cassandra']['directories']['saved_caches'] = '/var/lib/cassandra/saved_caches'
+default['cassandra']['directories']['commitlog'] = '/var/lib/cassandra/commitlog'
 default['cassandra']['directories']['logs'] = '/var/log/cassandra'
+default['cassandra']['directories']['gc_logs'] = '/var/log/cassandra/gc'
 
 # Network Configuration
 default['cassandra']['cluster_name'] = 'My Cluster'
@@ -56,3 +58,37 @@ default['cassandra']['tarball_checksum'] = nil
 
 # System Tuning
 default['cassandra']['system_tuning']['enabled'] = true
+
+# JVM Settings
+default['cassandra']['jvm']['heap_size'] = nil # Auto-calculated if nil
+default['cassandra']['jvm']['new_size'] = nil # Auto-calculated if nil
+
+# JMX Settings
+default['cassandra']['jmx_port'] = 7199
+default['cassandra']['jmx_authentication'] = false
+
+# Additional Performance Settings
+default['cassandra']['concurrent_materialized_view_writes'] = 32
+default['cassandra']['disk_optimization_strategy'] = 'ssd'
+default['cassandra']['memtable_allocation_type'] = 'heap_buffers'
+default['cassandra']['memtable_cleanup_threshold'] = 0.11
+default['cassandra']['memtable_flush_writers'] = 2
+default['cassandra']['compaction_throughput_mb_per_sec'] = 64
+default['cassandra']['stream_throughput_outbound_megabits_per_sec'] = 200
+default['cassandra']['inter_dc_stream_throughput_outbound_megabits_per_sec'] = 200
+
+# Logging
+default['cassandra']['log_level'] = 'INFO'
+
+# Audit logging
+default['cassandra']['audit_log']['enabled'] = false
+
+# DC and Rack for property file snitch
+default['cassandra']['datacenter'] = 'dc1'
+default['cassandra']['rack'] = 'rack1'
+
+# Service management
+default['cassandra']['wait_for_start'] = true
+
+# Java home
+default['java']['java_home'] = '/usr/lib/jvm/zulu17'

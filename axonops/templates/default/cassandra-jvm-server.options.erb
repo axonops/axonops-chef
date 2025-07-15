@@ -1,0 +1,68 @@
+###########################################################################
+#                         jvm-server.options                              #
+#                                                                         #
+# Server specific JVM options                                             #
+###########################################################################
+
+# Heap size settings
+<% if @heap_size -%>
+-Xmx<%= @heap_size %>
+-Xms<%= @heap_size %>
+<% else -%>
+# Heap size is automatically calculated based on system memory
+# To override, set cassandra.jvm.heap_size attribute
+<% end -%>
+
+<% if @new_size -%>
+-Xmn<%= @new_size %>
+<% end -%>
+
+# Garbage collector settings for Java 17
+# Using G1GC which is more stable across Java 17 versions
+-XX:+UseG1GC
+-XX:MaxGCPauseMillis=300
+
+# GC logging options
+-Xlog:gc*=info,age*=debug:file=/var/log/cassandra/gc.log:time,uptime,pid,tid,level:filecount=10,filesize=10M
+
+# Heap dump settings
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=/var/lib/cassandra/java_<%= Time.now.to_i %>.hprof
+
+# Performance settings
+-XX:+AlwaysPreTouch
+-XX:+DisableExplicitGC
+-XX:+ParallelRefProcEnabled
+-XX:MaxTenuringThreshold=1
+
+# Thread settings
+-XX:ParallelGCThreads=16
+-XX:ConcGCThreads=16
+-XX:G1RSetUpdatingPauseTimePercent=5
+
+# String deduplication
+-XX:+UseStringDeduplication
+
+# Compiler settings
+-XX:+TieredCompilation
+-XX:TieredStopAtLevel=4
+
+# Error handling
+-XX:+CrashOnOutOfMemoryError
+
+# JMX settings
+-Dcom.sun.management.jmxremote.port=7199
+-Dcom.sun.management.jmxremote.local.only=false
+-Dcom.sun.management.jmxremote.ssl=false
+-Dcom.sun.management.jmxremote.authenticate=false
+-Djava.rmi.server.hostname=<%= node['ipaddress'] || 'localhost' %>
+
+# Prefer binding to IPv4 network interfaces
+-Djava.net.preferIPv4Stack=true
+
+# Cassandra system properties
+-Dcassandra.jmx.local.port=7199
+-Dcassandra.available_processors=<%= node['cpu']['total'] || 4 %>
+
+# Netty settings
+-Dio.netty.eventLoop.maxPendingTasks=65536

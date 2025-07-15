@@ -72,3 +72,23 @@ default['axonops']['backups'] = {}
 
 # Log Parsing Rules
 default['axonops']['log_rules'] = {}
+
+# Offline installation settings
+default['axonops']['offline_install'] = false
+default['axonops']['offline_packages_path'] = '/opt/axonops/offline'
+default['axonops']['offline_packages_dir'] = '/opt/axonops/offline'
+
+# Package names
+default['axonops']['packages'] = {
+  'elasticsearch_tarball' => nil,  # Auto-detected based on version
+  'cassandra_tarball' => nil,      # Auto-detected based on version
+  'java_tarball' => nil,           # Auto-detected based on version
+  'agent' => nil,                  # Auto-detected
+  'server' => nil,                 # Auto-detected
+  'dashboard' => nil               # Auto-detected
+}
+
+# Java agent
+default['axonops']['agent']['java_agent'] = {
+  'enabled' => true
+}

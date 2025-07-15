@@ -6,11 +6,11 @@
 #
 
 # Internal Elasticsearch for AxonOps Server
-default['axonops']['server']['elastic']['version'] = '7.17.16'
+default['axonops']['server']['elastic']['version'] = '7.17.26'
 default['axonops']['server']['elastic']['heap_size'] = '512m'
 default['axonops']['server']['elastic']['cluster_name'] = 'axonops-cluster'
-default['axonops']['server']['elastic']['install_dir'] = '/opt/axonops-elasticsearch'
-default['axonops']['server']['elastic']['data_dir'] = '/var/lib/axonops-elasticsearch'
+default['axonops']['server']['elastic']['install_dir'] = '/opt/axonops-search'
+default['axonops']['server']['elastic']['data_dir'] = '/var/lib/axonops-search'
 default['axonops']['server']['elastic']['tarball_url'] = nil
 default['axonops']['server']['elastic']['tarball_checksum'] = nil
 
@@ -19,8 +19,8 @@ default['axonops']['server']['cassandra']['version'] = '5.0.4'
 default['axonops']['server']['cassandra']['dc'] = 'axonops'
 default['axonops']['server']['cassandra']['username'] = 'cassandra'
 default['axonops']['server']['cassandra']['password'] = 'cassandra'
-default['axonops']['server']['cassandra']['install_dir'] = '/opt/axonops-cassandra'
-default['axonops']['server']['cassandra']['data_dir'] = '/var/lib/axonops-cassandra'
+default['axonops']['server']['cassandra']['install_dir'] = '/opt/axonops-data'
+default['axonops']['server']['cassandra']['data_dir'] = '/var/lib/axonops-data'
 default['axonops']['server']['cassandra']['tarball_url'] = nil
 default['axonops']['server']['cassandra']['tarball_checksum'] = nil
 

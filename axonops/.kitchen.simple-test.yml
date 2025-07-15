@@ -1,0 +1,46 @@
+---
+# Simple test configuration for real packages
+driver:
+  name: vagrant
+  synced_folders:
+    - ["./offline_packages", "/vagrant/offline_packages"]
+
+provisioner:
+  name: chef_zero
+  product_name: chef
+  chef_license: accept
+
+verifier:
+  name: shell
+
+platforms:
+  - name: ubuntu-22.04
+    driver:
+      box: bento/ubuntu-22.04
+
+suites:
+  - name: real-test
+    driver:
+      memory: 4096
+      cpus: 2
+    run_list:
+      - recipe[axonops::test_real_packages_minimal]
+    attributes:
+      axonops:
+        offline_install: true
+        offline_packages_dir: "/vagrant/offline_packages"
+        deployment_mode: "self-hosted"
+    verifier:
+      command: |
+        echo "=== Real Package Test Results ==="
+        echo ""
+        echo "Installed packages:"
+        dpkg -l | grep axon || echo "No axon packages found"
+        echo ""
+        echo "Services:"
+        systemctl list-unit-files | grep axon || echo "No axon services found"
+        echo ""
+        echo "Configuration files:"
+        ls -la /etc/axonops/ 2>/dev/null || echo "No config directory"
+        echo ""
+        echo "Test complete!"

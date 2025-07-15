@@ -1,0 +1,95 @@
+---
+# Multi-node Test Kitchen configuration
+# Tests a realistic deployment with separate VMs for AxonOps and Cassandra
+#
+# Usage: KITCHEN_YAML=.kitchen.multi-node.yml kitchen test
+
+driver:
+  name: vagrant
+  network:
+    - ["private_network", {type: "dhcp"}]
+  synced_folders:
+    - ["./offline_packages", "/vagrant/offline_packages"]
+
+provisioner:
+  name: chef_zero
+  product_name: chef
+  chef_license: accept
+  nodes_path: test/fixtures/nodes
+  # Enable Chef Zero search functionality
+  client_rb:
+    chef_zero.enabled: true
+
+verifier:
+  name: shell
+
+platforms:
+  - name: ubuntu-22.04
+    driver:
+      box: bento/ubuntu-22.04
+
+suites:
+  # AxonOps Server VM - Contains all AxonOps components and storage
+  - name: axonops-server
+    driver:
+      vm_hostname: axonops-server.test
+      network:
+        - ["private_network", {ip: "192.168.56.10"}]
+      memory: 4096
+      cpus: 2
+    run_list:
+      - recipe[axonops::multi_node_axonops_real]
+    verifier:
+      command: test/integration/multi-node/verify_real_packages.sh
+    attributes:
+      axonops:
+        deployment_mode: "self-hosted"
+        offline_install: true
+        offline_packages_dir: "/vagrant/offline_packages"
+        server:
+          enabled: true
+          listen_address: "0.0.0.0"
+          elasticsearch:
+            install: true
+          cassandra:
+            install: true  # For metrics storage
+        dashboard:
+          enabled: true
+          listen_address: "0.0.0.0"
+        # Configure for multi-node
+        multi_node:
+          role: "server"
+          server_ip: "192.168.56.10"
+
+  # Application Cassandra VM - Your actual Cassandra cluster
+  - name: cassandra-app
+    driver:
+      vm_hostname: cassandra-app.test
+      network:
+        - ["private_network", {ip: "192.168.56.20"}]
+      memory: 2048
+      cpus: 2
+    run_list:
+      - recipe[axonops::multi_node_cassandra_real]
+    verifier:
+      command: test/integration/multi-node/verify_real_packages.sh
+    attributes:
+      cassandra:
+        install: true
+        force_fresh_install: true  # This is a test environment
+        cluster_name: "Test Application Cluster"
+        listen_address: "192.168.56.20"
+        rpc_address: "192.168.56.20"
+        seeds: ["192.168.56.20"]
+      axonops:
+        agent:
+          enabled: true
+        offline_install: true
+        offline_packages_dir: "/vagrant/offline_packages"
+        # Configure for multi-node
+        multi_node:
+          role: "cassandra"
+          server_ip: "192.168.56.10"
+        # Point agent to the AxonOps server
+        api:
+          url: "http://192.168.56.10:8080"

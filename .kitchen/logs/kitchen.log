@@ -1,0 +1,29 @@
+I, [2025-07-14T10:37:09.548423 #58673]  INFO -- Kitchen: -----> Starting Test Kitchen (v3.7.2)
+E, [2025-07-14T10:37:09.548619 #58673] ERROR -- Kitchen: ------Exception-------
+E, [2025-07-14T10:37:09.548638 #58673] ERROR -- Kitchen: Class: Kitchen::UserError
+E, [2025-07-14T10:37:09.548651 #58673] ERROR -- Kitchen: Message: Kitchen YAML file /Users/johnny/Development/axonops-chef/.kitchen.real-packages.yml does not exist.
+E, [2025-07-14T10:37:09.548661 #58673] ERROR -- Kitchen: ----------------------
+E, [2025-07-14T10:37:09.548671 #58673] ERROR -- Kitchen: ------Backtrace-------
+E, [2025-07-14T10:37:09.548679 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/test-kitchen-3.7.2/lib/kitchen/loader/yaml.rb:65:in 'Kitchen::Loader::YAML#read'
+E, [2025-07-14T10:37:09.548688 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/test-kitchen-3.7.2/lib/kitchen/config.rb:153:in 'Kitchen::Config#data'
+E, [2025-07-14T10:37:09.548696 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/test-kitchen-3.7.2/lib/kitchen/config.rb:131:in 'Kitchen::Config#suites'
+E, [2025-07-14T10:37:09.548705 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/test-kitchen-3.7.2/lib/kitchen/config.rb:183:in 'Kitchen::Config#filter_instances'
+E, [2025-07-14T10:37:09.548713 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/test-kitchen-3.7.2/lib/kitchen/config.rb:142:in 'Kitchen::Config#build_instances'
+E, [2025-07-14T10:37:09.548721 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/test-kitchen-3.7.2/lib/kitchen/config.rb:116:in 'Kitchen::Config#instances'
+E, [2025-07-14T10:37:09.548730 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/test-kitchen-3.7.2/lib/kitchen/command.rb:109:in 'Kitchen::Command::Base#filtered_instances'
+E, [2025-07-14T10:37:09.548738 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/test-kitchen-3.7.2/lib/kitchen/command.rb:139:in 'Kitchen::Command::Base#parse_subcommand'
+E, [2025-07-14T10:37:09.548746 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/test-kitchen-3.7.2/lib/kitchen/command/action.rb:34:in 'block in Kitchen::Command::Action#call'
+E, [2025-07-14T10:37:09.548754 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/benchmark-0.4.1/lib/benchmark.rb:305:in 'Benchmark.measure'
+E, [2025-07-14T10:37:09.548762 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/test-kitchen-3.7.2/lib/kitchen/command/action.rb:33:in 'Kitchen::Command::Action#call'
+E, [2025-07-14T10:37:09.548770 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/test-kitchen-3.7.2/lib/kitchen/cli.rb:52:in 'Kitchen::CLI::PerformCommand#perform'
+E, [2025-07-14T10:37:09.548777 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/test-kitchen-3.7.2/lib/kitchen/cli.rb:198:in 'block (2 levels) in <class:CLI>'
+E, [2025-07-14T10:37:09.548785 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/thor-1.3.2/lib/thor/command.rb:28:in 'Thor::Command#run'
+E, [2025-07-14T10:37:09.548793 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/thor-1.3.2/lib/thor/invocation.rb:127:in 'Thor::Invocation#invoke_command'
+E, [2025-07-14T10:37:09.548801 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/thor-1.3.2/lib/thor.rb:538:in 'Thor.dispatch'
+E, [2025-07-14T10:37:09.548809 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/thor-1.3.2/lib/thor/base.rb:584:in 'Thor::Base::ClassMethods#start'
+E, [2025-07-14T10:37:09.548816 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/test-kitchen-3.7.2/bin/kitchen:11:in 'block in <top (required)>'
+E, [2025-07-14T10:37:09.548824 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/test-kitchen-3.7.2/lib/kitchen/errors.rb:183:in 'Kitchen.with_friendly_errors'
+E, [2025-07-14T10:37:09.548832 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/gems/test-kitchen-3.7.2/bin/kitchen:11:in '<top (required)>'
+E, [2025-07-14T10:37:09.548840 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/bin/kitchen:25:in 'Kernel#load'
+E, [2025-07-14T10:37:09.548856 #58673] ERROR -- Kitchen: /opt/homebrew/lib/ruby/gems/3.4.0/bin/kitchen:25:in '<main>'
+E, [2025-07-14T10:37:09.548864 #58673] ERROR -- Kitchen: ----End Backtrace-----

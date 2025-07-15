@@ -1,6 +1,31 @@
 # AxonOps Chef Cookbook
 
-A comprehensive Chef cookbook for deploying and configuring the AxonOps monitoring platform for Apache Cassandra. This cookbook supports both SaaS and self-hosted deployments, with API-based configuration management and full offline/airgapped installation capabilities.
+A comprehensive Chef cookbook for deploying and configuring the AxonOps monitoring platform for Apache Cassandra.
+
+## 🚀 Quick Start - Monitor Your Cassandra in 5 Minutes
+
+```bash
+# Download and run the installation script
+wget https://raw.githubusercontent.com/axonops/axonops-chef/main/axonops/examples/simple-configs/install-agent.sh
+chmod +x install-agent.sh
+./install-agent.sh YOUR_ORG_NAME YOUR_ORG_KEY my-cluster-name
+```
+
+That's it! Your Cassandra cluster will appear in AxonOps dashboard in minutes.
+
+## 📚 New to Chef? We've Got You Covered!
+
+- **[Beginner's Guide](docs/BEGINNER_GUIDE.md)** - Step-by-step installation guide for Chef newcomers
+- **[Configuration Guide](docs/CONFIGURATION_GUIDE.md)** - Simple examples for common scenarios  
+- **[Simple Examples](examples/simple-configs/)** - Copy-paste ready configurations
+
+## Overview
+
+This cookbook helps you:
+- **Monitor existing Cassandra clusters** with AxonOps (most common use case)
+- **Install Apache Cassandra** with monitoring pre-configured
+- **Deploy self-hosted AxonOps** for on-premise installations
+- **Configure everything via code** for reproducible deployments
 
 ## Features
 
@@ -43,22 +68,22 @@ knife cookbook site install axonops
 ### From GitHub
 
 ```bash
-git clone https://github.com/axonops/axonops-chef-cookbook.git
-cd axonops
+git clone https://github.com/axonops/axonops-chef.git
+cd axonops-chef/axonops
 ```
 
 ### Using Berkshelf
 
 Add to your `Berksfile`:
 ```ruby
-cookbook 'axonops', git: 'https://github.com/axonops/axonops-chef-cookbook.git'
+cookbook 'axonops', git: 'https://github.com/axonops/axonops-chef.git', rel: 'axonops'
 ```
 
 ### Using Policyfile
 
 Add to your `Policyfile.rb`:
 ```ruby
-cookbook 'axonops', git: 'https://github.com/axonops/axonops-chef-cookbook.git', branch: 'main'
+cookbook 'axonops', git: 'https://github.com/axonops/axonops-chef.git', rel: 'axonops', branch: 'main'
 ```
 
 ## Overview
@@ -92,7 +117,29 @@ axonops/
     └── vagrant-wrapper # Wrapper to fix bundler conflicts
 ```
 
-## Quick Start
+## Simple Configuration Example
+
+To monitor your existing Cassandra cluster, you just need this configuration:
+
+```json
+{
+  "run_list": ["recipe[axonops::agent]"],
+  "axonops": {
+    "agent": {
+      "org": "your-company",
+      "org_key": "your-secret-key",
+      "cluster_name": "production"
+    }
+  }
+}
+```
+
+Save this as `/etc/chef/node.json`, then run:
+```bash
+sudo chef-client --local-mode
+```
+
+## Detailed Usage Examples
 
 ### Scenario 1: Monitor Existing Cassandra with AxonOps SaaS
 
@@ -136,6 +183,12 @@ include_recipe 'axonops::agent'
 ```
 
 ### Scenario 4: Install Apache Cassandra 5.0 for Applications
+
+> ⚠️ **WARNING: FRESH INSTALLATIONS ONLY** ⚠️  
+> The `axonops::cassandra` recipe is designed for **new Cassandra installations only**.  
+> **DO NOT use this recipe to upgrade existing Cassandra clusters!**  
+> This recipe applies default configurations that may break existing clusters.  
+> For upgrades, please follow the official Apache Cassandra upgrade documentation.
 
 ```ruby
 # Install Cassandra for your applications (separate from AxonOps internal storage)
@@ -220,7 +273,7 @@ node.override['axonops']['packages']['zulu_jdk_tarball'] = 'zulu17.46.19-ca-jdk1
 - `agent` - Installs AxonOps agent to monitor Cassandra clusters
 - `server` - Installs AxonOps server (self-hosted mode only)
 - `dashboard` - Installs AxonOps web dashboard
-- `cassandra` - Installs Apache Cassandra 5.0 for your applications
+- `cassandra` - Installs Apache Cassandra 5.0 for your applications (**FRESH INSTALLS ONLY - NOT FOR UPGRADES**)
 - `configure` - Configures AxonOps monitoring, alerts, and backups via API
 - `offline` - Sets up for offline/airgapped installation
 
@@ -244,9 +297,20 @@ Currently, use the `configure` recipe with attributes for API-based configuratio
 
 See `attributes/` directory for all available attributes. Key attribute files:
 - `default.rb` - Core AxonOps configuration
-- `cassandra.rb` - Apache Cassandra installation settings
+- `cassandra.rb` - Apache Cassandra installation settings (⚠️ **FRESH INSTALLS ONLY**)
 - `server.rb` - AxonOps server settings
 - `java.rb` - Java/JDK configuration
+
+### Important Cassandra Attributes
+
+```ruby
+# Safety check - prevents accidental installation over existing Cassandra
+default['cassandra']['force_fresh_install'] = false  # NEVER set to true unless you understand the risks
+
+# Installation settings
+default['cassandra']['install'] = false              # Must explicitly enable
+default['cassandra']['version'] = '5.0.4'           # Apache Cassandra 5.0.4
+```
 
 ## Important Notes
 
@@ -258,6 +322,16 @@ This cookbook installs **Azul Zulu Java 17** by default. This is the recommended
 
 ### Existing Cassandra Clusters
 **This cookbook will NOT reinstall or modify your existing Cassandra installations.** The agent recipe only installs the AxonOps monitoring agent, which connects to your existing Cassandra nodes without any modifications.
+
+> ⚠️ **IMPORTANT: Cassandra Recipe Usage** ⚠️  
+> The `axonops::cassandra` recipe is **ONLY for fresh installations** of Apache Cassandra 5.0.  
+> **Never use this recipe on nodes with existing Cassandra installations** as it will:
+> - Overwrite existing configuration files
+> - Reset cluster settings to defaults
+> - Potentially cause data loss or cluster instability
+> - Not perform proper upgrade procedures
+> 
+> For existing clusters, use only `axonops::agent` to add monitoring capabilities.
 
 ### System Tuning
 The cookbook applies recommended system settings for optimal performance:
@@ -284,6 +358,12 @@ Apache License 2.0
 ## Testing
 
 This cookbook includes comprehensive integration tests using Test Kitchen with Vagrant and VirtualBox.
+
+### Testing Documentation
+
+- **[TESTING.md](TESTING.md)** - Comprehensive testing guide with all procedures
+- **[docs/KITCHEN_QUICKSTART.md](docs/KITCHEN_QUICKSTART.md)** - Quick reference for common test commands
+- **[docs/testing/](docs/testing/)** - Additional testing documentation and archives
 
 ### Test Environment Setup
 
@@ -343,6 +423,7 @@ Each test suite verifies different aspects of the cookbook:
 - **`configure`** - Tests API-based configuration management
 - **`offline`** - Tests airgapped/offline installation capability
 - **`full-stack`** - Tests complete AxonOps deployment (all components)
+- **`multi-node`** - Tests realistic multi-node deployment (2 VMs: AxonOps server + Cassandra app)
 
 ### Test Platforms
 
@@ -400,7 +481,30 @@ This cookbook was developed with the following considerations:
 
 For more detailed testing information, see [TESTING.md](TESTING.md).
 
+## Examples
+
+The `examples/` directory contains complete, working examples:
+
+### Multi-Node Deployment Example
+
+See `examples/multi-node-deployment/` for a complete example of deploying AxonOps monitoring a separate Cassandra cluster:
+
+```bash
+# Using Test Kitchen
+make test-multi-node
+
+# Using Vagrant directly
+cd examples/multi-node-deployment
+vagrant up
+```
+
+This example demonstrates:
+- VM1: Complete AxonOps stack (server, dashboard, storage backends)
+- VM2: Apache Cassandra 5.0 application cluster with AxonOps agent
+- Network configuration for multi-node communication
+- Proper service discovery and monitoring setup
+
 ## Support
 
-- [GitHub Issues](https://github.com/axonops/axonops-cookbook/issues)
+- [GitHub Issues](https://github.com/axonops/axonops-chef/issues)
 - [AxonOps Documentation](https://docs.axonops.com)

@@ -6,8 +6,8 @@ description 'Installs and configures AxonOps monitoring platform for Apache Cass
 version '0.1.0'
 chef_version '>= 14.0'
 
-issues_url 'https://github.com/axonops/axonops-cookbook/issues'
-source_url 'https://github.com/axonops/axonops-cookbook'
+issues_url 'https://github.com/axonops/axonops-chef/issues'
+source_url 'https://github.com/axonops/axonops-chef'
 
 supports 'ubuntu', '>= 20.04'
 supports 'debian', '>= 11.0'

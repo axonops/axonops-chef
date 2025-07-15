@@ -61,7 +61,7 @@ else
 fi
 
 echo -n "Checking Elasticsearch service... "
-if [ -f /etc/systemd/system/axonops-elasticsearch.service ]; then
+if [ -f /etc/systemd/system/axonops-search.service ]; then
   echo "✓"
 else
   echo "✗ FAILED"

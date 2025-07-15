@@ -1,15 +1,24 @@
 [Service]
+# User and Group
 User=<%= @user %>
 Group=<%= @group %>
 
-# Resource limits
+# Resource Limits
 <% @limits.each do |key, value| -%>
 <%= key %>=<%= value %>
 <% end -%>
 
-# Restart configuration
-Restart=on-failure
-RestartSec=30s
+# Environment Variables
+<% if @environment -%>
+<% @environment.each do |env| -%>
+Environment="<%= env %>"
+<% end -%>
+<% end -%>
 
-# Environment
-Environment="AXON_HOME=/var/lib/axonops"
+# Restart Policy
+Restart=on-failure
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal

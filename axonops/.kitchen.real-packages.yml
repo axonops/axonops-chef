@@ -1,0 +1,51 @@
+---
+# Test Kitchen configuration for testing with real AxonOps packages
+#
+# Usage: KITCHEN_YAML=.kitchen.real-packages.yml kitchen test
+
+driver:
+  name: vagrant
+  synced_folders:
+    - ["./offline_packages", "/vagrant/offline_packages"]
+
+provisioner:
+  name: chef_zero
+  product_name: chef
+  chef_license: accept
+
+verifier:
+  name: shell
+
+platforms:
+  - name: ubuntu-22.04
+    driver:
+      box: bento/ubuntu-22.04
+
+suites:
+  - name: real-packages
+    driver:
+      memory: 4096
+      cpus: 2
+    run_list:
+      - recipe[axonops::test_real_packages_minimal]
+    attributes:
+      axonops:
+        offline_install: true
+        offline_packages_dir: "/vagrant/offline_packages"
+        deployment_mode: "self-hosted"
+        server:
+          enabled: true
+        dashboard:
+          enabled: true
+        agent:
+          enabled: true
+          java_agent:
+            enabled: true
+      cassandra:
+        version: "5.0.4"
+        install: true
+      java:
+        install_from_package: false  # Use tarball for consistent Java 17
+    verifier:
+      inspec_tests:
+        - test/integration/real-packages

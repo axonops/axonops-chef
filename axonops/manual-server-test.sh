@@ -79,7 +79,7 @@ EOH
 end
 
 # Create Elasticsearch service
-file '/etc/systemd/system/axonops-elasticsearch.service' do
+file '/etc/systemd/system/axonops-search.service' do
   content <<-EOH
 [Unit]
 Description=Elasticsearch for AxonOps (Test)

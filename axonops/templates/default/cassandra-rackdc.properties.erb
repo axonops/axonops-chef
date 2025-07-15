@@ -1,0 +1,19 @@
+# This file is used by GossipingPropertyFileSnitch and will be
+# automatically overwritten by the snitch if certain properties
+# are missing, so you shouldn't store any extra state here.
+#
+# The snitch will use this file to determine which nodes are in the
+# local datacenter and rack. It will also attempt to determine the
+# public IP or hostname to use for itself: first by looking for an
+# uncommented line starting with "prefer_local" below, and then by
+# querying an EC2 metadata service for a public IP, and finally by
+# reverse-looking up its own hostname if all else fails.
+
+# These properties are used with GossipingPropertyFileSnitch
+dc=<%= @datacenter %>
+rack=<%= @rack %>
+
+# prefer_local specifies whether to use the local IP address or the public IP
+# for communication with other nodes (for example, within the same rack).
+# Uncomment the following line to use the local IP address:
+# prefer_local=true

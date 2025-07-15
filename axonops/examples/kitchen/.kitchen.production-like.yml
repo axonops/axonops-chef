@@ -1,0 +1,77 @@
+---
+# Production-like Test Kitchen configuration
+# Tests a realistic deployment scenario with proper networking and resources
+
+driver:
+  name: vagrant
+  network:
+    - ["private_network", {type: "dhcp"}]
+
+provisioner:
+  name: chef_zero
+  product_name: chef
+  product_version: latest
+  install_strategy: once
+  
+platforms:
+  # Production-like Ubuntu LTS
+  - name: ubuntu-22.04
+    driver:
+      box: bento/ubuntu-22.04
+      customize:
+        memory: 4096
+        cpus: 2
+        
+  # Enterprise Linux
+  - name: almalinux-8
+    driver:
+      box: bento/almalinux-8
+      customize:
+        memory: 4096
+        cpus: 2
+
+suites:
+  # Test existing Cassandra monitoring
+  - name: existing-cassandra
+    run_list:
+      - recipe[axonops::test_existing_cassandra_setup]  # Sets up mock Cassandra
+      - recipe[axonops::agent]
+    attributes:
+      axonops:
+        agent:
+          axon_server: "agents.axonops.cloud"
+          axon_port: 443
+          org: "production"
+          org_key: "<%= ENV['AXONOPS_ORG_KEY'] %>"  # Use environment variable
+          cluster_name: "prod-cluster-1"
+          # Agent will auto-detect existing Cassandra
+          
+  # Test full self-hosted deployment
+  - name: self-hosted
+    run_list:
+      - recipe[axonops::java]
+      - recipe[axonops::elasticsearch]
+      - recipe[axonops::cassandra_data]  # For metrics storage
+      - recipe[axonops::server]
+      - recipe[axonops::dashboard]
+      - recipe[axonops::cassandra]       # Application Cassandra
+      - recipe[axonops::agent]
+    attributes:
+      axonops:
+        # Use specific versions for production
+        server:
+          version: "3.0.0"
+          install: true
+        dashboard:
+          version: "3.0.0"
+        agent:
+          version: "1.0.50"
+          axon_server: "localhost"
+          axon_port: 8080
+        # Production-ready Cassandra settings
+        cassandra:
+          version: "5.0.4"
+          cluster_name: "production"
+          num_tokens: 16
+          endpoint_snitch: "GossipingPropertyFileSnitch"
+          heap_size: "2G"

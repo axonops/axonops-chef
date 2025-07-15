@@ -1,0 +1,86 @@
+---
+# Test Kitchen configuration for offline/airgapped installations
+# Tests installation using pre-downloaded packages
+#
+# Usage: KITCHEN_YAML=.kitchen.offline.yml kitchen test
+
+driver:
+  name: vagrant
+  network:
+    - ["private_network", {type: "dhcp"}]
+
+provisioner:
+  name: chef_zero
+  product_name: chef
+  chef_license: accept
+
+verifier:
+  name: shell
+
+platforms:
+  - name: ubuntu-22.04
+    driver:
+      box: bento/ubuntu-22.04
+
+suites:
+  # Test offline Cassandra installation
+  - name: cassandra-offline
+    driver:
+      vm_hostname: cassandra-offline.test
+      memory: 2048
+      cpus: 2
+      synced_folders:
+        - ["./offline_packages", "/tmp/offline_packages", "create: true"]
+    run_list:
+      - recipe[axonops::cassandra]
+    verifier:
+      command: test/integration/cassandra-offline/verify.sh
+    attributes:
+      axonops:
+        offline_install: true
+        offline_packages_path: "/tmp/offline_packages"
+        agent:
+          enabled: false  # Disable agent for now
+      cassandra:
+        version: "5.0.4"
+        force_fresh_install: true
+        cluster_name: "Offline Test Cluster"
+        seeds: ["127.0.0.1"]
+        listen_address: "127.0.0.1"
+        rpc_address: "127.0.0.1"
+      java:
+        install_from_package: false
+        tarball_path: "/tmp/offline_packages/zulu17.54.21-ca-jdk17.0.13-linux_aarch64.tar.gz"
+
+  # Test full offline AxonOps stack
+  - name: axonops-offline
+    driver:
+      vm_hostname: axonops-offline.test
+      memory: 4096
+      cpus: 2
+      synced_folders:
+        - ["./offline_packages", "/tmp/offline_packages", "create: true"]
+    run_list:
+      - recipe[axonops::server]
+      - recipe[axonops::dashboard]
+      - recipe[axonops::agent]
+    verifier:
+      command: test/integration/axonops-offline/verify.sh
+    attributes:
+      axonops:
+        offline_install: true
+        offline_packages_path: "/tmp/offline_packages"
+        deployment_mode: "self-hosted"
+        server:
+          enabled: true
+          elasticsearch:
+            install: true
+          cassandra:
+            install: true
+        dashboard:
+          enabled: true
+        agent:
+          enabled: true
+      java:
+        install_from_package: false
+        tarball_path: "/tmp/offline_packages/zulu17.54.21-ca-jdk17.0.13-linux_aarch64.tar.gz"

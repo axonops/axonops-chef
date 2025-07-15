@@ -237,6 +237,41 @@ test-components: ## Run all component integration tests (takes 30+ minutes)
 .PHONY: test-all
 test-all: lint unit test-components ## Run ALL tests including all components
 
+# Multi-node deployment testing
+.PHONY: test-multi-node
+test-multi-node: ## Test realistic multi-node deployment (AxonOps server + Cassandra app)
+	@echo "Testing multi-node deployment..."
+	@echo "This creates 2 VMs: AxonOps server and Cassandra application"
+	@KITCHEN_YAML=.kitchen.multi-node.yml KITCHEN_LOCAL_YAML=.kitchen.local.yml bundle exec kitchen test -c
+
+.PHONY: test-multi-node-create
+test-multi-node-create: ## Create multi-node test VMs
+	@echo "Creating multi-node test VMs..."
+	@KITCHEN_YAML=.kitchen.multi-node.yml KITCHEN_LOCAL_YAML=.kitchen.local.yml bundle exec kitchen create
+
+.PHONY: test-multi-node-converge
+test-multi-node-converge: ## Converge multi-node test VMs
+	@echo "Converging multi-node test VMs..."
+	@KITCHEN_YAML=.kitchen.multi-node.yml KITCHEN_LOCAL_YAML=.kitchen.local.yml bundle exec kitchen converge
+
+.PHONY: test-multi-node-verify
+test-multi-node-verify: ## Verify multi-node deployment
+	@echo "Verifying multi-node deployment..."
+	@KITCHEN_YAML=.kitchen.multi-node.yml KITCHEN_LOCAL_YAML=.kitchen.local.yml bundle exec kitchen verify
+
+.PHONY: test-multi-node-destroy
+test-multi-node-destroy: ## Destroy multi-node test VMs
+	@echo "Destroying multi-node test VMs..."
+	@KITCHEN_YAML=.kitchen.multi-node.yml KITCHEN_LOCAL_YAML=.kitchen.local.yml bundle exec kitchen destroy
+
+.PHONY: test-multi-node-login-server
+test-multi-node-login-server: ## SSH into AxonOps server VM
+	@KITCHEN_YAML=.kitchen.multi-node.yml KITCHEN_LOCAL_YAML=.kitchen.local.yml bundle exec kitchen login axonops-server-ubuntu-2204
+
+.PHONY: test-multi-node-login-cassandra
+test-multi-node-login-cassandra: ## SSH into Cassandra app VM
+	@KITCHEN_YAML=.kitchen.multi-node.yml KITCHEN_LOCAL_YAML=.kitchen.local.yml bundle exec kitchen login cassandra-app-ubuntu-2204
+
 # Kitchen Commands
 .PHONY: kitchen-list
 kitchen-list: ## List all test instances
@@ -535,6 +570,9 @@ test-status: ## Show available tests and their purposes
 	@echo "  make test-configure   - API-based configuration management"
 	@echo "  make test-offline     - Offline/airgapped installation"
 	@echo "  make test-full-stack  - ALL components together (large VM)"
+	@echo ""
+	@echo "Multi-Node Deployment Test:"
+	@echo "  make test-multi-node  - Realistic 2-VM deployment (AxonOps + Cassandra)"
 	@echo ""
 	@echo "Quick Tests (keep VMs running for debugging):"
 	@echo "  make test-agent-quick"

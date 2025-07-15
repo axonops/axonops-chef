@@ -48,7 +48,7 @@ check_component "agent service" "[ -f /etc/systemd/system/axon-agent.service ]"
 echo ""
 echo "==== Elasticsearch (AxonOps Storage) ===="
 check_component "elasticsearch directory" "[ -d /opt/elasticsearch ]"
-check_component "elasticsearch service" "[ -f /etc/systemd/system/axonops-elasticsearch.service ]"
+check_component "elasticsearch service" "[ -f /etc/systemd/system/axonops-search.service ]"
 check_component "elasticsearch config" "[ -f /opt/elasticsearch/config/elasticsearch.yml ]"
 
 echo ""

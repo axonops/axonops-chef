@@ -3,6 +3,7 @@
 # Test Kitchen
 .kitchen/
 .kitchen.local.yml
+.kitchen.*.local.yml
 kitchen.local.yml
 test/fixtures/data_bags/
 test/fixtures/environments/
@@ -103,9 +104,15 @@ logs/
 encrypted_data_bag_secret
 
 # Build artifacts
-*.tar.gz
-*.zip
 pkg/
+
+# Offline installation packages
+/offline_packages/
+*.tar.gz
+*.deb
+*.rpm
+*.tgz
+*.zip
 
 # Ruby
 *.gem
@@ -119,6 +126,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.pyc
+
+# Version cache from download script
+scripts/version_cache.json
 
 # Backup files
 *.backup

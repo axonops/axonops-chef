@@ -1,0 +1,23 @@
+---
+# Local Test Kitchen configuration overrides
+# Copy this file to .kitchen.local.yml and customize as needed
+# .kitchen.local.yml is ignored by git
+
+# Example: Use the vagrant wrapper to avoid bundler conflicts
+driver:
+  vagrant_binary: bin/vagrant-wrapper
+
+# Example: Use different VM provider
+# driver:
+#   provider: vmware_desktop
+
+# Example: Custom VM settings
+# driver:
+#   customize:
+#     memory: 2048
+#     cpus: 2
+
+# Example: Use proxy
+# provisioner:
+#   http_proxy: http://proxy.example.com:8080
+#   https_proxy: http://proxy.example.com:8080
