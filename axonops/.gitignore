@@ -114,6 +114,9 @@ pkg/
 *.tgz
 *.zip
 
+# Apache Cassandra directory
+apache-cassandra-5.0.4/
+
 # Ruby
 *.gem
 .rvmrc
