@@ -1,0 +1,65 @@
+---
+# Apple Silicon (M1/M2/M3) Test Kitchen configuration
+# Special settings for ARM64 development machines
+
+driver:
+  name: vagrant
+  # Use the vagrant wrapper to avoid bundler conflicts
+  vagrant_binary: bin/vagrant-wrapper
+  
+provisioner:
+  name: chef_zero
+  
+platforms:
+  # ARM64-compatible boxes
+  - name: ubuntu-22.04-arm64
+    driver:
+      box: bento/ubuntu-22.04-arm64
+      customize:
+        memory: 2048
+        cpus: 2
+        
+  # For testing x86_64 packages on ARM64
+  - name: ubuntu-22.04-cross-arch
+    driver:
+      box: bento/ubuntu-22.04-arm64
+      customize:
+        memory: 2048
+        cpus: 2
+
+suites:
+  # Test with architecture detection
+  - name: agent-arm64
+    run_list:
+      - recipe[axonops::agent]
+    attributes:
+      axonops:
+        agent:
+          axon_server: "agents.axonops.cloud"
+          axon_port: 443
+          # The cookbook will automatically handle architecture mismatches
+          
+  # Test with forced architecture for x86_64 packages
+  - name: agent-cross-arch
+    run_list:
+      - recipe[axonops::agent]
+    attributes:
+      axonops:
+        # Force x86_64 package installation on ARM64
+        force_architecture: true
+        agent:
+          axon_server: "agents.axonops.cloud"
+          axon_port: 443
+          
+  # Test with native ARM64 Java
+  - name: cassandra-arm64
+    run_list:
+      - recipe[axonops::java]
+      - recipe[axonops::cassandra]
+    attributes:
+      axonops:
+        java:
+          # Download ARM64 Java
+          architecture: "aarch64"
+        cassandra:
+          version: "5.0.4"
