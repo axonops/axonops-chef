@@ -2,8 +2,9 @@ require_relative 'axonops_api'
 require_relative 'axonops_utils'
 
 class Chef
-  class Resource::AxonopsAlertRule < Resource::LWRPBase
+  class Resource::AxonopsAlertRule < Chef::Resource
     resource_name :axonops_alert_rule
+    provides :axonops_alert_rule
 
     property :name, String, name_property: true
     property :description, String, default: ''
@@ -13,8 +14,8 @@ class Chef
     property :chart, String, required: true
     property :metric, String, default: ''
     property :operator, String, equal_to: ['=', '>=', '>', '<=', '<', '!=']
-    property :warning_value, Float
-    property :critical_value, Float
+    property :warning_value, Integer, default: 80
+    property :critical_value, Integer, default: 90
     property :duration, String
     property :url_filter, String, default: ''
     property :scope, Array, default: []
@@ -26,10 +27,10 @@ class Chef
     property :routing, Hash, default: {}
     property :present, [true, false], default: true
     property :percentile, Array, default: [],
-             equal_to: ['', '75thPercentile', '95thPercentile', '98thPercentile', 
+             equal_to: [[], '', '75thPercentile', '95thPercentile', '98thPercentile', 
                        '99thPercentile', '999thPercentile']
     property :consistency, Array, default: [],
-             equal_to: ['', 'ALL', 'ANY', 'ONE', 'TWO', 'THREE', 'SERIAL', 
+             equal_to: [[], '', 'ALL', 'ANY', 'ONE', 'TWO', 'THREE', 'SERIAL', 
                        'QUORUM', 'EACH_QUORUM', 'LOCAL_ONE', 'LOCAL_QUORUM', 'LOCAL_SERIAL']
     property :keyspace, Array, default: []
     property :username, String, default: ''

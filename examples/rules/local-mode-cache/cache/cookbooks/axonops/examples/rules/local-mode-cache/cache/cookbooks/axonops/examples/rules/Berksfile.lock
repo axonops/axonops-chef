@@ -1,0 +1,7 @@
+DEPENDENCIES
+  apt (>= 7.0.0)
+  yum (>= 5.0.0)
+
+GRAPH
+  apt (7.6.0)
+  yum (7.4.20)

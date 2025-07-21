@@ -1,0 +1,10 @@
+{
+  "run_list": ["recipe[axonops::agent]"],
+  "axonops": {
+    "agent": {
+      "org": "REPLACE_WITH_YOUR_ORG_NAME",
+      "org_key": "REPLACE_WITH_YOUR_ORG_KEY",
+      "cluster_name": "my-cassandra-cluster"
+    }
+  }
+}

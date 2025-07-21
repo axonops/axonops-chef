@@ -1,0 +1,9 @@
+name: axonops-agent
+title: AxonOps Agent Tests
+maintainer: AxonOps Team
+version: 0.1.0
+supports:
+  - platform-name: ubuntu
+  - platform-name: debian
+  - platform-name: redhat
+  - platform-name: centos

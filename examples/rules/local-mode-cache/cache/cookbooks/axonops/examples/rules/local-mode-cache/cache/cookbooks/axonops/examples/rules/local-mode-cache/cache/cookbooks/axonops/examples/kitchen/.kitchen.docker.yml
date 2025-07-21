@@ -1,0 +1,54 @@
+---
+# Docker-based Test Kitchen configuration
+# Faster than VMs but with some limitations (no systemd by default)
+
+driver:
+  name: docker
+  privileged: true
+  # Force x86_64 on Apple Silicon
+  # platform: linux/amd64
+
+provisioner:
+  name: chef_zero
+  
+platforms:
+  - name: ubuntu-22.04
+    driver_config:
+      image: ubuntu:22.04
+      # Force architecture if needed
+      # platform: linux/amd64
+      run_command: /sbin/init
+      provision_command:
+        - apt-get update
+        - apt-get install -y systemd
+        
+  - name: centos-8
+    driver_config:
+      image: centos:8
+      run_command: /usr/sbin/init
+      provision_command:
+        - yum install -y systemd
+
+suites:
+  - name: agent
+    run_list:
+      - recipe[axonops::agent]
+    attributes:
+      axonops:
+        agent:
+          axon_server: "agents.axonops.cloud"
+          axon_port: 443
+          org: "your-org-name"
+          org_key: "your-org-key"
+          cluster_name: "docker-test"
+          
+  - name: full-stack
+    run_list:
+      - recipe[axonops::full_stack_test]
+    attributes:
+      axonops:
+        server:
+          install: true
+        agent:
+          axon_server: "localhost"
+          axon_port: 8080

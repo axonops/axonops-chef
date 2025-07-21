@@ -1,0 +1,61 @@
+###########################################################################
+#                             jvm-server.options                          #
+#                                                                         #
+# JVM server options for Cassandra                                        #
+###########################################################################
+
+# Heap size settings
+-Xms<%= @heap_size %>
+-Xmx<%= @heap_size %>
+<% if @new_heap_size -%>
+-Xmn<%= @new_heap_size %>
+<% end -%>
+
+# CMS Settings (pre-Java 9)
+#-XX:+UseParNewGC
+#-XX:+UseConcMarkSweepGC
+#-XX:+CMSParallelRemarkEnabled
+#-XX:SurvivorRatio=8
+#-XX:MaxTenuringThreshold=1
+#-XX:CMSInitiatingOccupancyFraction=75
+#-XX:+UseCMSInitiatingOccupancyOnly
+#-XX:CMSWaitDuration=10000
+#-XX:+CMSParallelInitialMarkEnabled
+#-XX:+CMSEdenChunksRecordAlways
+#-XX:+CMSClassUnloadingEnabled
+
+# G1 Settings (default for Java 11+)
+-XX:+UseG1GC
+-XX:+ParallelRefProcEnabled
+-XX:MaxGCPauseMillis=500
+-XX:G1RSetUpdatingPauseTimePercent=5
+
+# GC logging options
+-XX:+PrintGCDetails
+-XX:+PrintGCDateStamps
+-XX:+PrintHeapAtGC
+-XX:+PrintTenuringDistribution
+-XX:+PrintGCApplicationStoppedTime
+-XX:+PrintPromotionFailure
+-XX:+UseGCLogFileRotation
+-XX:NumberOfGCLogFiles=10
+-XX:GCLogFileSize=10M
+
+# General JVM options
+-XX:+AlwaysPreTouch
+-XX:+DisableExplicitGC
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:MaxDirectMemorySize=
+-XX:+PerfDisableSharedMem
+-XX:+UseCondCardMark
+
+# Error handling
+-XX:ErrorFile=/var/log/axonops-cassandra/hs_err_pid%p.log
+-XX:HeapDumpPath=/var/log/axonops-cassandra/
+
+# Thread settings
+-XX:+UseThreadPriorities
+-XX:ThreadPriorityPolicy=42
+
+# Biased locking
+-XX:+UseBiasedLocking

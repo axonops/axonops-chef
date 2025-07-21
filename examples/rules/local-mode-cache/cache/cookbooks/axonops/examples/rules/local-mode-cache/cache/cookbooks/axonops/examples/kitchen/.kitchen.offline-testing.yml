@@ -1,0 +1,62 @@
+---
+# Offline/Airgapped Test Kitchen configuration
+# For testing installations without internet access
+
+driver:
+  name: vagrant
+  # Disable default synced folder to simulate airgapped environment
+  synced_folders: []
+  
+provisioner:
+  name: chef_zero
+  # Don't download Chef, assume it's pre-installed
+  install_strategy: skip
+  
+  # Mount offline packages directory
+  sandbox_path: /tmp/kitchen
+  
+platforms:
+  - name: ubuntu-22.04-offline
+    driver:
+      box: bento/ubuntu-22.04
+      # Disable vagrant automatic updates
+      box_check_update: false
+      customize:
+        memory: 2048
+        cpus: 2
+      # Mount offline packages
+      synced_folders:
+        - ["./offline_packages", "/tmp/offline_packages", "disabled: false, type: 'rsync'"]
+      # Disable network to simulate airgapped
+      network:
+        - ["private_network", {ip: "192.168.33.10", virtualbox__intnet: true}]
+
+suites:
+  - name: offline-agent
+    run_list:
+      - recipe[axonops::agent]
+    attributes:
+      axonops:
+        offline_install: true
+        offline_package_dir: "/tmp/offline_packages"
+        agent:
+          axon_server: "axonops-server.internal"
+          axon_port: 8080
+          org: "internal"
+          org_key: "offline-key"
+          
+  - name: offline-full
+    run_list:
+      - recipe[axonops::java]
+      - recipe[axonops::cassandra]
+      - recipe[axonops::agent]
+    attributes:
+      axonops:
+        offline_install: true
+        offline_package_dir: "/tmp/offline_packages"
+        # Use tarball installations
+        java:
+          install_method: "tarball"
+        cassandra:
+          install_method: "tarball"
+          version: "5.0.4"

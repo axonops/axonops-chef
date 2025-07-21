@@ -1,0 +1,12 @@
+{
+  "run_list": [
+    "recipe[axonops::alert_rules]"
+  ],
+  "axonops": {
+    "api": {
+      "org": "testorg1",
+      "cluster": "test50cluster"
+    }
+  }
+}
+

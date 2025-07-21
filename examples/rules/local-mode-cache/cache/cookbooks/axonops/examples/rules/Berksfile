@@ -1,0 +1,5 @@
+source 'https://supermarket.chef.io'
+
+cookbook 'yum', '>= 5.0'
+cookbook 'apt', '>= 7.0'
+

@@ -1,0 +1,39 @@
+---
+# Minimal Test Kitchen configuration for testing AxonOps Agent only
+# This is the simplest configuration for getting started
+
+driver:
+  name: vagrant
+  # Uncomment and adjust if using custom Vagrant installation
+  # vagrant_binary: /usr/local/bin/vagrant
+
+provisioner:
+  name: chef_zero
+  # Uncomment to see more debug output
+  # log_level: debug
+  
+platforms:
+  # Pick one platform to start with
+  - name: ubuntu-22.04
+    driver:
+      box: bento/ubuntu-22.04
+      # Adjust VM resources as needed
+      customize:
+        memory: 2048
+        cpus: 2
+
+suites:
+  - name: agent
+    run_list:
+      - recipe[axonops::agent]
+    attributes:
+      axonops:
+        agent:
+          # Point to your AxonOps server (SaaS or self-hosted)
+          axon_server: "agents.axonops.cloud"
+          axon_port: 443
+          
+          # Your AxonOps organization and cluster config
+          org: "your-org-name"
+          org_key: "your-org-key"
+          cluster_name: "test-cluster"
