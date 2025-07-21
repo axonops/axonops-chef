@@ -9,15 +9,16 @@ class AxonOps
   attr_reader :org_name, :auth_token, :api_token, :username, :password, 
               :cluster_type, :base_url, :jwt, :integrations_output, :errors
 
-  def initialize(org_name:, auth_token: '', base_url: '', username: '', 
-                 password: '', cluster_type: 'cassandra', api_token: '', 
+  def initialize(org_name: '', auth_token: '', base_url: '', username: '',
+                 password: '', cluster_type: 'cassandra', api_token: '',
                  override_saas: false)
-    @org_name = org_name
-    @auth_token = auth_token
-    @api_token = api_token
-    @username = username
-    @password = password
-    @cluster_type = cluster_type
+    @org_name = org_name.empty? ? (ENV['AXONOPS_ORG'] || '') : nil
+    @auth_token = auth_token.empty? ? (ENV['AXONOPS_TOKEN'] || '') : auth_token
+    @base_url = base_url.empty? ? (ENV['AXONOPS_URL'] || '') : base_url
+    @api_token = api_token.empty? ? (ENV['AXONOPS_API_TOKEN'] || '') : api_token
+    @username = username.empty? ? (ENV['AXONOPS_USERNAME'] || '') : username
+    @password = password.empty? ? (ENV['AXONOPS_PASSWORD'] || '') : password
+    @cluster_type = cluster_type || ENV['AXONOPS_CLUSTER_TYPE'] || 'cassandra'
     @jwt = ''
 
     # save the integration output to a var so we can use it multiple times
@@ -26,8 +27,10 @@ class AxonOps
     # collect the errors, will check it on every module
     @errors = []
 
+    Chef::Log.info("Initializing AxonOps client for org: #{@org_name}, cluster type: #{@cluster_type}")
+    Chef::Log.debug("Base URL: #{@base_url}, Auth Token: #{@auth_token}, Username: #{@username}")
     # set the base url
-    if !base_url.empty?
+    if !@base_url.empty?
       # if saas is overridden, the url will always be treated as saas
       if override_saas
         @base_url = base_url.chomp('/') + '/' + org_name
@@ -37,7 +40,7 @@ class AxonOps
       end
     else
       # if nothing is specified, it is AxonOps Cloud
-      @base_url = CLOUD_URL + '/' + org_name
+      @base_url = CLOUD_URL + '/' + @org_name
     end
 
     # if you have a username and password, it will be used for the login
@@ -57,6 +60,7 @@ class AxonOps
     """
     Get the JWT from the login endpoint
     """
+    Chef::Log.debug("Getting JWT for #{@username} on #{@base_url}/api/login")
     # if you have it already, use it
     return @jwt unless @jwt.empty?
 
@@ -65,14 +69,17 @@ class AxonOps
       'password' => @password
     }
 
+    Chef::Log.info("Getting JWT for #{@username} on #{@base_url}/api/login")
     result, return_error = do_request('/api/login', json_data: json_data, method: 'POST')
 
     if return_error
+      Chef::Log.error("Failed to get JWT: #{return_error}")
       @errors << return_error
     end
 
     if !result || !result.key?('token')
       @errors << "#{@base_url}/api/login returned an invalid result #{result} #{return_error}"
+      Chef::Log.error(@errors.last)
       return nil
     end
 
@@ -100,7 +107,7 @@ class AxonOps
     api_token = @api_token unless @api_token.empty?
 
     # if we have jwt, use it
-    bearer = @jwt unless @jwt.empty?
+    bearer = @jwt if @jwt && !@jwt.empty?
 
     full_url = @base_url + '/' + rel_url.sub(/^\//, '')
 
@@ -127,6 +134,7 @@ class AxonOps
       uri = URI(full_url)
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = uri.scheme == 'https'
+      #http.set_debug_output($stderr)
 
       case method.upcase
       when 'GET'
@@ -148,12 +156,14 @@ class AxonOps
       response = http.request(request)
 
       unless ok_codes.include?(response.code.to_i)
-        return nil, "#{full_url} return code is #{response.code}"
+        Chef::Log.debug("Response from #{full_url}: #{response.code} #{response.message}: #{response.body}")
+        return nil, "#{full_url} return code is #{response.code}: #{response.body}"
       end
 
       content = response.body
 
     rescue => e
+      Chef::Log.debug("Error during HTTP request: #{e.message} #{full_url}")
       return nil, "#{e.message} #{full_url}"
     end
 
