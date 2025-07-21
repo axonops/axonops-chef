@@ -1,225 +1,272 @@
-#
-# Cookbook:: axonops
-# Library:: axonops_api
-#
-# AxonOps API helper library for configuration management
-#
-
-require 'net/http'
 require 'json'
 require 'uri'
+require 'net/http'
+require 'net/https'
 
-module AxonOps
-  class API
-    attr_reader :base_url, :api_key, :org_name
+class AxonOps
+  CLOUD_URL = 'https://dash.axonops.cloud'
 
-    def initialize(base_url, api_key = nil, org_name = nil)
-      @base_url = base_url.chomp('/')
-      @api_key = api_key
-      @org_name = org_name
+  attr_reader :org_name, :auth_token, :api_token, :username, :password, 
+              :cluster_type, :base_url, :jwt, :integrations_output, :errors
+
+  def initialize(org_name:, auth_token: '', base_url: '', username: '', 
+                 password: '', cluster_type: 'cassandra', api_token: '', 
+                 override_saas: false)
+    @org_name = org_name
+    @auth_token = auth_token
+    @api_token = api_token
+    @username = username
+    @password = password
+    @cluster_type = cluster_type
+    @jwt = ''
+
+    # save the integration output to a var so we can use it multiple times
+    @integrations_output = {}
+
+    # collect the errors, will check it on every module
+    @errors = []
+
+    # set the base url
+    if !base_url.empty?
+      # if saas is overridden, the url will always be treated as saas
+      if override_saas
+        @base_url = base_url.chomp('/') + '/' + org_name
+      else
+        # if saas is not overridden, it is treated as on-prem
+        @base_url = base_url.chomp('/')
+      end
+    else
+      # if nothing is specified, it is AxonOps Cloud
+      @base_url = CLOUD_URL + '/' + org_name
     end
 
-    # Generic API request method
-    def request(method, endpoint, body = nil)
-      uri = URI.parse("#{@base_url}#{endpoint}")
+    # if you have a username and password, it will be used for the login
+    if !@username.empty? && !@password.empty?
+      @jwt = get_jwt
+    end
+  end
 
+  def get_cluster_type
+    """
+    getter for cluster_type
+    """
+    @cluster_type
+  end
+
+  def get_jwt
+    """
+    Get the JWT from the login endpoint
+    """
+    # if you have it already, use it
+    return @jwt unless @jwt.empty?
+
+    json_data = {
+      'username' => @username,
+      'password' => @password
+    }
+
+    result, return_error = do_request('/api/login', json_data: json_data, method: 'POST')
+
+    if return_error
+      @errors << return_error
+    end
+
+    if !result || !result.key?('token')
+      @errors << "#{@base_url}/api/login returned an invalid result #{result} #{return_error}"
+      return nil
+    end
+
+    @jwt = result['token']
+    @jwt
+  end
+
+  def dash_url
+    @base_url
+  end
+
+  def do_request(rel_url, method: 'GET', ok_codes: [200, 201, 204], 
+                 data: nil, json_data: nil, form_field: '')
+    """
+    Perform a request to AxonOps and return the response or an error
+    """
+    # bearer empty is for anonymous
+    bearer = ''
+    api_token = ''
+
+    # if we have auth_token, use it
+    bearer = @auth_token unless @auth_token.empty?
+
+    # if we have an api token for on prem axonserver instances
+    api_token = @api_token unless @api_token.empty?
+
+    # if we have jwt, use it
+    bearer = @jwt unless @jwt.empty?
+
+    full_url = @base_url + '/' + rel_url.sub(/^\//, '')
+
+    if data.nil? && !json_data.nil?
+      data = json_data.to_json
+    end
+
+    headers = {
+      'Accept' => 'application/json',
+      'User-agent' => 'AxonOps Ruby Client'
+    }
+
+    headers['Authorization'] = "Bearer #{bearer}" unless bearer.empty?
+    headers['Authorization'] = "AxonApi #{api_token}" unless api_token.empty?
+
+    if !form_field.empty?
+      headers['Content-type'] = 'application/x-www-form-urlencoded'
+      data = "#{form_field}=#{URI.encode_www_form_component(data)}"
+    elsif !data.nil?
+      headers['Content-type'] = 'application/json'
+    end
+
+    begin
+      uri = URI(full_url)
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = uri.scheme == 'https'
-      http.read_timeout = 30
-      http.open_timeout = 10
 
       case method.upcase
       when 'GET'
         request = Net::HTTP::Get.new(uri.request_uri)
       when 'POST'
         request = Net::HTTP::Post.new(uri.request_uri)
+        request.body = data if data
       when 'PUT'
         request = Net::HTTP::Put.new(uri.request_uri)
+        request.body = data if data
       when 'DELETE'
         request = Net::HTTP::Delete.new(uri.request_uri)
       else
-        raise ArgumentError, "Unsupported HTTP method: #{method}"
+        return nil, "Unsupported HTTP method: #{method}"
       end
 
-      # Set headers
-      request['Content-Type'] = 'application/json'
-      request['Accept'] = 'application/json'
+      headers.each { |key, value| request[key] = value }
 
-      # Authentication
-      if @api_key
-        request['X-API-Key'] = @api_key
-      end
-
-      if @org_name
-        request['X-Organization'] = @org_name
-      end
-
-      # Set body if provided
-      request.body = body.to_json if body
-
-      # Make request
       response = http.request(request)
 
-      # Parse response
-      {
-        code: response.code.to_i,
-        body: response.body.empty? ? {} : JSON.parse(response.body),
-        success: response.code.to_i >= 200 && response.code.to_i < 300,
-      }
-    rescue StandardError => e
-      Chef::Log.error("AxonOps API request failed: #{e.message}")
-      {
-        code: 0,
-        body: { 'error' => e.message },
-        success: false,
-      }
-    end
-
-    # Alert Rules
-    def create_alert_rule(rule)
-      request('POST', '/api/v1/alerts/rules', rule)
-    end
-
-    def update_alert_rule(rule_id, rule)
-      request('PUT', "/api/v1/alerts/rules/#{rule_id}", rule)
-    end
-
-    def delete_alert_rule(rule_id)
-      request('DELETE', "/api/v1/alerts/rules/#{rule_id}")
-    end
-
-    def get_alert_rules
-      request('GET', '/api/v1/alerts/rules')
-    end
-
-    # Alert Endpoints (Notification Channels)
-    def create_alert_endpoint(endpoint)
-      request('POST', '/api/v1/alerts/endpoints', endpoint)
-    end
-
-    def update_alert_endpoint(endpoint_id, endpoint)
-      request('PUT', "/api/v1/alerts/endpoints/#{endpoint_id}", endpoint)
-    end
-
-    def delete_alert_endpoint(endpoint_id)
-      request('DELETE', "/api/v1/alerts/endpoints/#{endpoint_id}")
-    end
-
-    def get_alert_endpoints
-      request('GET', '/api/v1/alerts/endpoints')
-    end
-
-    # Alert Routes
-    def create_alert_route(route)
-      request('POST', '/api/v1/alerts/routes', route)
-    end
-
-    def update_alert_route(route_id, route)
-      request('PUT', "/api/v1/alerts/routes/#{route_id}", route)
-    end
-
-    def delete_alert_route(route_id)
-      request('DELETE', "/api/v1/alerts/routes/#{route_id}")
-    end
-
-    def get_alert_routes
-      request('GET', '/api/v1/alerts/routes')
-    end
-
-    # Service Checks
-    def create_service_check(check)
-      request('POST', '/api/v1/service-checks', check)
-    end
-
-    def update_service_check(check_id, check)
-      request('PUT', "/api/v1/service-checks/#{check_id}", check)
-    end
-
-    def delete_service_check(check_id)
-      request('DELETE', "/api/v1/service-checks/#{check_id}")
-    end
-
-    def get_service_checks
-      request('GET', '/api/v1/service-checks')
-    end
-
-    # Backup Configurations
-    def create_backup_config(config)
-      request('POST', '/api/v1/backups/configs', config)
-    end
-
-    def update_backup_config(config_id, config)
-      request('PUT', "/api/v1/backups/configs/#{config_id}", config)
-    end
-
-    def delete_backup_config(config_id)
-      request('DELETE', "/api/v1/backups/configs/#{config_id}")
-    end
-
-    def get_backup_configs
-      request('GET', '/api/v1/backups/configs')
-    end
-
-    # Log Parsing Rules
-    def create_log_rule(rule)
-      request('POST', '/api/v1/logs/rules', rule)
-    end
-
-    def update_log_rule(rule_id, rule)
-      request('PUT', "/api/v1/logs/rules/#{rule_id}", rule)
-    end
-
-    def delete_log_rule(rule_id)
-      request('DELETE', "/api/v1/logs/rules/#{rule_id}")
-    end
-
-    def get_log_rules
-      request('GET', '/api/v1/logs/rules')
-    end
-
-    # Helper method to check if a resource exists
-    def resource_exists?(type, name)
-      case type
-      when :alert_rule
-        response = get_alert_rules
-      when :alert_endpoint
-        response = get_alert_endpoints
-      when :service_check
-        response = get_service_checks
-      when :backup_config
-        response = get_backup_configs
-      else
-        return false
+      unless ok_codes.include?(response.code.to_i)
+        return nil, "#{full_url} return code is #{response.code}"
       end
 
-      return false unless response[:success]
+      content = response.body
 
-      resources = response[:body]['data'] || response[:body]
-      resources.any? { |r| r['name'] == name }
+    rescue => e
+      return nil, "#{e.message} #{full_url}"
+    end
+
+    # Not all requests return a response so ignore json decoding errors
+    begin
+      return JSON.parse(content), nil
+    rescue JSON::ParserError
+      return nil, nil
     end
   end
-end
 
-# Helper methods for use in recipes
-module AxonOpsHelper
-  def axonops_api
-    @axonops_api ||= begin
-      # Determine API endpoint
-      base_url = if node['axonops']['deployment_mode'] == 'self-hosted'
-                   "http://#{node['axonops']['server']['listen_address']}:#{node['axonops']['server']['listen_port']}"
-                 else
-                   'https://api.axonops.cloud'
-                 end
+  def get_integration_output(cluster)
+    """
+    get the integration output from local variable if present, or from API
+    """
+    # if we don't have already the integration API output, call the API
+    unless @integrations_output.key?(cluster)
+      integrations, error = do_request("/api/v1/integrations/#{@org_name}/#{get_cluster_type}/#{cluster}")
+      return nil, error if error
 
-      AxonOps::API.new(
-        base_url,
-        node['axonops']['api']['key'],
-        node['axonops']['api']['organization']
-      )
+      # save the integration output for the next time
+      @integrations_output[cluster] = integrations
     end
+
+    [@integrations_output[cluster], nil]
+  end
+
+  def find_integration_by_name_and_type(cluster, integration_type, name)
+    """
+    get the integration by the name and type
+    """
+    # Get the list of current integrations
+    integrations, error = get_integration_output(cluster)
+    return nil, error if error
+
+    definitions = integrations.key?('Definitions') ? integrations['Definitions'] : []
+
+    # Check if the named integration already exists
+    if definitions
+      definitions.each do |definition|
+        if definition.key?('Type') && definition.key?('Params') && 
+           definition['Params'].key?('name') &&
+           definition['Type'] == integration_type && 
+           definition['Params']['name'] == name
+          return definition, nil
+        end
+      end
+    end
+
+    [nil, nil]
+  end
+
+  def find_integration_id_by_name(cluster, name)
+    """
+    get the integration by the name
+    """
+    # Get the list of current integrations
+    integrations, error = get_integration_output(cluster)
+    return nil, error if error
+
+    definitions = integrations.key?('Definitions') ? integrations['Definitions'] : []
+
+    # Check if the named integration already exists
+    if definitions
+      definitions.each do |definition|
+        if definition.key?('Params') && definition['Params'].key?('name') &&
+           definition['Params']['name'] == name
+          return definition['ID'], nil
+        end
+      end
+    end
+
+    [nil, nil]
+  end
+
+  def find_integration_name_by_id(cluster, integration_id)
+    """
+    get the integration by the ID
+    """
+    # Get the list of current integrations
+    integrations, error = get_integration_output(cluster)
+    return nil, error if error
+
+    definitions = integrations.key?('Definitions') ? integrations['Definitions'] : []
+
+    # find the definition
+    if definitions
+      definitions.each do |definition|
+        if definition['ID'] == integration_id
+          return definition['Params']['name'], nil
+        end
+      end
+    end
+
+    [nil, nil]
+  end
+
+  def find_nodes_ids(nodes, org, cluster)
+    nodes_returned, error = do_request("api/v1/nodes/#{org}/#{get_cluster_type}/#{cluster}")
+    return nil, error if error
+
+    list_of_ids = []
+
+    nodes.each do |node|
+      nodes_returned.each do |node_returned|
+        details = node_returned['Details']
+        if node == details['human_readable_identifier'] || node == node_returned['HostIP']
+          list_of_ids << node_returned['host_id']
+          break
+        end
+      end
+    end
+
+    [list_of_ids, nil]
   end
 end
-
-# Make helper available to recipes
-Chef::DSL::Recipe.send(:include, AxonOpsHelper)
-Chef::Resource.send(:include, AxonOpsHelper)
