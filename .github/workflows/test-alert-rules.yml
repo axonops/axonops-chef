@@ -31,7 +31,7 @@ jobs:
     
     - name: Install Chef Workstation
       run: |
-        wget https://packages.chef.io/files/stable/chef-workstation/23.5.1040/ubuntu/20.04/chef-workstation_23.5.1040-1_amd64.deb
+        wget https://packages.chef.io/files/stable/chef-workstation/23.5.1040/ubuntu/22.04/chef-workstation_23.5.1040-1_amd64.deb
         sudo dpkg -i chef-workstation_23.5.1040-1_amd64.deb
         echo 'eval "$(chef shell-init bash)"' >> ~/.bashrc
         source ~/.bashrc

@@ -23,35 +23,47 @@ jobs:
         ruby-version: ${{ matrix.ruby-version }}
         bundler-cache: true
     
+    - name: Install Chef Workstation
+      run: |
+        wget https://packages.chef.io/files/stable/chef-workstation/23.5.1040/ubuntu/22.04/chef-workstation_23.5.1040-1_amd64.deb
+        sudo dpkg -i chef-workstation_23.5.1040-1_amd64.deb
+        echo 'eval "$(chef shell-init bash)"' >> ~/.bashrc
+        source ~/.bashrc
+        # Accept Chef license
+        sudo env CHEF_LICENSE=accept-silent chef -v
+
     - name: Install Chef
       run: |
         export CHEF_LICENSE=accept-silent
-        gem install chef -v "~> ${{ matrix.chef-version }}.0"
-        gem install chefspec
-        gem install berkshelf
+        /opt/chef-workstation/embedded/bin/gem install chef -v "~> ${{ matrix.chef-version }}.0"
+        /opt/chef-workstation/embedded/bin/gem install chefspec
+        /opt/chef-workstation/embedded/bin/gem install berkshelf
+      env:
+        CHEF_LICENSE: accept-silent
+
     
     - name: Install dependencies
       run: |
         export CHEF_LICENSE=accept-silent
-        chef exec bundle lock --normalize-platforms || true
-        chef exec bundle install --jobs 4 --retry 3
-        chef exec berks install
+        /opt/chef-workstation/bin/chef exec bundle lock --normalize-platforms || true
+        /opt/chef-workstation/bin/chef exec bundle install --jobs 4 --retry 3
+        /opt/chef-workstation/bin/chef exec berks install
     
     - name: Run RuboCop (linting)
       run: |
         export CHEF_LICENSE=accept-silent
-        chef exec rubocop --display-cop-names --extra-details
+        /opt/chef-workstation/bin/chef exec rubocop --display-cop-names --extra-details
       continue-on-error: true
     
     - name: Run ChefSpec unit tests
       run: |
         export CHEF_LICENSE=accept-silent
-        chef exec rspec spec/unit/recipes/alert_rules_spec.rb --format documentation --color
+        /opt/chef-workstation/bin/chef exec rspec spec/unit/recipes/alert_rules_spec.rb --format documentation --color
     
     - name: Run all unit tests
       run: |
         export CHEF_LICENSE=accept-silent
-        chef exec rspec --format documentation --color
+        /opt/chef-workstation/bin/chef exec rspec --format documentation --color
     
     - name: Upload test results
       if: always()
@@ -75,8 +87,8 @@ jobs:
     
     - name: Install dependencies
       run: |
-        gem install cookstyle
-        gem install chef
+        /opt/chef-workstation/embedded/bin/gem install cookstyle
+        /opt/chef-workstation/embedded/bin/gem install chef
     
     - name: Run Cookstyle
       run: cookstyle --display-cop-names --extra-details
@@ -95,8 +107,8 @@ jobs:
     
     - name: Install dependencies
       run: |
-        gem install foodcritic
-        gem install chef
+        /opt/chef-workstation/embedded/bin/gem install foodcritic
+        /opt/chef-workstation/embedded/bin/gem install chef
     
     - name: Run Foodcritic
       run: foodcritic . -f any -t ~FC121 -t ~FC034
