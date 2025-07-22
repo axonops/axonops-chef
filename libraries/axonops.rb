@@ -12,7 +12,7 @@ class AxonOps
   def initialize(org_name: '', auth_token: '', base_url: '', username: '',
                  password: '', cluster_type: 'cassandra', api_token: '',
                  override_saas: false)
-    @org_name = org_name.empty? ? (ENV['AXONOPS_ORG'] || '') : nil
+    @org_name = org_name.empty? ? (ENV['AXONOPS_ORG'] || '') : org_name
     @auth_token = auth_token.empty? ? (ENV['AXONOPS_TOKEN'] || '') : auth_token
     @base_url = base_url.empty? ? (ENV['AXONOPS_URL'] || '') : base_url
     @api_token = api_token.empty? ? (ENV['AXONOPS_API_TOKEN'] || '') : api_token

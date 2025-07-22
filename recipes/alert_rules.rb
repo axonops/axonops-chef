@@ -281,5 +281,117 @@ axonops_backup "SFTP Backup" do
   password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
   base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
   auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
+  action :delete
+end
+
+
+# Example: Slack integration
+axonops_integration "slack-alerts" do
+  integration_type "slack"
+  slack_webhook_url "https://hooks.slack.com/services/XXX/XXX/XXXXXXX"
+  slack_channel "#alerts"
+  slack_axondash_url "https://axonops.internal.axonopsdev.com"
+  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
+  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
+  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
+  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
+  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
+  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
+  action :delete
+end
+
+# Example: PagerDuty integration
+axonops_integration "pagerduty-critical" do
+  integration_type "pagerduty"
+  pagerduty_integration_key "YOUR_PAGERDUTY_INTEGRATION_KEY"
+  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
+  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
+  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
+  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
+  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
+  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
+  action :delete
+end
+
+# Example: Microsoft Teams integration
+axonops_integration "teams-alerts" do
+  integration_type "microsoft_teams"
+  teams_webhook_url "https://outlook.office.com/webhook/YOUR_TEAMS_WEBHOOK"
+  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
+  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
+  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
+  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
+  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
+  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
+  action :delete
+end
+
+# Example: SMTP integration
+axonops_integration "email-alerts" do
+  integration_type "smtp"
+  smtp_server "smtp.example.com"
+  smtp_port "587"
+  smtp_username "alerts@example.com"
+  smtp_password "smtp_password"
+  smtp_from "alerts@example.com"
+  smtp_receivers "ops-team@example.com"
+  smtp_subject "AxonOps Alert"
+  smtp_start_tls true
+  smtp_auth_login true
+  smtp_skip_certificate_verify false
+  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
+  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
+  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
+  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
+  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
+  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
+  action :delete
+end
+
+# Example: ServiceNow integration
+axonops_integration "servicenow-incidents" do
+  integration_type "servicenow"
+  servicenow_instance_url "https://mycompany.service-now.com"
+  servicenow_username "api_user"
+  servicenow_password "api_password"
+  servicenow_client_id "optional_client_id"
+  servicenow_client_secret "optional_client_secret"
+  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
+  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
+  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
+  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
+  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
+  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
+  action :delete
+end
+
+# Example: OpsGenie integration
+axonops_integration "opsgenie-alerts" do
+  integration_type "opsgenie"
+  opsgenie_api_key "YOUR_OPSGENIE_API_KEY"
+  opsgenie_api_url "https://api.opsgenie.com"
+  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
+  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
+  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
+  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
+  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
+  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
+  action :delete
+end
+
+# Example: General Webhook integration
+axonops_integration "generic-webhook" do
+  integration_type "general_webhook"
+  webhook_url "http://some:8080"
+  webhook_headers [
+    { "header" => "Auth", "value" => "blab" },
+    { "header" => "Other", "value" => "other" }
+  ]
+  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
+  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
+  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
+  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
+  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
+  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
   action :create
 end
