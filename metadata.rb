@@ -51,6 +51,7 @@ recipe 'axonops::java', 'Installs Java/Zulu JDK'
 recipe 'axonops::configure', 'Configures AxonOps via API'
 recipe 'axonops::system_tuning', 'Applies system tuning for Cassandra'
 recipe 'axonops::offline', 'Supports offline/airgapped installation'
+recipe 'axonops::alert_rules', 'Deploys AxonOps alert rules'
 
 # Attributes
 attribute 'axonops/agent/enabled',
