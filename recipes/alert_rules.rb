@@ -19,7 +19,7 @@ axonops_alert_rule 'Check for High CPU' do
   operator '>'
   warning_value 80
   critical_value 90
-  duration '5m'
+  duration '15m'
   description 'Alert when CPU usage is too high'
   routing ['slack-alerts', 'pagerduty']  # Integration names
   action :create

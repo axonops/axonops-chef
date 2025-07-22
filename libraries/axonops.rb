@@ -168,6 +168,10 @@ class AxonOps
     end
 
     # Not all requests return a response so ignore json decoding errors
+    if content.nil? || content.empty?
+      Chef::Log.debug("No content returned from #{full_url}")
+      return nil, nil
+    end
     begin
       return JSON.parse(content), nil
     rescue JSON::ParserError
