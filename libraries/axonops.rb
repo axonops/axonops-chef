@@ -147,6 +147,7 @@ class AxonOps
         request.body = data if data
       when 'DELETE'
         request = Net::HTTP::Delete.new(uri.request_uri)
+        request.body = data if data
       else
         return nil, "Unsupported HTTP method: #{method}"
       end
