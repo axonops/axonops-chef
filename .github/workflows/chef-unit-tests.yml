@@ -25,25 +25,33 @@ jobs:
     
     - name: Install Chef
       run: |
+        export CHEF_LICENSE=accept-silent
         gem install chef -v "~> ${{ matrix.chef-version }}.0"
         gem install chefspec
         gem install berkshelf
     
     - name: Install dependencies
       run: |
+        export CHEF_LICENSE=accept-silent
         chef exec bundle lock --normalize-platforms || true
         chef exec bundle install --jobs 4 --retry 3
         chef exec berks install
     
     - name: Run RuboCop (linting)
-      run: chef exec rubocop --display-cop-names --extra-details
+      run: |
+        export CHEF_LICENSE=accept-silent
+        chef exec rubocop --display-cop-names --extra-details
       continue-on-error: true
     
     - name: Run ChefSpec unit tests
-      run: chef exec rspec spec/unit/recipes/alert_rules_spec.rb --format documentation --color
+      run: |
+        export CHEF_LICENSE=accept-silent
+        chef exec rspec spec/unit/recipes/alert_rules_spec.rb --format documentation --color
     
     - name: Run all unit tests
-      run: chef exec rspec --format documentation --color
+      run: |
+        export CHEF_LICENSE=accept-silent
+        chef exec rspec --format documentation --color
     
     - name: Upload test results
       if: always()
