@@ -27,7 +27,7 @@ class AxonOps
     # collect the errors, will check it on every module
     @errors = []
 
-    Chef::Log.info("Initializing AxonOps client for org: #{@org_name}, cluster type: #{@cluster_type}")
+    Chef::Log.debug("Initializing AxonOps client for org: #{@org_name}, cluster type: #{@cluster_type}")
     Chef::Log.debug("Base URL: #{@base_url}, Auth Token: #{@auth_token}, Username: #{@username}")
     # set the base url
     if !@base_url.empty?
@@ -69,7 +69,7 @@ class AxonOps
       'password' => @password
     }
 
-    Chef::Log.info("Getting JWT for #{@username} on #{@base_url}/api/login")
+    Chef::Log.debug("Getting JWT for #{@username} on #{@base_url}/api/login")
     result, return_error = do_request('/api/login', json_data: json_data, method: 'POST')
 
     if return_error

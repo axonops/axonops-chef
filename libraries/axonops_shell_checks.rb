@@ -30,7 +30,7 @@ class Chef
       converge_by("Creating/updating AxonOps shell check #{new_resource.name}") do
         begin
           # Create AxonOps client instance
-          Chef::Log.info("Starting AxonOps shell check processing for: #{new_resource.name}")
+          Chef::Log.debug("Starting AxonOps shell check processing for: #{new_resource.name}")
           client = AxonOps.new(
             org_name: new_resource.org,
             auth_token: new_resource.auth_token,
@@ -44,7 +44,7 @@ class Chef
 
           # Get existing health checks (includes httpchecks, tcpchecks, shellchecks)
           health_checks_url = "/api/v1/healthchecks/#{new_resource.org}/#{client.get_cluster_type}/#{new_resource.cluster}"
-          Chef::Log.info("Fetching health checks from: #{health_checks_url}")
+          Chef::Log.debug("Fetching health checks from: #{health_checks_url}")
           
           response = client.do_request(health_checks_url, method: 'GET')
           if response.nil?
@@ -57,7 +57,7 @@ class Chef
             raise error
           end
 
-          Chef::Log.info("Current health checks response: #{current_health_checks}")
+          Chef::Log.debug("Current health checks response: #{current_health_checks}")
 
           # Ensure we have the proper structure
           current_health_checks ||= {}
@@ -74,8 +74,8 @@ class Chef
             old_check = current_shell_checks.find { |check| check['name'] == new_resource.name }
           end
           
-          Chef::Log.info("Found existing shell check: #{old_check ? 'YES' : 'NO'}")
-          Chef::Log.info("Existing shell check data: #{old_check}") if old_check
+          Chef::Log.debug("Found existing shell check: #{old_check ? 'YES' : 'NO'}")
+          Chef::Log.debug("Existing shell check data: #{old_check}") if old_check
 
           # Exit early if check doesn't exist and we don't want it to
           if !old_check && !new_resource.present
@@ -94,7 +94,7 @@ class Chef
             end
           end
 
-          Chef::Log.info("Change detected: #{changed}")
+          Chef::Log.debug("Change detected: #{changed}")
 
           if changed || old_check.nil?
             if new_resource.present
@@ -119,7 +119,7 @@ class Chef
                 'serviceCheckType' => 'shellchecks'
               }
 
-              Chef::Log.info("Shell check payload: #{shell_check_payload}")
+              Chef::Log.debug("Shell check payload: #{shell_check_payload}")
               
               # Build the updated shell checks array
               updated_shell_checks = current_shell_checks.dup
@@ -141,7 +141,7 @@ class Chef
                 'shellchecks' => updated_shell_checks
               }
               
-              Chef::Log.info("Sending complete payload to AxonOps")
+              Chef::Log.debug("Sending complete payload to AxonOps")
               
               # Send PUT request with the complete health checks payload
               response = client.do_request(health_checks_url, method: 'PUT', json_data: complete_payload)

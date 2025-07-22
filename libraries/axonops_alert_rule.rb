@@ -60,7 +60,7 @@ class Chef
       converge_by("Creating/updating AxonOps alert rule #{new_resource.name}") do
         begin
           # Create AxonOps client instance
-          Chef::Log.info("Starting AxonOps alert rule processing for: #{new_resource.name}")
+          Chef::Log.debug("Starting AxonOps alert rule processing for: #{new_resource.name}")
           client = AxonOps.new(
             org_name: new_resource.org,
             auth_token: new_resource.auth_token,
@@ -74,7 +74,7 @@ class Chef
 
           # Get existing alert rules
           alerts_url = "/api/v1/alert-rules/#{new_resource.org}/#{client.get_cluster_type}/#{new_resource.cluster}"
-          Chef::Log.info("Fetching alerts from: #{alerts_url}")
+          Chef::Log.debug("Fetching alerts from: #{alerts_url}")
           
           response = client.do_request(alerts_url, method: 'GET')
           if response.nil?
@@ -87,11 +87,11 @@ class Chef
             raise error
           end
 
-          Chef::Log.info("Current rules response: #{current_rules}")
+          Chef::Log.debug("Current rules response: #{current_rules}")
 
           # Get dashboard templates
           dash_templates_url = "/api/v1/dashboardtemplate/#{new_resource.org}/#{client.get_cluster_type}/#{new_resource.cluster}"
-          Chef::Log.info("Fetching dashboard templates from: #{dash_templates_url}")
+          Chef::Log.debug("Fetching dashboard templates from: #{dash_templates_url}")
           
           response = client.do_request(dash_templates_url)
           if response.nil?
@@ -105,7 +105,7 @@ class Chef
             raise error_message
           end
 
-          Chef::Log.info("Dashboard templates response: #{dash_templates}")
+          Chef::Log.debug("Dashboard templates response: #{dash_templates}")
 
           # Check if we have the expected data structure
           unless dash_templates && dash_templates['dashboards']
@@ -142,11 +142,11 @@ class Chef
             new_chart = new_charts
           end
           
-          Chef::Log.info("Selected chart: #{new_chart}")
+          Chef::Log.debug("Selected chart: #{new_chart}")
           
           # Determine alert name (use resource name or chart title)
           alert_name = new_resource.name.empty? ? new_resource.chart : new_resource.name
-          Chef::Log.info("Alert name: #{alert_name}")
+          Chef::Log.debug("Alert name: #{alert_name}")
 
           # Find existing alert rule - with nil check
           current_metricrules = current_rules['metricrules'] if current_rules
@@ -154,8 +154,8 @@ class Chef
           if current_metricrules
             old_alert = AxonOpsUtils.find_by_field(current_metricrules, 'alert', alert_name)
           end
-          Chef::Log.info("Found existing alert: #{old_alert ? 'YES' : 'NO'}")
-          Chef::Log.info("Existing alert data: #{old_alert}") if old_alert
+          Chef::Log.debug("Found existing alert: #{old_alert ? 'YES' : 'NO'}")
+          Chef::Log.debug("Existing alert data: #{old_alert}") if old_alert
 
           # Exit early if alert doesn't exist and we don't want it to
           if !old_alert && !new_resource.present
@@ -192,9 +192,9 @@ class Chef
               next if integration_name.nil? || integration_name.empty?
               
               begin
-                Chef::Log.info("Looking up integration: '#{integration_name}'")
+                Chef::Log.debug("Looking up integration: '#{integration_name}'")
                 integration_id = client.find_integration_id_by_name(new_resource.cluster, integration_name)
-                Chef::Log.info("Integration lookup result: #{integration_id}")
+                Chef::Log.debug("Integration lookup result: #{integration_id}")
                 
                 if integration_id && !integration_id.to_s.empty?
                   # Ensure integration_id is a string, not an array
@@ -206,7 +206,7 @@ class Chef
                       'id' => id_string,  # lowercase 'id' and ensure it's a string
                       'severity' => new_resource.routing_severity || 'warning'
                     }
-                    Chef::Log.info("Added integration ID '#{id_string}' for '#{integration_name}' with severity '#{new_resource.routing_severity}'")
+                    Chef::Log.debug("Added integration ID '#{id_string}' for '#{integration_name}' with severity '#{new_resource.routing_severity}'")
                   else
                     Chef::Log.warn("Integration ID for '#{integration_name}' is empty after conversion")
                   end
@@ -264,7 +264,7 @@ class Chef
             raise "Unsupported chart type for alert expression: #{new_chart['type']}"
           end
 
-          Chef::Log.info("Generated expression: #{expression}")
+          Chef::Log.debug("Generated expression: #{expression}")
 
           # Build filters array - inline logic
           filters = []
@@ -290,7 +290,7 @@ class Chef
             end
           end
 
-          Chef::Log.info("Change detected: #{changed}")
+          Chef::Log.debug("Change detected: #{changed}")
 
           if changed || old_alert.nil?
             if new_resource.present
@@ -325,7 +325,7 @@ class Chef
                 'filters' => filters
               }
 
-              Chef::Log.info("Sending payload to AxonOps: #{payload}")
+              Chef::Log.debug("Sending payload to AxonOps: #{payload}")
               
               response = client.do_request(alerts_url, method: 'POST', json_data: payload)
               if response.nil?

@@ -1,397 +1,190 @@
-#
-# Cookbook:: axonops
-# Recipe:: example_alerts
-#
-# Example recipe demonstrating how to configure alert rules
-#
-
-# # Example 1: CPU usage alert
-# axonops_alert_rule 'Check for High CPU' do
-#   org ENV['AXONOPS_ORG'] || node['axonops']['api']['org']
-#   cluster ENV['AXONOPS_CLUSTER'] || node['axonops']['api']['cluster']
-#   username ENV['AXONOPS_USERNAME'] || node['axonops']['api']['username'] || ''
-#   password ENV['AXONOPS_PASSWORD'] || node['axonops']['api']['password'] || ''
-#   base_url ENV['AXONOPS_URL'] || node['axonops']['api']['base_url'] || ''
-#   auth_token ENV['AXONOPS_TOKEN'] || node['axonops']['api']['auth_token'] || ''
-#   dashboard 'System'
-#   chart 'CPU usage per host'
-#   metric 'host_CPU_Percent_Merge'
-#   operator '>'
-#   warning_value 80
-#   critical_value 90
-#   duration '15m'
-#   description 'Alert when CPU usage is too high'
-#   routing ['slack-alerts', 'pagerduty']  # Integration names
-#   action :delete
-# end
-
-# # Example 2: Memory usage alert
-# axonops_alert_rule 'high_memory_usage' do
-#   org ENV['AXONOPS_ORG'] || node['axonops']['api']['org']
-#   cluster ENV['AXONOPS_CLUSTER'] || node['axonops']['api']['cluster']
-#   username ENV['AXONOPS_USERNAME'] || node['axonops']['api']['username'] || ''
-#   password ENV['AXONOPS_PASSWORD'] || node['axonops']['api']['password'] || ''
-#   base_url ENV['AXONOPS_URL'] || node['axonops']['api']['base_url'] || ''
-#   auth_token ENV['AXONOPS_TOKEN'] || node['axonops']['api']['auth_token'] || ''
-#   dashboard 'System'
-#   chart 'Used memory'
-#   metric 'host_Memory_Used'
-#   operator '>'
-#   warning_value 80
-#   critical_value 90
-#   duration '5m'
-#   description 'Alert when memory usage is too high'
-#   routing ['slack-alerts', 'pagerduty']  # Integration names
-#   action :delete
-# end
-
-# # Example: TCP check for storage port
-# axonops_tcp_check 'Storage Port Check' do
-#   interval '1m'
-#   timeout '1m'
-#   tcp '{{.comp_listen_address}}:{{.comp_storage_port}}'
-#   org ENV['AXONOPS_ORG'] || node['axonops']['api']['org']
-#   cluster ENV['AXONOPS_CLUSTER'] || node['axonops']['api']['cluster']
-#   username ENV['AXONOPS_USERNAME'] || node['axonops']['api']['username'] || ''
-#   password ENV['AXONOPS_PASSWORD'] || node['axonops']['api']['password'] || ''
-#   base_url ENV['AXONOPS_URL'] || node['axonops']['api']['base_url'] || ''
-#   auth_token ENV['AXONOPS_TOKEN'] || node['axonops']['api']['auth_token'] || ''
-#   action :delete
-# end
-
-# # Example: Shell check for node down detection
-# axonops_shell_check 'NODE DOWN' do
-#   interval '30s'
-#   timeout '1m'
-#   shell '/bin/bash'
-#   script <<-SCRIPT
-# EXIT_OK=0
-# EXIT_WARNING=1
-# EXIT_CRITICAL=2
-
-# NODETOOL=/opt/cassandra/bin/nodetool # REPLACE PATH TO nodetool
-# WARNING_DN_COUNT=1
-# CRITICAL_DN_COUNT=2
-
-# # Get the local Data Center from 'nodetool info'
-# local_dc=$($NODETOOL info | awk -F: '/Data Center/{gsub(/^[ \\t]+/, "", $2); print $2}')
-# if [ -z $local_dc ]; then
-#     exit $EXIT_WARNING
-# fi
-
-# # Initialize counts
-# local_dn_count=0
-# remote_dn_count=0
-
-# # Declare associative arrays
-# declare -A dc_dn_counts  # Counts of DN per Data Center
-# declare -A dcrack_dn_counts  # Counts of DN per Data Center and Rack
-
-# # Initialize variables
-# current_dc=""
-# in_node_section=false
-
-# # Process 'nodetool status' output without using a subshell
-# while read -r line; do
-#     # Check for Data Center line
-#     if [[ "$line" =~ ^Datacenter:\\ (.*) ]]; then
-#         current_dc="${BASH_REMATCH[1]}"
-#         continue
-#     fi
-
-#     # Skip irrelevant lines
-#     if [[ "$line" =~ ^\\s*$ ]] || [[ "$line" =~ ^==+ ]] || [[ "$line" =~ ^Status= ]]; then
-#         continue
-#     fi
-
-#     # Trim leading spaces
-#     line=$(echo "$line" | sed 's/^[ \\t]*//')
-
-#     # Get the status code (first field)
-#     status=$(echo "$line" | awk '{print $1}')
-
-#     # Process nodes with status 'DN'
-#     if [[ "$status" == "DN" ]]; then
-#         # Extract the Rack (last field)
-#         rack=$(echo "$line" | awk '{print $NF}')
-
-#         # Update counts based on whether the node is in the local DC
-#         if [[ "$current_dc" == "$local_dc" ]]; then
-#             ((local_dn_count++))
-#         else
-#             ((remote_dn_count++))
-#         fi
-
-#         # Update per-DC counts
-#         dc_dn_counts["$current_dc"]=$(( ${dc_dn_counts["$current_dc"]} + 1 ))
-
-#         # Update per-DC:Rack counts
-#         dcrack_key="${current_dc}:${rack}"
-#         dcrack_dn_counts["$dcrack_key"]=$(( ${dcrack_dn_counts["$dcrack_key"]} + 1 ))
-#     fi
-# done < <($NODETOOL status)
-
-# # Output the counts
-# echo "DN in local DC ($local_dc): $local_dn_count"
-# echo "DN in remote DC: $remote_dn_count"
-
-# echo -e "\n\t\t\t 'DN' node counts per Data Center:"
-# for dc in "${!dc_dn_counts[@]}"; do
-#     echo "DC '$dc': ${dc_dn_counts[$dc]} DN nodes"
-# done
-
-# echo -e "\n\t\t\t 'DN' node counts per Data Center and Rack:"
-# for dcrack in "${!dcrack_dn_counts[@]}"; do
-#     echo "$dcrack: ${dcrack_dn_counts[$dcrack]} DN nodes"
-# done
-
-# for dc in "${!dc_dn_counts[@]}"; do
-#     if [ ${dc_dn_counts[$dc]} -ge $CRITICAL_DN_COUNT ]; then
-#         exit $EXIT_CRITICAL
-#     elif [ ${dc_dn_counts[$dc]} -eq $WARNING_DN_COUNT ]; then
-#         exit $EXIT_WARNING
-#     fi
-# done
-
-# exit $EXIT_OK
-# SCRIPT
-#   org ENV['AXONOPS_ORG'] || node['axonops']['api']['org']
-#   cluster ENV['AXONOPS_CLUSTER'] || node['axonops']['api']['cluster']
-#   username ENV['AXONOPS_USERNAME'] || node['axonops']['api']['username'] || ''
-#   password ENV['AXONOPS_PASSWORD'] || node['axonops']['api']['password'] || ''
-#   base_url ENV['AXONOPS_URL'] || node['axonops']['api']['base_url'] || ''
-#   auth_token ENV['AXONOPS_TOKEN'] || node['axonops']['api']['auth_token'] || ''
-#   action :delete
-# end
-
-# # Example: HTTP check for health endpoint
-# axonops_http_check 'AxonOps API Health Check' do
-#   interval '1m'
-#   timeout '30s'
-#   url 'https://api.axonops.com/health'
-#   http_method 'GET'
-#   expected_status 200
-#   headers({ 'Accept' => 'application/json' })
-#   org ENV['AXONOPS_ORG'] || node['axonops']['api']['org']
-#   cluster ENV['AXONOPS_CLUSTER'] || node['axonops']['api']['cluster']
-#   username ENV['AXONOPS_USERNAME'] || node['axonops']['api']['username'] || ''
-#   password ENV['AXONOPS_PASSWORD'] || node['axonops']['api']['password'] || ''
-#   base_url ENV['AXONOPS_URL'] || node['axonops']['api']['base_url'] || ''
-#   auth_token ENV['AXONOPS_TOKEN'] || node['axonops']['api']['auth_token'] || ''
-#   action :delete
-# end
-
-# # Example: HTTP check with POST and body
-# axonops_http_check 'Webhook Test' do
-#   interval '5m'
-#   timeout '1m'
-#   url 'https://webhook.site/your-webhook-url'
-#   http_method 'POST'
-#   headers({
-#     'Content-Type' => 'application/json',
-#     'X-Custom-Header' => 'AxonOps'
-#   })
-#   body '{"status": "check", "service": "cassandra"}'
-#   expected_status 201
-#   org ENV['AXONOPS_ORG'] || node['axonops']['api']['org']
-#   cluster ENV['AXONOPS_CLUSTER'] || node['axonops']['api']['cluster']
-#   username ENV['AXONOPS_USERNAME'] || node['axonops']['api']['username'] || ''
-#   password ENV['AXONOPS_PASSWORD'] || node['axonops']['api']['password'] || ''
-#   base_url ENV['AXONOPS_URL'] || node['axonops']['api']['base_url'] || ''
-#   auth_token ENV['AXONOPS_TOKEN'] || node['axonops']['api']['auth_token'] || ''
-#   action :delete
-# end
-
-# # Example: Shell check for log file readability
-# axonops_shell_check 'axon-agent.log check' do
-#   interval '1m'
-#   timeout '30s'
-#   shell '/bin/bash'
-#   script <<-SCRIPT
-# if [ -r /var/log/axonops/axon-agent.log ] 
-# then 
-#   exit 0 
-# else 
-#   echo 'Unable to read /var/log/axonops/axon-agent.log' 
-#   exit 2
-# fi
-# SCRIPT
-#   org ENV['AXONOPS_ORG'] || node['axonops']['api']['org']
-#   cluster ENV['AXONOPS_CLUSTER'] || node['axonops']['api']['cluster']
-#   username ENV['AXONOPS_USERNAME'] || node['axonops']['api']['username'] || ''
-#   password ENV['AXONOPS_PASSWORD'] || node['axonops']['api']['password'] || ''
-#   base_url ENV['AXONOPS_URL'] || node['axonops']['api']['base_url'] || ''
-#   auth_token ENV['AXONOPS_TOKEN'] || node['axonops']['api']['auth_token'] || ''
-#   action :delete
-# end
-
-# Example: S3 backup configuration with explicit credentials
-axonops_backup "Daily S3 Backup" do
-  tag "daily-s3-backup"
-  local_retention_duration "1d"
-  remote_retention_duration "7d"
-  remote true
-  remote_type "s3"
-  # S3 specific settings (these will auto-generate remote_config)
-  s3_region "us-east-1"
-  s3_access_key_id "YOUR_ACCESS_KEY_ID"
-  s3_secret_access_key "YOUR_SECRET_ACCESS_KEY"
-  s3_storage_class "STANDARD"
-  s3_acl "private"
-  s3_encryption "AES256"
-  s3_no_check_bucket true
-  s3_disable_checksum false
-  remote_path "my-backup-bucket/cassandra-backups"
-  schedule true
-  schedule_expr "0 2 * * *"  # Daily at 2 AM
-  keyspaces ["system_auth", "my_keyspace"]
-  datacenters ["dc1"]
-  all_nodes true
-  all_tables false
-  tables [{ "Name" => "important_table" }]
-  bwlimit "50M"
-  tpslimit 25
-  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
-  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
-  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
-  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
-  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
-  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
-  action :delete
+# Alert Rules
+if node['axonops'] && node['axonops']['alert_rules']
+  node['axonops']['alert_rules'].each do |alert_rule|
+    axonops_alert_rule alert_rule['name'] do
+      org        ENV['AXONOPS_ORG']       || alert_rule['org']       || node['axonops']['api']['org']
+      cluster    ENV['AXONOPS_CLUSTER']   || alert_rule['cluster']   || node['axonops']['api']['cluster']
+      username   ENV['AXONOPS_USERNAME']  || alert_rule['username']  || node['axonops']['api']['username'] || ''
+      password   ENV['AXONOPS_PASSWORD']  || alert_rule['password']  || node['axonops']['api']['password'] || ''
+      base_url   ENV['AXONOPS_URL']       || alert_rule['base_url']  || node['axonops']['api']['base_url'] || ''
+      auth_token ENV['AXONOPS_TOKEN']     || alert_rule['auth_token']|| node['axonops']['api']['auth_token'] || ''
+      dashboard      alert_rule['dashboard']
+      chart          alert_rule['chart']
+      metric         alert_rule['metric']
+      operator       alert_rule['operator']
+      warning_value  alert_rule['warning_value']
+      critical_value alert_rule['critical_value']
+      duration       alert_rule['duration']
+      description    alert_rule['description']
+      routing        alert_rule['routing']
+      action         alert_rule['action'] ? alert_rule['action'].to_sym : :create
+    end
+  end
 end
 
-# Example: SFTP backup configuration with explicit credentials
-axonops_backup "SFTP Backup" do
-  tag "s3-iam-backup"
-  local_retention_duration "1d"
-  remote_retention_duration "7d"
-  remote true
-  remote_type "sftp"
-  remote_path "my-backup-bucket/cassandra-backups"
-  sftp_host "example.com"
-  sftp_user "sftp_user"
-  sftp_pass "your_sftp_password"
-  schedule true
-  schedule_expr "0 2 * * *"
-  keyspaces ["system_auth"]
-  all_nodes true
-  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
-  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
-  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
-  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
-  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
-  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
-  action :delete
+# TCP Checks
+if node['axonops'] && node['axonops']['tcp_checks']
+  node['axonops']['tcp_checks'].each do |tcp_check|
+    axonops_tcp_check tcp_check['name'] do
+      org        ENV['AXONOPS_ORG']       || tcp_check['org']       || node['axonops']['api']['org']
+      cluster    ENV['AXONOPS_CLUSTER']   || tcp_check['cluster']   || node['axonops']['api']['cluster']
+      username   ENV['AXONOPS_USERNAME']  || tcp_check['username']  || node['axonops']['api']['username'] || ''
+      password   ENV['AXONOPS_PASSWORD']  || tcp_check['password']  || node['axonops']['api']['password'] || ''
+      base_url   ENV['AXONOPS_URL']       || tcp_check['base_url']  || node['axonops']['api']['base_url'] || ''
+      auth_token ENV['AXONOPS_TOKEN']     || tcp_check['auth_token']|| node['axonops']['api']['auth_token'] || ''
+      interval   tcp_check['interval']    || '1m'
+      timeout    tcp_check['timeout']     || '1m'
+      tcp        tcp_check['tcp']
+      action     tcp_check['action'] ? tcp_check['action'].to_sym : :create
+    end
+  end
 end
 
-
-# Example: Slack integration
-axonops_integration "slack-alerts" do
-  integration_type "slack"
-  slack_webhook_url "https://hooks.slack.com/services/XXX/XXX/XXXXXXX"
-  slack_channel "#alerts"
-  slack_axondash_url "https://axonops.internal.axonopsdev.com"
-  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
-  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
-  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
-  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
-  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
-  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
-  action :delete
+# Shell Checks
+if node['axonops'] && node['axonops']['shell_checks']
+  node['axonops']['shell_checks'].each do |shell_check|
+    axonops_shell_check shell_check['name'] do
+      org        ENV['AXONOPS_ORG']       || shell_check['org']       || node['axonops']['api']['org']
+      cluster    ENV['AXONOPS_CLUSTER']   || shell_check['cluster']   || node['axonops']['api']['cluster']
+      username   ENV['AXONOPS_USERNAME']  || shell_check['username']  || node['axonops']['api']['username'] || ''
+      password   ENV['AXONOPS_PASSWORD']  || shell_check['password']  || node['axonops']['api']['password'] || ''
+      base_url   ENV['AXONOPS_URL']       || shell_check['base_url']  || node['axonops']['api']['base_url'] || ''
+      auth_token ENV['AXONOPS_TOKEN']     || shell_check['auth_token']|| node['axonops']['api']['auth_token'] || ''
+      interval   shell_check['interval']  || '1m'
+      timeout    shell_check['timeout']   || '30s'
+      shell      shell_check['shell']     || '/bin/bash'
+      script     shell_check['script']
+      action     shell_check['action'] ? shell_check['action'].to_sym : :create
+    end
+  end
 end
 
-# Example: PagerDuty integration
-axonops_integration "pagerduty-critical" do
-  integration_type "pagerduty"
-  pagerduty_integration_key "YOUR_PAGERDUTY_INTEGRATION_KEY"
-  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
-  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
-  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
-  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
-  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
-  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
-  action :delete
+# HTTP Checks
+if node['axonops'] && node['axonops']['http_checks']
+  node['axonops']['http_checks'].each do |http_check|
+    axonops_http_check http_check['name'] do
+      org             ENV['AXONOPS_ORG']       || http_check['org']       || node['axonops']['api']['org']
+      cluster         ENV['AXONOPS_CLUSTER']   || http_check['cluster']   || node['axonops']['api']['cluster']
+      username        ENV['AXONOPS_USERNAME']  || http_check['username']  || node['axonops']['api']['username'] || ''
+      password        ENV['AXONOPS_PASSWORD']  || http_check['password']  || node['axonops']['api']['password'] || ''
+      base_url        ENV['AXONOPS_URL']       || http_check['base_url']  || node['axonops']['api']['base_url'] || ''
+      auth_token      ENV['AXONOPS_TOKEN']     || http_check['auth_token']|| node['axonops']['api']['auth_token'] || ''
+      interval        http_check['interval']       || '1m'
+      timeout         http_check['timeout']        || '30s'
+      url             http_check['url']
+      http_method     http_check['http_method']    || 'GET'
+      expected_status http_check['expected_status'] || 200
+      headers         http_check['headers']         || {}
+      body            http_check['body']            if http_check['body']
+      action          http_check['action'] ? http_check['action'].to_sym : :create
+    end
+  end
 end
 
-# Example: Microsoft Teams integration
-axonops_integration "teams-alerts" do
-  integration_type "microsoft_teams"
-  teams_webhook_url "https://outlook.office.com/webhook/YOUR_TEAMS_WEBHOOK"
-  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
-  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
-  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
-  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
-  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
-  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
-  action :delete
+# Backups
+if node['axonops'] && node['axonops']['backups']
+  node['axonops']['backups'].each do |backup|
+    axonops_backup backup['name'] do
+      org                      ENV['AXONOPS_ORG']       || backup['org']       || node['axonops']['api']['org']
+      cluster                  ENV['AXONOPS_CLUSTER']   || backup['cluster']   || node['axonops']['api']['cluster']
+      username                 ENV['AXONOPS_USERNAME']  || backup['username']  || node['axonops']['api']['username'] || ''
+      password                 ENV['AXONOPS_PASSWORD']  || backup['password']  || node['axonops']['api']['password'] || ''
+      base_url                 ENV['AXONOPS_URL']       || backup['base_url']  || node['axonops']['api']['base_url'] || ''
+      auth_token               ENV['AXONOPS_TOKEN']     || backup['auth_token']|| node['axonops']['api']['auth_token'] || ''
+      tag                      backup['tag']
+      local_retention_duration backup['local_retention_duration']  || '10d'
+      remote_retention_duration backup['remote_retention_duration'] || '60d'
+      delegate_remote_retention backup['delegate_remote_retention'] if backup.key?('delegate_remote_retention')
+      remote_type              backup['remote_type']                || 's3'
+      remote_config            backup['remote_config']              if backup['remote_config']
+      remote_path              backup['remote_path']                || ''
+      remote                   backup['remote']                     if backup.key?('remote')
+      timeout                  backup['timeout']                    || '1h'
+      transfers                backup['transfers']                  || 1
+      tpslimit                 backup['tpslimit']                   || 50
+      bwlimit                  backup['bwlimit']                    || '100M'
+      full_backup              backup['full_backup']                if backup.key?('full_backup')
+      dynamic_remote_fields    backup['dynamic_remote_fields']      || []
+      datacenters              backup['datacenters']                || []
+      racks                    backup['racks']                      || []
+      nodes                    backup['nodes']                      || []
+      tables                   backup['tables']                     || []
+      all_tables               backup['all_tables']                 if backup.key?('all_tables')
+      all_nodes                backup['all_nodes']                  if backup.key?('all_nodes')
+      keyspaces                backup['keyspaces']                  || []
+      simple_schedule          backup['simple_schedule']            if backup.key?('simple_schedule')
+      schedule                 backup['schedule']                   if backup.key?('schedule')
+      schedule_expr            backup['schedule_expr']              || '0 * * * *'
+      # S3 specific settings
+      s3_region                backup['s3_region']                  if backup['s3_region']
+      s3_access_key_id         backup['s3_access_key_id']           if backup['s3_access_key_id']
+      s3_secret_access_key     backup['s3_secret_access_key']       if backup['s3_secret_access_key']
+      s3_storage_class         backup['s3_storage_class']           if backup['s3_storage_class']
+      s3_acl                   backup['s3_acl']                     if backup['s3_acl']
+      s3_encryption            backup['s3_encryption']              if backup['s3_encryption']
+      s3_no_check_bucket       backup['s3_no_check_bucket']         if backup.key?('s3_no_check_bucket')
+      s3_disable_checksum      backup['s3_disable_checksum']        if backup.key?('s3_disable_checksum')
+      # SFTP specific settings
+      sftp_host                backup['sftp_host']                  if backup['sftp_host']
+      sftp_user                backup['sftp_user']                  if backup['sftp_user']
+      sftp_pass                backup['sftp_pass']                  if backup['sftp_pass']
+      sftp_port                backup['sftp_port']                  if backup['sftp_port']
+      sftp_key_file            backup['sftp_key_file']              if backup['sftp_key_file']
+      # Azure specific settings
+      azure_account            backup['azure_account']              if backup['azure_account']
+      azure_key                backup['azure_key']                  if backup['azure_key']
+      azure_use_msi            backup['azure_use_msi']              if backup.key?('azure_use_msi')
+      azure_msi_object_id      backup['azure_msi_object_id']        if backup['azure_msi_object_id']
+      azure_msi_client_id      backup['azure_msi_client_id']        if backup['azure_msi_client_id']
+      azure_msi_mi_res_id      backup['azure_msi_mi_res_id']        if backup['azure_msi_mi_res_id']
+      action                   backup['action'] ? backup['action'].to_sym : :create
+    end
+  end
 end
 
-# Example: SMTP integration
-axonops_integration "email-alerts" do
-  integration_type "smtp"
-  smtp_server "smtp.example.com"
-  smtp_port "587"
-  smtp_username "alerts@example.com"
-  smtp_password "smtp_password"
-  smtp_from "alerts@example.com"
-  smtp_receivers "ops-team@example.com"
-  smtp_subject "AxonOps Alert"
-  smtp_start_tls true
-  smtp_auth_login true
-  smtp_skip_certificate_verify false
-  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
-  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
-  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
-  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
-  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
-  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
-  action :delete
-end
-
-# Example: ServiceNow integration
-axonops_integration "servicenow-incidents" do
-  integration_type "servicenow"
-  servicenow_instance_url "https://mycompany.service-now.com"
-  servicenow_username "api_user"
-  servicenow_password "api_password"
-  servicenow_client_id "optional_client_id"
-  servicenow_client_secret "optional_client_secret"
-  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
-  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
-  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
-  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
-  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
-  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
-  action :delete
-end
-
-# Example: OpsGenie integration
-axonops_integration "opsgenie-alerts" do
-  integration_type "opsgenie"
-  opsgenie_api_key "YOUR_OPSGENIE_API_KEY"
-  opsgenie_api_url "https://api.opsgenie.com"
-  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
-  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
-  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
-  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
-  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
-  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
-  action :delete
-end
-
-# Example: General Webhook integration
-axonops_integration "generic-webhook" do
-  integration_type "general_webhook"
-  webhook_url "http://some:8080"
-  webhook_headers [
-    { "header" => "Auth", "value" => "blab" },
-    { "header" => "Other", "value" => "other" }
-  ]
-  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
-  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
-  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
-  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
-  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
-  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
-  action :create
+# Integrations
+if node['axonops'] && node['axonops']['integrations']
+  node['axonops']['integrations'].each do |integration|
+    axonops_integration integration['name'] do
+      org                       ENV['AXONOPS_ORG']       || integration['org']       || node['axonops']['api']['org']
+      cluster                   ENV['AXONOPS_CLUSTER']   || integration['cluster']   || node['axonops']['api']['cluster']
+      username                  ENV['AXONOPS_USERNAME']  || integration['username']  || node['axonops']['api']['username'] || ''
+      password                  ENV['AXONOPS_PASSWORD']  || integration['password']  || node['axonops']['api']['password'] || ''
+      base_url                  ENV['AXONOPS_URL']       || integration['base_url']  || node['axonops']['api']['base_url'] || ''
+      auth_token                ENV['AXONOPS_TOKEN']     || integration['auth_token']|| node['axonops']['api']['auth_token'] || ''
+      integration_type          integration['integration_type']
+      # Slack specific properties
+      slack_webhook_url         integration['slack_webhook_url']      if integration['slack_webhook_url']
+      slack_channel             integration['slack_channel']          if integration['slack_channel']
+      slack_axondash_url        integration['slack_axondash_url']     if integration['slack_axondash_url']
+      # PagerDuty specific properties
+      pagerduty_integration_key integration['pagerduty_integration_key'] if integration['pagerduty_integration_key']
+      # Teams specific properties
+      teams_webhook_url         integration['teams_webhook_url']      if integration['teams_webhook_url']
+      # SMTP specific properties
+      smtp_username             integration['smtp_username']          if integration['smtp_username']
+      smtp_password             integration['smtp_password']          if integration['smtp_password']
+      smtp_from                 integration['smtp_from']              if integration['smtp_from']
+      smtp_receivers            integration['smtp_receivers']         if integration['smtp_receivers']
+      smtp_subject              integration['smtp_subject']           if integration['smtp_subject']
+      smtp_server               integration['smtp_server']            if integration['smtp_server']
+      smtp_port                 integration['smtp_port']              if integration['smtp_port']
+      smtp_skip_certificate_verify integration['smtp_skip_certificate_verify'] if integration.key?('smtp_skip_certificate_verify')
+      smtp_start_tls            integration['smtp_start_tls']         if integration.key?('smtp_start_tls')
+      smtp_auth_login           integration['smtp_auth_login']        if integration.key?('smtp_auth_login')
+      # ServiceNow specific properties
+      servicenow_instance_url   integration['servicenow_instance_url'] if integration['servicenow_instance_url']
+      servicenow_username       integration['servicenow_username']    if integration['servicenow_username']
+      servicenow_password       integration['servicenow_password']    if integration['servicenow_password']
+      servicenow_client_id      integration['servicenow_client_id']   if integration['servicenow_client_id']
+      servicenow_client_secret  integration['servicenow_client_secret'] if integration['servicenow_client_secret']
+      # OpsGenie specific properties
+      opsgenie_api_key          integration['opsgenie_api_key']       if integration['opsgenie_api_key']
+      opsgenie_api_url          integration['opsgenie_api_url']       if integration['opsgenie_api_url']
+      # General Webhook specific properties
+      webhook_url               integration['webhook_url']            if integration['webhook_url']
+      webhook_headers           integration['webhook_headers']        if integration['webhook_headers']
+      action                    integration['action'] ? integration['action'].to_sym : :create
+    end
+  end
 end
