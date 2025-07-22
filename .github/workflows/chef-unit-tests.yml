@@ -1,0 +1,94 @@
+name: Chef Unit Tests
+
+on:
+  push:
+    branches: [ main, develop, test_units ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby-version: ['2.7', '3.0', '3.1']
+        chef-version: ['16', '17', '18']
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby-version }}
+        bundler-cache: true
+    
+    - name: Install Chef
+      run: |
+        gem install chef -v "~> ${{ matrix.chef-version }}.0"
+        gem install chefspec
+        gem install berkshelf
+    
+    - name: Install dependencies
+      run: |
+        chef exec bundle install --jobs 4 --retry 3
+        chef exec berks install
+    
+    - name: Run RuboCop (linting)
+      run: chef exec rubocop --display-cop-names --extra-details
+      continue-on-error: true
+    
+    - name: Run ChefSpec unit tests
+      run: chef exec rspec spec/unit/recipes/alert_rules_spec.rb --format documentation --color
+    
+    - name: Run all unit tests
+      run: chef exec rspec --format documentation --color
+    
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: rspec-results-ruby${{ matrix.ruby-version }}-chef${{ matrix.chef-version }}
+        path: |
+          coverage/
+          .rspec_status
+    
+  cookstyle:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.1'
+        bundler-cache: true
+    
+    - name: Install dependencies
+      run: |
+        gem install cookstyle
+        gem install chef
+    
+    - name: Run Cookstyle
+      run: cookstyle --display-cop-names --extra-details
+      continue-on-error: true
+    
+  foodcritic:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '2.7'
+        bundler-cache: true
+    
+    - name: Install dependencies
+      run: |
+        gem install foodcritic
+        gem install chef
+    
+    - name: Run Foodcritic
+      run: foodcritic . -f any -t ~FC121 -t ~FC034
+      continue-on-error: true

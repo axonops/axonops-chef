@@ -30,6 +30,7 @@ Add the axonops cookbook to your Berksfile using one of these methods:
 
 ```ruby
 # Berksfile
+source 'https://supermarket.chef.io'
 
 # Pull from a specific branch
 cookbook 'axonops', git: 'https://github.com/axonops/axonops-chef.git', branch: 'testing'
