@@ -41,17 +41,20 @@ jobs:
     - name: Verify Chef installation
       run: |
         export CHEF_LICENSE=accept-silent
+        export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
         chef --version
         chef exec ruby --version
     
     - name: Install cookbook dependencies
       run: |
         export CHEF_LICENSE=accept-silent
+        export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
         chef exec bundle install || true
         chef exec berks install || true
     
     - name: Run alert_rules unit tests
       run: |
+        export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
         export CHEF_LICENSE=accept-silent
         chef exec rspec spec/unit/recipes/alert_rules_spec.rb --format documentation --color
     
@@ -59,6 +62,7 @@ jobs:
       if: always()
       run: |
         export CHEF_LICENSE=accept-silent
+        export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
         chef exec rspec spec/unit/recipes/alert_rules_spec.rb --format html --out rspec_results.html || true
     
     - name: Upload test results

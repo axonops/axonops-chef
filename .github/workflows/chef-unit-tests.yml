@@ -35,6 +35,7 @@ jobs:
     - name: Install Chef
       run: |
         export CHEF_LICENSE=accept-silent
+        export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
         /opt/chef-workstation/embedded/bin/gem install chef -v "~> ${{ matrix.chef-version }}.0"
         /opt/chef-workstation/embedded/bin/gem install chefspec
         /opt/chef-workstation/embedded/bin/gem install berkshelf
@@ -45,6 +46,7 @@ jobs:
     - name: Install dependencies
       run: |
         export CHEF_LICENSE=accept-silent
+        export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
         /opt/chef-workstation/bin/chef exec bundle lock --normalize-platforms || true
         /opt/chef-workstation/bin/chef exec bundle install --jobs 4 --retry 3
         /opt/chef-workstation/bin/chef exec berks install
@@ -52,17 +54,20 @@ jobs:
     - name: Run RuboCop (linting)
       run: |
         export CHEF_LICENSE=accept-silent
+        export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
         /opt/chef-workstation/bin/chef exec rubocop --display-cop-names --extra-details
       continue-on-error: true
     
     - name: Run ChefSpec unit tests
       run: |
         export CHEF_LICENSE=accept-silent
+        export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
         /opt/chef-workstation/bin/chef exec rspec spec/unit/recipes/alert_rules_spec.rb --format documentation --color
     
     - name: Run all unit tests
       run: |
         export CHEF_LICENSE=accept-silent
+        export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
         /opt/chef-workstation/bin/chef exec rspec --format documentation --color
     
     - name: Upload test results
