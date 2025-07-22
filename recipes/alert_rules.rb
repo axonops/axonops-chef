@@ -225,24 +225,22 @@
 #   action :delete
 # end
 
-# Example: S3 backup configuration
+# Example: S3 backup configuration with explicit credentials
 axonops_backup "Daily S3 Backup" do
   tag "daily-s3-backup"
   local_retention_duration "1d"
   remote_retention_duration "7d"
   remote true
   remote_type "s3"
-  remote_config <<-CONFIG
-type = s3
-provider = AWS
-storage_class = STANDARD
-env_auth = true
-no_check_bucket = true
-region = us-east-1
-acl = private
-server_side_encryption = AES256
-disable_checksum = false
-CONFIG
+  # S3 specific settings (these will auto-generate remote_config)
+  s3_region "us-east-1"
+  s3_access_key_id "YOUR_ACCESS_KEY_ID"
+  s3_secret_access_key "YOUR_SECRET_ACCESS_KEY"
+  s3_storage_class "STANDARD"
+  s3_acl "private"
+  s3_encryption "AES256"
+  s3_no_check_bucket true
+  s3_disable_checksum false
   remote_path "my-backup-bucket/cassandra-backups"
   schedule true
   schedule_expr "0 2 * * *"  # Daily at 2 AM
@@ -260,4 +258,28 @@ CONFIG
   base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
   auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
   action :delete
+end
+
+# Example: SFTP backup configuration with explicit credentials
+axonops_backup "SFTP Backup" do
+  tag "s3-iam-backup"
+  local_retention_duration "1d"
+  remote_retention_duration "7d"
+  remote true
+  remote_type "sftp"
+  remote_path "my-backup-bucket/cassandra-backups"
+  sftp_host "example.com"
+  sftp_user "sftp_user"
+  sftp_pass "your_sftp_password"
+  schedule true
+  schedule_expr "0 2 * * *"
+  keyspaces ["system_auth"]
+  all_nodes true
+  org ENV["AXONOPS_ORG"] || node["axonops"]["api"]["org"]
+  cluster ENV["AXONOPS_CLUSTER"] || node["axonops"]["api"]["cluster"]
+  username ENV["AXONOPS_USERNAME"] || node["axonops"]["api"]["username"] || ""
+  password ENV["AXONOPS_PASSWORD"] || node["axonops"]["api"]["password"] || ""
+  base_url ENV["AXONOPS_URL"] || node["axonops"]["api"]["base_url"] || ""
+  auth_token ENV["AXONOPS_TOKEN"] || node["axonops"]["api"]["auth_token"] || ""
+  action :create
 end

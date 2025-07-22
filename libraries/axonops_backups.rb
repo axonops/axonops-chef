@@ -17,6 +17,31 @@ class Chef
              equal_to: ['local', 's3', 'sftp', 'azure']
     property :remote_config, String, default: ''
     property :remote_path, String, default: ''
+    
+    # S3 specific properties
+    property :s3_region, String, default: 'us-east-1'
+    property :s3_access_key_id, String, default: ''
+    property :s3_secret_access_key, String, default: ''
+    property :s3_storage_class, String, default: 'STANDARD'
+    property :s3_acl, String, default: 'private'
+    property :s3_encryption, String, default: 'AES256'
+    property :s3_no_check_bucket, [true, false], default: true
+    property :s3_disable_checksum, [true, false], default: false
+    
+    # SFTP specific properties
+    property :sftp_host, String, default: ''
+    property :sftp_user, String, default: ''
+    property :sftp_pass, String, default: ''
+    property :sftp_port, String, default: '22'
+    property :sftp_key_file, String, default: ''
+    
+    # Azure specific properties
+    property :azure_account, String, default: ''
+    property :azure_key, String, default: ''
+    property :azure_use_msi, [true, false], default: false
+    property :azure_msi_object_id, String, default: ''
+    property :azure_msi_client_id, String, default: ''
+    property :azure_msi_mi_res_id, String, default: ''
     property :remote, [true, false], default: false
     property :timeout, String, default: '1h'
     property :transfers, Integer, default: 1
@@ -165,9 +190,67 @@ class Chef
               end
               
               # Create/Update backup
+              # Build remote_config if not explicitly provided
+              remote_config_value = new_resource.remote_config
+              if remote_config_value.empty?
+                case new_resource.remote_type
+                when 's3'
+                  config = {
+                    'type' => 's3',
+                    'provider' => 'AWS',
+                    'storage_class' => new_resource.s3_storage_class,
+                    'region' => new_resource.s3_region,
+                    'acl' => new_resource.s3_acl,
+                    'server_side_encryption' => new_resource.s3_encryption,
+                    'no_check_bucket' => new_resource.s3_no_check_bucket.to_s,
+                    'disable_checksum' => new_resource.s3_disable_checksum.to_s
+                  }
+                  
+                  # Handle authentication
+                  if !new_resource.s3_access_key_id.empty? && !new_resource.s3_secret_access_key.empty?
+                    config['env_auth'] = 'false'
+                    config['access_key_id'] = new_resource.s3_access_key_id
+                    config['secret_access_key'] = new_resource.s3_secret_access_key
+                  else
+                    config['env_auth'] = 'true'
+                  end
+                  
+                when 'sftp'
+                  config = {
+                    'type' => 'sftp',
+                    'host' => new_resource.sftp_host,
+                    'user' => new_resource.sftp_user
+                  }
+                  config['pass'] = new_resource.sftp_pass unless new_resource.sftp_pass.empty?
+                  config['port'] = new_resource.sftp_port unless new_resource.sftp_port.empty?
+                  config['key_file'] = new_resource.sftp_key_file unless new_resource.sftp_key_file.empty?
+                  
+                when 'azure'
+                  config = {
+                    'type' => 'azureblob',
+                    'account' => new_resource.azure_account
+                  }
+                  
+                  if new_resource.azure_use_msi
+                    config['use_msi'] = 'true'
+                    config['msi_object_id'] = new_resource.azure_msi_object_id unless new_resource.azure_msi_object_id.empty?
+                    config['msi_client_id'] = new_resource.azure_msi_client_id unless new_resource.azure_msi_client_id.empty?
+                    config['msi_mi_res_id'] = new_resource.azure_msi_mi_res_id unless new_resource.azure_msi_mi_res_id.empty?
+                  else
+                    config['key'] = new_resource.azure_key unless new_resource.azure_key.empty?
+                  end
+                  
+                else
+                  config = {}
+                end
+                
+                # Convert to rclone config format
+                remote_config_value = config.map { |k, v| "#{k} = #{v}" }.join("\n")
+              end
+              
               backup_payload = {
                 'LocalRetentionDuration' => new_resource.local_retention_duration,
-                'remoteConfig' => new_resource.remote_config,
+                'remoteConfig' => remote_config_value,
                 'remotePath' => new_resource.remote_path,
                 'RemoteRetentionDuration' => new_resource.remote_retention_duration,
                 'delegateRemoteRetention' => new_resource.delegate_remote_retention,
