@@ -64,6 +64,7 @@ jobs:
       run: |
         export CHEF_LICENSE=accept-silent
         export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
+        /opt/chef-workstation/embedded/bin/gem install berkshelf
         /opt/chef-workstation/embedded/bin/bundle install
         /opt/chef-workstation/bin/chef exec rspec spec/unit/recipes/alert_rules_spec.rb --format documentation --color
     
