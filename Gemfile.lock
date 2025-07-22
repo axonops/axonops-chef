@@ -537,7 +537,7 @@ GEM
     io-console (0.8.1)
     ipaddress (0.8.3)
     jmespath (1.6.2)
-    json (2.12.2)
+    json (2.13.0)
     jsonpath (1.1.5)
       multi_json
     jwt (2.10.2)
@@ -908,6 +908,7 @@ DEPENDENCIES
   chef (~> 17.0)
   chefspec (~> 9.3)
   cookstyle (~> 7.0)
+  json (~> 2.13.0)
   kitchen-docker (~> 2.8)
   kitchen-inspec (~> 2.5)
   kitchen-vagrant (~> 1.12)
