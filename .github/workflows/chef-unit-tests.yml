@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ruby-version: ['3.1', '3.2']
+        ruby-version: ['3.2', '3.3']
         chef-version: ['17', '18']
     
     steps:
@@ -31,6 +31,7 @@ jobs:
     
     - name: Install dependencies
       run: |
+        chef exec bundle lock --normalize-platforms || true
         chef exec bundle install --jobs 4 --retry 3
         chef exec berks install
     
@@ -81,7 +82,7 @@ jobs:
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '3.1'
+        ruby-version: '3.2'
         bundler-cache: true
     
     - name: Install dependencies

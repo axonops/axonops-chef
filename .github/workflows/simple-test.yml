@@ -21,6 +21,7 @@ jobs:
     - name: Install dependencies
       run: |
         gem install bundler
+        bundle lock --normalize-platforms || true
         bundle install
     
     - name: Run unit tests
