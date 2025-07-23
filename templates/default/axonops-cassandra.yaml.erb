@@ -1,7 +1,6 @@
 
 # Cassandra storage config YAML
 # Managed by Chef with axonops cookbook
-# Configuration for AxonOps Server Metrics Storage
 
 # NOTE:
 #   See https://cassandra.apache.org/doc/latest/configuration/ for
@@ -453,7 +452,7 @@ commit_failure_policy: die
 # Default value ("auto") is 1/256th of the heap or 10MiB, whichever is greater
 # Min unit: MiB
 # prepared_statements_cache_size:
-prepared_statements_cache_size: 24MiB # AxonOps Recommended
+prepared_statements_cache_size: <%= node['axonops']['cassandra']['prepared_statements_cache_size'] || '24MiB' %> # AxonOps Recommended
 
 # Maximum size of the key cache in memory.
 #
@@ -470,7 +469,7 @@ prepared_statements_cache_size: 24MiB # AxonOps Recommended
 #
 # This is only relevant to SSTable formats that use key cache, e.g. BIG.
 # Min unit: MiB
-key_cache_size: 512MiB
+key_cache_size: <%= node['axonops']['cassandra']['key_cache_size'] || '512MiB' %>
 
 # Duration in seconds after which Cassandra should
 # save the key cache. Caches are saved to saved_caches_directory as
@@ -483,7 +482,7 @@ key_cache_size: 512MiB
 # This is only relevant to SSTable formats that use key cache, e.g. BIG.
 # Default is 14400 or 4 hours.
 # Min unit: s
-key_cache_save_period: 4h
+key_cache_save_period: <%= node['axonops']['cassandra']['key_cache_save_period'] %>
 
 # Number of keys from the key cache to save
 # Disabled by default, meaning all keys are going to be saved
@@ -510,8 +509,8 @@ row_cache_class_name: org.apache.cassandra.cache.OHCProvider
 #
 # Default value is 0, to disable row caching.
 # Min unit: MiB
-# row_cache_size: 0MiB
-row_cache_size: 0MiB
+# row_cache_size: <%= node['axonops']['cassandra']['row_cache_size'] %>
+row_cache_size: <%= node['axonops']['cassandra']['row_cache_size'] %>
 
 # Duration in seconds after which Cassandra should save the row cache.
 # Caches are saved to saved_caches_directory as specified in this configuration file.
@@ -522,8 +521,8 @@ row_cache_size: 0MiB
 #
 # Default is 0 to disable saving the row cache.
 # Min unit: s
-# row_cache_save_period: 0s
-row_cache_save_period: 0s
+# row_cache_save_period: <%= node['axonops']['cassandra']['row_cache_save_period'] %>
+row_cache_save_period: <%= node['axonops']['cassandra']['row_cache_save_period'] %>
 
 # Number of keys from the row cache to save.
 # Specify 0 (which is the default), meaning all keys are going to be saved
@@ -551,7 +550,7 @@ counter_cache_size:
 #
 # Default is 7200 or 2 hours.
 # Min unit: s
-counter_cache_save_period: 7200s
+counter_cache_save_period: <%= node['axonops']['cassandra']['counter_cache_save_period'] %>
 
 # Number of keys from the counter cache to save
 # Disabled by default, meaning all keys are going to be saved
@@ -567,7 +566,7 @@ saved_caches_directory: <%= node['axonops']['cassandra']['saved_caches_directory
 # while still having the cache during runtime.
 # Min unit: s
 # cache_load_timeout: 30s
-cache_load_timeout: 2m
+cache_load_timeout: <%= node['axonops']['cassandra']['cache_load_timeout'] %>
 
 # commitlog_sync may be either "periodic", "group", or "batch."
 #
@@ -587,7 +586,7 @@ cache_load_timeout: 2m
 commitlog_sync: periodic
 # Min unit: ms
 # commitlog_sync_period: 10000ms
-commitlog_sync_period: 10s
+commitlog_sync_period: <%= node['axonops']['cassandra']['commitlog_sync_period'] %>
 
 # When in periodic commitlog mode, the number of milliseconds to block writes
 # while waiting for a slow disk flush to complete.
@@ -611,8 +610,8 @@ commitlog_sync_period: 10s
 # be set to at least twice the size of max_mutation_size
 #
 # Min unit: MiB
-#commitlog_segment_size: 32MiB
-commitlog_segment_size: 32MiB
+#commitlog_segment_size: <%= node['axonops']['cassandra']['commitlog_segment_size'] %>
+commitlog_segment_size: <%= node['axonops']['cassandra']['commitlog_segment_size'] %>
 
 # Compression to apply to the commit log. If omitted, the commit log
 # will be written uncompressed.  LZ4, Snappy, and Deflate compressors
@@ -649,7 +648,7 @@ seed_provider:
     parameters:
       # seeds is actually a comma-delimited list of addresses.
       # Ex: "<ip1>,<ip2>,<ip3>"
-          - seeds: "10.124.16.6,10.124.16.7"
+          - seeds: "<%= @seeds %>"
       # If set to "true", SimpleSeedProvider will return all IP addresses for a DNS name,
       # based on the configured name service on the system. Defaults to "false".
       #  resolve_multiple_ip_addresses_per_dns_record: "false"
@@ -668,13 +667,13 @@ seed_provider:
 #concurrent_reads: 32
 #concurrent_writes: 32
 #concurrent_counter_writes: 32
-concurrent_reads: 32
-concurrent_writes: 32
-concurrent_counter_writes: 32
+concurrent_reads: <%= node['axonops']['cassandra']['concurrent_reads'] %>
+concurrent_writes: <%= node['axonops']['cassandra']['concurrent_writes'] %>
+concurrent_counter_writes: <%= node['axonops']['cassandra']['concurrent_counter_writes'] %>
 
 # For materialized view writes, as there is a read involved, so this should
 # be limited by the less of concurrent reads or concurrent writes.
-concurrent_materialized_view_writes: 32
+concurrent_materialized_view_writes: <%= node['axonops']['cassandra']['concurrent_materialized_view_writes'] %>
 
 # Maximum memory to use for inter-node and client-server networking buffers.
 #
@@ -707,8 +706,8 @@ concurrent_materialized_view_writes: 32
 # Possible values are:
 # ssd (for solid state disks, the default)
 # spinning (for spinning disks)
-# disk_optimization_strategy: ssd
-disk_optimization_strategy: ssd
+# disk_optimization_strategy: <%= node['axonops']['cassandra']['disk_optimization_strategy'] %>
+disk_optimization_strategy: <%= node['axonops']['cassandra']['disk_optimization_strategy'] %>
 
 # Total permitted memory to use for memtables. Cassandra will stop
 # accepting writes when the limit is exceeded until a flush completes,
@@ -744,7 +743,7 @@ disk_optimization_strategy: ssd
 # offheap_objects
 #    off heap objects
 #memtable_allocation_type: heap_buffers
-memtable_allocation_type: offheap_objects
+memtable_allocation_type: <%= node['axonops']['cassandra']['memtable_allocation_type'] %>
 
 # Limit memory usage for Merkle tree calculations during repairs. The default
 # is 1/16th of the available heap. The main tradeoff is that smaller trees
@@ -796,8 +795,8 @@ memtable_allocation_type: offheap_objects
 # and flush size and frequency. More is not better you just need enough flush writers
 # to never stall waiting for flushing to free memory.
 #
-# memtable_flush_writers: 2
-memtable_flush_writers: 2
+# memtable_flush_writers: <%= node['axonops']['cassandra']['memtable_flush_writers'] || 2 %>
+memtable_flush_writers: <%= node['axonops']['cassandra']['memtable_flush_writers'] || 2 %>
 
 # Total space to use for change-data-capture logs on disk.
 #
@@ -839,19 +838,19 @@ memtable_flush_writers: 2
 #trickle_fsync: false
 # Min unit: KiB
 #trickle_fsync_interval: 10240KiB
-trickle_fsync: True
-trickle_fsync_interval: 10MiB
+trickle_fsync: <%= node['axonops']['cassandra']['trickle_fsync'] %>
+trickle_fsync_interval: <%= node['axonops']['cassandra']['trickle_fsync_interval'] || '10MiB' %>
 
 # TCP port, for commands and data
 # For security reasons, you should not expose this port to the internet.  Firewall it if needed.
-storage_port: 7000
+storage_port: <%= node['axonops']['cassandra']['storage_port'] %>
 
 # SSL port, for legacy encrypted communication. This property is unused unless enabled in
 # server_encryption_options (see below). As of cassandra 4.0, this property is deprecated
 # as a single port can be used for either/both secure and insecure connections.
 # For security reasons, you should not expose this port to the internet. Firewall it if needed.
-#ssl_storage_port: 7001
-ssl_storage_port: 7001
+#ssl_storage_port: <%= node['axonops']['cassandra']['ssl_storage_port'] %>
+ssl_storage_port: <%= node['axonops']['cassandra']['ssl_storage_port'] %>
 
 # Address or interface to bind to and tell other Cassandra nodes to connect to.
 # You _must_ change this if you want multiple nodes to be able to communicate!
@@ -877,7 +876,7 @@ ssl_storage_port: 7001
 # address will be used. If true the first ipv6 address will be used. Defaults to false preferring
 # ipv4. If there is only one address it will be selected regardless of ipv4/ipv6.
 # listen_interface_prefer_ipv6: false
-listen_address: 10.124.16.6
+listen_address: <%= node['axonops']['cassandra']['listen_address'] %>
 
 # Address to broadcast to other Cassandra nodes
 # Leaving this blank will set it to the same value as listen_address
@@ -912,8 +911,8 @@ internode_authenticator:
 start_native_transport: True
 # port for the CQL native transport to listen for clients on
 # For security reasons, you should not expose this port to the internet.  Firewall it if needed.
-#native_transport_port: 9042
-native_transport_port: 9042
+#native_transport_port: <%= node['axonops']['cassandra']['native_transport_port'] %>
+native_transport_port: <%= node['axonops']['cassandra']['native_transport_port'] %>
 # Enabling native transport encryption in client_encryption_options allows you to either use
 # encryption for the standard port or to use a dedicated, additional port along with the unencrypted
 # standard native_transport_port.
@@ -989,7 +988,7 @@ native_transport_allow_older_protocols: True
 # address will be used. If true the first ipv6 address will be used. Defaults to false preferring
 # ipv4. If there is only one address it will be selected regardless of ipv4/ipv6.
 # rpc_interface_prefer_ipv6: false
-rpc_address: 10.124.16.6
+rpc_address: <%= node['axonops']['cassandra']['rpc_address'] %>
 
 # RPC address to broadcast to drivers and other Cassandra nodes. This cannot
 # be set to 0.0.0.0. If left blank, this will be set to the value of
@@ -1045,15 +1044,15 @@ auto_snapshot: True
 # By default, auto snapshots *do not* have TTL, uncomment the property below
 # to enable TTL on auto snapshots.
 # Accepted units: d (days), h (hours) or m (minutes)
-# auto_snapshot_ttl: 30d
-auto_snapshot_ttl: 30d
+# auto_snapshot_ttl: <%= node['axonops']['cassandra']['auto_snapshot_ttl'] || '30d' %>
+auto_snapshot_ttl: <%= node['axonops']['cassandra']['auto_snapshot_ttl'] || '30d' %>
 
 # The act of creating or clearing a snapshot involves creating or removing
 # potentially tens of thousands of links, which can cause significant performance
 # impact, especially on consumer grade SSDs. A non-zero value here can
 # be used to throttle these links to avoid negative performance impact of
 # taking and clearing snapshots
-snapshot_links_per_second: 16384
+snapshot_links_per_second: <%= node['axonops']['cassandra']['snapshot_links_per_second'] || 16384 %>
 
 # The sstable formats configuration. SSTable formats implementations are
 # loaded using the service loader mechanism. In this section, one can select
@@ -1102,14 +1101,19 @@ sstable:
 # The default is to use SizeTieredCompactionStrategy, with its default
 # compaction parameters.
 #
-#default_compaction:
-#  class_name: UnifiedCompactionStrategy
-#  parameters:
-#    scaling_parameters: T4
-#    max_sstables_to_compact: 64
-#    target_sstable_size: 1GiB
-#    sstable_growth: 0.3333333333333333
-#    min_sstable_size: 100MiB
+<%
+  # Determine the compaction strategy being used
+  compaction_strategy = node['axonops']['cassandra']['compaction_strategy'] || 'SizeTieredCompactionStrategy'
+
+  # Get the parameters for the chosen strategy, or an empty hash if none exist
+  strategy_parameters = node['axonops']['cassandra']['compaction_strategy_options'][compaction_strategy] || {}
+%>
+default_compaction:
+  class_name: <%= compaction_strategy %>
+  parameters:
+<% strategy_parameters.each do |key, value| %>
+    <%= key %>: <%= value %>
+<% end %>
 
 # Number of simultaneous compactions to allow, NOT including
 # validation "compactions" for anti-entropy repair.  Simultaneous
@@ -1126,7 +1130,7 @@ sstable:
 # If your data directories are backed by SSD, you should increase this
 # to the number of cores.
 # concurrent_compactors: 1
-concurrent_compactors: 4
+concurrent_compactors: <%= node['axonops']['cassandra']['concurrent_compactors'] || 4 %>
 
 # Number of simultaneous repair validations to allow. If not set or set to
 # a value less than 1, it defaults to the value of concurrent_compactors.
@@ -1138,7 +1142,7 @@ concurrent_compactors: 4
 # concurrent_validations: 0
 
 # Number of simultaneous materialized view builder tasks to allow.
-concurrent_materialized_view_builders: 1
+concurrent_materialized_view_builders: <%= node['axonops']['cassandra']['concurrent_materialized_view_builders'] %>
 
 # Throttles compaction to the given total throughput across the entire
 # system. The faster you insert data, the faster you need to compact in
@@ -1148,7 +1152,7 @@ concurrent_materialized_view_builders: 1
 # of compaction, including validation compaction (building Merkle trees
 # for repairs).
 #compaction_throughput: 64MiB/s
-compaction_throughput: 64MiB/s
+compaction_throughput: <%= node['axonops']['cassandra']['compaction_throughput'] %>
 
 # When compacting, the replacement sstable(s) can be opened before they
 # are completely written, and used in place of the prior sstables for
@@ -1158,7 +1162,7 @@ compaction_throughput: 64MiB/s
 # sstable_preemptive_open_interval_in_mb being negative
 # Min unit: MiB
 # sstable_preemptive_open_interval: 50MiB
-sstable_preemptive_open_interval: 64MiB
+sstable_preemptive_open_interval: <%= node['axonops']['cassandra']['sstable_preemptive_open_interval'] %>
 
 # Starting from 4.1 sstables support UUID based generation identifiers. They are disabled by default
 # because once enabled, there is no easy way to downgrade. When the node is restarted with this option
@@ -1185,30 +1189,30 @@ stream_entire_sstables: True
 # this node to the given total throughput in Mbps.
 # Setting this value to 0 it disables throttling.
 # When unset, the default is 200 Mbps or 24 MiB/s.
-# entire_sstable_stream_throughput_outbound: 24MiB/s
-entire_sstable_stream_throughput_outbound: 24MiB/s
+# entire_sstable_stream_throughput_outbound: <%= node['axonops']['cassandra']['entire_sstable_stream_throughput_outbound'] || '24MiB/s' %>
+entire_sstable_stream_throughput_outbound: <%= node['axonops']['cassandra']['entire_sstable_stream_throughput_outbound'] || '24MiB/s' %>
 
 # Throttles entire SSTable file streaming between datacenters.
 # Setting this value to 0 disables throttling for entire SSTable inter-DC file streaming.
 # When unset, the default is 200 Mbps or 24 MiB/s.
-# entire_sstable_inter_dc_stream_throughput_outbound: 24MiB/s
-entire_sstable_inter_dc_stream_throughput_outbound: 24MiB/s
+# entire_sstable_inter_dc_stream_throughput_outbound: <%= node['axonops']['cassandra']['entire_sstable_inter_dc_stream_throughput_outbound'] || '24MiB/s' %>
+entire_sstable_inter_dc_stream_throughput_outbound: <%= node['axonops']['cassandra']['entire_sstable_inter_dc_stream_throughput_outbound'] || '24MiB/s' %>
 
 # Throttles all outbound streaming file transfers on this node to the
 # given total throughput in Mbps. This is necessary because Cassandra does
 # mostly sequential IO when streaming data during bootstrap or repair, which
 # can lead to saturating the network connection and degrading rpc performance.
 # When unset, the default is 200 Mbps or 24 MiB/s.
-# stream_throughput_outbound: 24MiB/s
-stream_throughput_outbound: 24MiB/s
+# stream_throughput_outbound: <%= node['axonops']['cassandra']['stream_throughput_outbound'] %>
+stream_throughput_outbound: <%= node['axonops']['cassandra']['stream_throughput_outbound'] %>
 
 # Throttles all streaming file transfer between the datacenters,
 # this setting allows users to throttle inter dc stream throughput in addition
 # to throttling all network stream traffic as configured with
 # stream_throughput_outbound_megabits_per_sec
 # When unset, the default is 200 Mbps or 24 MiB/s.
-# inter_dc_stream_throughput_outbound: 24MiB/s
-inter_dc_stream_throughput_outbound: 24MiB/s
+# inter_dc_stream_throughput_outbound: <%= node['axonops']['cassandra']['stream_throughput_outbound'] %>
+inter_dc_stream_throughput_outbound: <%= node['axonops']['cassandra']['stream_throughput_outbound'] %>
 
 # Server side timeouts for requests. The server will return a timeout exception
 # to the client if it can't complete an operation within the corresponding
@@ -1227,48 +1231,48 @@ inter_dc_stream_throughput_outbound: 24MiB/s
 # Lowest acceptable value is 10 ms.
 # Min unit: ms
 #read_request_timeout: 5000ms
-read_request_timeout: 5s
+read_request_timeout: <%= node['axonops']['cassandra']['read_request_timeout'] %>
 # How long the coordinator should wait for seq or index scans to complete.
 # Lowest acceptable value is 10 ms.
 # Min unit: ms
 #range_request_timeout: 10000ms
-range_request_timeout: 10s
+range_request_timeout: <%= node['axonops']['cassandra']['range_request_timeout'] %>
 # How long the coordinator should wait for writes to complete.
 # Lowest acceptable value is 10 ms.
 # Min unit: ms
 #write_request_timeout: 2000ms
-write_request_timeout: 2s
+write_request_timeout: <%= node['axonops']['cassandra']['write_request_timeout'] %>
 # How long the coordinator should wait for counter writes to complete.
 # Lowest acceptable value is 10 ms.
 # Min unit: ms
 #counter_write_request_timeout: 5000ms
-counter_write_request_timeout: 5000s
+counter_write_request_timeout: <%= node['axonops']['cassandra']['counter_write_request_timeout'] %>
 # How long a coordinator should continue to retry a CAS operation
 # that contends with other proposals for the same row.
 # Lowest acceptable value is 10 ms.
 # Min unit: ms
 #cas_contention_timeout: 1000ms
-cas_contention_timeout: 2s
+cas_contention_timeout: <%= node['axonops']['cassandra']['cas_contention_timeout'] %>
 # How long the coordinator should wait for truncates to complete
 # (This can be much longer, because unless auto_snapshot is disabled
 # we need to flush first so we can snapshot before removing the data.)
 # Lowest acceptable value is 10 ms.
 # Min unit: ms
 #truncate_request_timeout: 60000ms
-truncate_request_timeout: 60s
+truncate_request_timeout: <%= node['axonops']['cassandra']['truncate_request_timeout'] %>
 # The default timeout for other, miscellaneous operations.
 # Lowest acceptable value is 10 ms.
 # Min unit: ms
 #request_timeout: 10000ms
-request_timeout: 10s
+request_timeout: <%= node['axonops']['cassandra']['request_timeout'] %>
 
 # Defensive settings for protecting Cassandra from true network partitions.
 # See (CASSANDRA-14358) for details.
 #
 # The amount of time to wait for internode tcp connections to establish.
 # Min unit: ms
-# internode_tcp_connect_timeout: 2000ms
-internode_tcp_connect_timeout: 2000ms
+# internode_tcp_connect_timeout: <%= node['axonops']['cassandra']['internode_tcp_connect_timeout'] || '2000ms' %>
+internode_tcp_connect_timeout: <%= node['axonops']['cassandra']['internode_tcp_connect_timeout'] || '2000ms' %>
 #
 # The amount of time unacknowledged data is allowed on a connection before we throw out the connection
 # Note this is only supported on Linux + epoll, and it appears to behave oddly above a setting of 30000
@@ -1276,13 +1280,13 @@ internode_tcp_connect_timeout: 2000ms
 # which picks up the OS default and configure the net.ipv4.tcp_retries2 sysctl to be ~8.
 # Min unit: ms
 # internode_tcp_user_timeout: 30000ms
-internode_tcp_user_timeout: 30s
+internode_tcp_user_timeout: <%= node['axonops']['cassandra']['internode_tcp_user_timeout'] %>
 
 # The amount of time unacknowledged data is allowed on a streaming connection.
 # The default is 5 minutes. Increase it or set it to 0 in order to increase the timeout.
 # Min unit: ms
 # internode_streaming_tcp_user_timeout: 300000ms
-internode_streaming_tcp_user_timeout: 5m
+internode_streaming_tcp_user_timeout: <%= node['axonops']['cassandra']['internode_streaming_tcp_user_timeout'] || '5m' %>
 
 # Global, per-endpoint and per-connection limits imposed on messages queued for delivery to other nodes
 # and waiting to be processed on arrival from other nodes in the cluster.  These limits are applied to the on-wire
@@ -1312,7 +1316,7 @@ internode_streaming_tcp_user_timeout: 5m
 # this timeout to execute, will generate an aggregated log message, so that slow queries
 # can be identified. Set this value to zero to disable slow query logging.
 # Min unit: ms
-slow_query_log_timeout: 2s
+slow_query_log_timeout: <%= node['axonops']['cassandra']['slow_query_log_timeout'] %>
 
 # Enable operation timeout information exchange between nodes to accurately
 # measure request timeouts.  If disabled, replicas will assume that requests
@@ -1334,8 +1338,8 @@ internode_timeout: True
 # are detected within 10 minutes
 # Specify 0 to disable.
 # Min unit: s
-# streaming_keep_alive_period: 300s
-streaming_keep_alive_period: 300s
+# streaming_keep_alive_period: <%= node['axonops']['cassandra']['streaming_keep_alive_period'] %>
+streaming_keep_alive_period: <%= node['axonops']['cassandra']['streaming_keep_alive_period'] %>
 
 # Limit number of connections per host for streaming
 # Increase this when you notice that joins are CPU-bound rather that network
@@ -1346,8 +1350,8 @@ streaming_keep_alive_period: 300s
 # Settings for stream stats tracking; used by system_views.streaming table
 # How long before a stream is evicted from tracking; this impacts both historic and currently running
 # streams.
-# streaming_state_expires: 3d
-streaming_state_expires: 3d
+# streaming_state_expires: <%= node['axonops']['cassandra']['streaming_state_expires'] || '3d' %>
+streaming_state_expires: <%= node['axonops']['cassandra']['streaming_state_expires'] || '3d' %>
 # How much memory may be used for tracking before evicting session from tracking; once crossed
 # historic and currently running streams maybe impacted.
 # streaming_state_size: 40MiB
@@ -1390,7 +1394,7 @@ streaming_state_expires: 3d
 # phi value that must be reached for a host to be marked down.
 # most users should never need to adjust this.
 # phi_convict_threshold: 8
-phi_convict_threshold: 12
+phi_convict_threshold: <%= node['axonops']['cassandra']['phi_convict_threshold'] || 12 %>
 
 # endpoint_snitch -- Set this to a class that implements
 # IEndpointSnitch.  The snitch has two functions:
@@ -1480,13 +1484,13 @@ endpoint_snitch: GossipingPropertyFileSnitch
 # controls how often to perform the more expensive part of host score
 # calculation
 # Min unit: ms
-#dynamic_snitch_update_interval: 100ms
-dynamic_snitch_update_interval: 100ms
+#dynamic_snitch_update_interval: <%= node['axonops']['cassandra']['dynamic_snitch_update_interval'] %>
+dynamic_snitch_update_interval: <%= node['axonops']['cassandra']['dynamic_snitch_update_interval'] %>
 # controls how often to reset all host scores, allowing a bad host to
 # possibly recover
 # Min unit: ms
 #dynamic_snitch_reset_interval: 600000ms
-dynamic_snitch_reset_interval: 5m
+dynamic_snitch_reset_interval: <%= node['axonops']['cassandra']['dynamic_snitch_reset_interval'] %>
 # if set greater than zero, this will allow
 # 'pinning' of replicas to hosts in order to increase cache capacity.
 # The badness threshold will control how much worse the pinned host has to be
@@ -1495,7 +1499,7 @@ dynamic_snitch_reset_interval: 5m
 # 0.2 means Cassandra would continue to prefer the static snitch values
 # until the pinned host was 20% worse than the fastest.
 #dynamic_snitch_badness_threshold: 1.0
-dynamic_snitch_badness_threshold: 0.1
+dynamic_snitch_badness_threshold: <%= node['axonops']['cassandra']['dynamic_snitch_badness_threshold'] %>
 
 # Configures Java crypto provider. By default, it will use DefaultCryptoProvider
 # which will install Amazon Correto Crypto Provider.
@@ -1541,17 +1545,21 @@ server_encryption_options:
   #     dc   : Encrypt connections to peers in other datacenters but not within datacenters
   #     rack : Encrypt connections to peers in other racks but not within racks
   #     all  : Always use encrypted connections
-  internode_encryption: all
+  internode_encryption: <%= @server_encryption_options['internode_encryption'] %>
   # When set to true, encrypted and unencrypted connections are allowed on the storage_port
   # This should _only be true_ while in unencrypted or transitional operation
   # optional defaults to true if internode_encryption is none
   # optional: true
   # If enabled, will open up an encrypted listening socket on ssl_storage_port. Should only be used
   # during upgrade to 4.0; otherwise, set to false.
-  legacy_ssl_storage_port_enabled: False
+  legacy_ssl_storage_port_enabled: <%= @server_encryption_options['legacy_ssl_storage_port_enabled'] %>
   # Set to a valid keystore if internode_encryption is dc, rack or all
-  keystore: /opt/ssl/cassandra-01.jks
-  keystore_password: REMOVED
+  keystore: <%= @server_encryption_options['keystore'] %>
+<% if @server_encryption_options['keystore_password_file'] && !@server_encryption_options['keystore_password_file'].empty? %>
+  keystore_password_file: <%= @server_encryption_options['keystore_password_file'] %>
+<% else %>
+  keystore_password: <%= @server_encryption_options['keystore_password'] %>
+<% end %>
   # Configure the way Cassandra creates SSL contexts.
   # To use PEM-based key material, see org.apache.cassandra.security.PEMBasedSslContextFactory
   # ssl_context_factory:
@@ -1564,21 +1572,22 @@ server_encryption_options:
 #  outbound_keystore: conf/.keystore
 #  outbound_keystore_password: cassandra
   # Verify peer server certificates
-  require_client_auth: False
+  require_client_auth: <%= @server_encryption_options['require_client_auth'] %>
   # Set to a valid trustore if require_client_auth is true
-  truststore: /opt/ssl/truststore.jks
-  truststore_password: REMOVED
+  truststore: <%= @server_encryption_options['truststore'] %>
+<% if @server_encryption_options['truststore_password_file'] && !@server_encryption_options['truststore_password_file'].empty? %>
+  truststore_password_file: <%= @server_encryption_options['truststore_password_file'] %>
+<% else %>
+  truststore_password: <%= @server_encryption_options['truststore_password'] %>
+<% end %>
   # Verify that the host name in the certificate matches the connected host
-  require_endpoint_verification: False
+  require_endpoint_verification: <%= @server_encryption_options['require_endpoint_verification'] %>
   # More advanced defaults:
-  # protocol: TLS
-  # store_type: JKS
-  # cipher_suites: [
-  #   TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-  #   TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-  #   TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA, TLS_RSA_WITH_AES_128_GCM_SHA256, TLS_RSA_WITH_AES_128_CBC_SHA,
-  #   TLS_RSA_WITH_AES_256_CBC_SHA
-  # ]
+  protocol: <%= @server_encryption_options['protocol'] %>
+  algorithm: <%= @server_encryption_options['algorithm'] %>
+  store_type: <%= @server_encryption_options['store_type'] %>
+  cipher_suites: <%= @server_encryption_options['cipher_suites'].to_json %>
+  accepted_protocols: <%= @server_encryption_options['accepted_protocols'].to_json %>
 
 # Configure client-to-server encryption.
 #
@@ -1594,37 +1603,41 @@ server_encryption_options:
 # auth set require_client_auth=true. Restart all nodes
 client_encryption_options:
   # Enable client-to-server encryption
-  enabled: True
+  enabled: <%= @client_encryption_options['enabled'] %>
   # When set to true, encrypted and unencrypted connections are allowed on the native_transport_port
   # This should _only be true_ while in unencrypted or transitional operation
   # optional defaults to true when enabled is false, and false when enabled is true.
-  optional: False
+<% if @client_encryption_options['enabled'] %>
+  optional: <%= @client_encryption_options.fetch('optional', false) %>
+<% end %>
   # Set keystore and keystore_password to valid keystores if enabled is true
-  keystore: /opt/ssl/cassandra-01.jks
-  keystore_password: REMOVED
-  #keystore_password: cassandra
+  keystore: <%= @client_encryption_options['keystore'] %>
+  keystore_password: <%= @client_encryption_options['keystore_password'] %>
+<% if @client_encryption_options['keystore_password_file'] && !@client_encryption_options['keystore_password_file'].empty? %>
+  keystore_password_file: <%= @server_encryption_options['keystore_password_file'] %>
+<% else %>
+  keystore_password: <%= @server_encryption_options['keystore_password'] %>
+<% end %>
   # Configure the way Cassandra creates SSL contexts.
   # To use PEM-based key material, see org.apache.cassandra.security.PEMBasedSslContextFactory
   # ssl_context_factory:
   #     # Must be an instance of org.apache.cassandra.security.ISslContextFactory
   #     class_name: org.apache.cassandra.security.DefaultSslContextFactory
   # Verify client certificates
-  require_client_auth: False
+  require_client_auth: <%= @client_encryption_options['require_client_auth'] %>
   # require_endpoint_verification: false
   # Set trustore and truststore_password if require_client_auth is true
-  truststore: "/opt/ssl/truststore.jks"
-  truststore_password: "REMOVED"
+<% if @client_encryption_options['truststore_password_file'] && !@client_encryption_options['truststore_password_file'].empty? %>
+  truststore_password_file: <%= @client_encryption_options['truststore_password_file'] %>
+<% else %>
+  truststore_password: <%= @client_encryption_options['truststore_password'] %>
+<% end %>
   # More advanced defaults:
-  # protocol: TLS
-  # store_type: JKS
-  # cipher_suites: [
-  #   TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-  #   TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-  #   TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA, TLS_RSA_WITH_AES_128_GCM_SHA256, TLS_RSA_WITH_AES_128_CBC_SHA,
-  #   TLS_RSA_WITH_AES_256_CBC_SHA
-  # ]
-  protocol: TLS
-  store_type: JKS
+  protocol: <%= @client_encryption_options['protocol'] %>
+  algorithm: <%= @client_encryption_options['algorithm'] %>
+  store_type: <%= @client_encryption_options['store_type'] %>
+  cipher_suites: <%= @client_encryption_options['cipher_suites'].to_json %>
+  accepted_protocols: <%= @client_encryption_options['accepted_protocols'].to_json %>
 
 
 # internode_compression controls whether traffic between nodes is
@@ -1671,10 +1684,10 @@ user_defined_functions_enabled: False
 
 ### AxonOps - Leave this off for now. Since Commtlogs and Hints are not encrypted by this, this feature is meaningless
 transparent_data_encryption_options:
-  chunk_length_kb: 64
+  chunk_length_kb: <%= node['axonops']['cassandra']['chunk_length_kb'] || 64 %>
   cipher: AES/CBC/PKCS5Padding
   enabled: false
-  key_alias: testing:1
+  key_alias: <%= node['axonops']['cassandra']['key_alias'] || 'testing:1' %>
   key_provider:
   -   class_name: org.apache.cassandra.security.JKSKeyProvider
       parameters:
@@ -1704,10 +1717,10 @@ transparent_data_encryption_options:
 # Adjust the thresholds here if you understand the dangers and want to
 # scan more tombstones anyway.  These thresholds may also be adjusted at runtime
 # using the StorageService mbean.
-#tombstone_warn_threshold: 1000
-tombstone_warn_threshold: 1000
-#tombstone_failure_threshold: 100000
-tombstone_failure_threshold: 100000
+#tombstone_warn_threshold: <%= node['axonops']['cassandra']['tombstone_warn_threshold'] %>
+tombstone_warn_threshold: <%= node['axonops']['cassandra']['tombstone_warn_threshold'] %>
+#tombstone_failure_threshold: <%= node['axonops']['cassandra']['tombstone_failure_threshold'] %>
+tombstone_failure_threshold: <%= node['axonops']['cassandra']['tombstone_failure_threshold'] %>
 
 
 # Filtering and secondary index queries at read consistency levels above ONE/LOCAL_ONE use a
@@ -1727,37 +1740,37 @@ replica_filtering_protection:
     #
     # If the failure threshold is breached, it is likely that either the current page/fetch size
     # is too large or one or more replicas is severely out-of-sync and in need of repair.
-    cached_rows_warn_threshold: 2000
-    cached_rows_fail_threshold: 32000
+    cached_rows_warn_threshold: <%= node['axonops']['cassandra']['replica_filtering_protection']['cached_rows_warn_threshold'] %>
+    cached_rows_fail_threshold: <%= node['axonops']['cassandra']['replica_filtering_protection']['cached_rows_fail_threshold'] %>
 
 # Log WARN on any multiple-partition batch size exceeding this value. 5KiB per batch by default.
 # Caution should be taken on increasing the size of this threshold as it can lead to node instability.
 # Min unit: KiB
 #batch_size_warn_threshold: 5KiB
-batch_size_warn_threshold: 64KiB
+batch_size_warn_threshold: <%= node['axonops']['cassandra']['batch_size_warn_threshold'] %>
 
 # Fail any multiple-partition batch exceeding this value. 50KiB (10x warn threshold) by default.
 # Min unit: KiB
 #batch_size_fail_threshold: 50KiB
-batch_size_fail_threshold: 640KiB
+batch_size_fail_threshold: <%= node['axonops']['cassandra']['batch_size_fail_threshold'] %>
 
 # Log WARN on any batches not of type LOGGED than span across more partitions than this limit
-#unlogged_batch_across_partitions_warn_threshold: 10
-unlogged_batch_across_partitions_warn_threshold: 10
+#unlogged_batch_across_partitions_warn_threshold: <%= node['axonops']['cassandra']['unlogged_batch_across_partitions_warn_threshold'] %>
+unlogged_batch_across_partitions_warn_threshold: <%= node['axonops']['cassandra']['unlogged_batch_across_partitions_warn_threshold'] %>
 
 
 # GC Pauses greater than 200 ms will be logged at INFO level
 # This threshold can be adjusted to minimize logging if necessary
 # Min unit: ms
 # gc_log_threshold: 200ms
-gc_log_threshold: 500ms
+gc_log_threshold: <%= node['axonops']['cassandra']['gc_log_threshold'] || '500ms' %>
 
 # GC Pauses greater than gc_warn_threshold will be logged at WARN level
 # Adjust the threshold based on your application throughput requirement. Setting to 0
 # will deactivate the feature.
 # Min unit: ms
 # gc_warn_threshold: 1000ms
-gc_warn_threshold: 2000ms
+gc_warn_threshold: <%= node['axonops']['cassandra']['gc_warn_threshold'] || '2000ms' %>
 
 # Maximum size of any value in SSTables. Safety measure to detect SSTable corruption
 # early. Any value size larger than this threshold will result into marking an SSTable
@@ -1777,7 +1790,7 @@ gc_warn_threshold: 2000ms
 # A further note about system keyspaces - system_traces and system_distributed keyspaces take RF of 2 or default,
 # whichever is higher, and system_auth keyspace takes RF of 1 or default, whichever is higher.
 # Suggested value for use in production: 3
-default_keyspace_rf: 2
+default_keyspace_rf: <%= node['axonops']['cassandra']['default_keyspace_rf'] || 2 %>
 
 # Track a metric per keyspace indicating whether replication achieved the ideal consistency
 # level for writes without timing out. This is different from the consistency level requested by
@@ -1821,7 +1834,7 @@ audit_logging_options:
   included_categories: DDL,DCL,OTHER,AUTH,ERROR
   logger:
   -   class_name: FileAuditLogger
-  max_queue_weight: 268435456
+  max_queue_weight: <%= node['axonops']['cassandra']['audit_logging_max_queue_weight'] || 268435456 %>
 
 
 # default options for full query logging - these can be overridden from command line when executing
@@ -2125,12 +2138,12 @@ simplestrategy_enabled: False
 # Suggested value for use in production: 2 or higher
 # minimum_replication_factor_warn_threshold: -1
 # minimum_replication_factor_fail_threshold: -1
-minimum_replication_factor_fail_threshold: 2
+minimum_replication_factor_fail_threshold: <%= node['axonops']['cassandra']['minimum_replication_factor_fail_threshold'] || 2 %>
 #
 # Guardrail to warn or fail when the maximum replication factor is greater than threshold.
 # This would also apply to system keyspaces.
 # maximum_replication_factor_warn_threshold: -1
-maximum_replication_factor_warn_threshold: 3
+maximum_replication_factor_warn_threshold: <%= node['axonops']['cassandra']['maximum_replication_factor_warn_threshold'] || 3 %>
 # maximum_replication_factor_fail_threshold: -1
 
 # Guardrail to enable a CREATE or ALTER TABLE statement when default_time_to_live is set to 0
@@ -2217,7 +2230,7 @@ batchlog_endpoint_strategy: dynamic_remote
 
 # TTL for different trace types used during logging of the repair process.
 # Min unit: s
-trace_type_query_ttl: 1d
+trace_type_query_ttl: <%= node['axonops']['cassandra']['trace_type_query_ttl'] || '1d' %>
 
 user_defined_functions_enabled: False
 

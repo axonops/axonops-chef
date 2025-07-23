@@ -23,10 +23,10 @@ default['axonops']['server']['cassandra']['version'] = '5.0.4'
 default['axonops']['server']['cassandra']['dc'] = 'axonops'
 default['axonops']['server']['cassandra']['username'] = 'cassandra'
 default['axonops']['server']['cassandra']['password'] = 'cassandra'
-default['axonops']['server']['cassandra']['install_dir'] = '/opt/axonops-data'
+default['axonops']['server']['cassandra']['install_dir'] = '/opt'
 default['axonops']['server']['cassandra']['data_dir'] = '/var/lib/axonops-data'
-default['axonops']['server']['cassandra']['tarball_url'] = nil
-default['axonops']['server']['cassandra']['tarball_checksum'] = nil
+default['axonops']['server']['cassandra']['data_file_directories'] = ['/var/lib/cassandra/data']
+default['axonops']['server']['cassandra']['compaction_strategy'] = 'SizeTieredCompactionStrategy'
 
 # TLS Configuration
 default['axonops']['server']['tls']['mode'] = 'disabled' # 'disabled', 'TLS', 'mTLS'

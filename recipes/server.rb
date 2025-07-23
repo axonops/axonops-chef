@@ -5,7 +5,10 @@
 # Deploys AxonOps Server for self-hosted monitoring
 #
 if node['axonops']['server']['cassandra']['install']
-  node.override['axonops']['cassandra']['compaction_strategy'] = 'SizeTieredCompactionStrategy'
+  # The configuration for Cassandra is now in the server attributes
+  node['axonops']['server']['cassandra'].each do |key, value|
+    node.override['axonops']['cassandra'][key] = value
+  end
   include_recipe 'axonops::cassandra'
 end
 
