@@ -22,6 +22,7 @@ default['axonops']['server']['elastic']['url'] = 'http://127.0.0.1:9200'
 
 # Internal Cassandra for AxonOps Metrics Storage
 default['axonops']['server']['cassandra']['version'] = '5.0.4'
+default['axonops']['server']['cassandra']['cluster_name'] = 'axonops-cluster'
 default['axonops']['server']['cassandra']['dc'] = 'axonops'
 default['axonops']['server']['cassandra']['username'] = 'cassandra'
 default['axonops']['server']['cassandra']['password'] = 'cassandra'
