@@ -9,7 +9,7 @@ class Chef
     provides :axonops_backup
 
     property :name, String, name_property: true
-    property :tag, String, required: true
+    property :tag, String, required: false
     property :local_retention_duration, String, default: '10d'
     property :remote_retention_duration, String, default: '60d'
     property :delegate_remote_retention, [true, false], default: false
@@ -88,6 +88,10 @@ class Chef
             cluster_type: new_resource.cluster_type,
             override_saas: new_resource.override_saas
           )
+
+          if !new_resource.tag || new_resource.tag.empty?
+            new_resource.tag = new_resource.name
+          end
 
           # Get existing backups
           backups_url = "/api/v1/cassandraScheduleSnapshot/#{new_resource.org}/#{client.get_cluster_type}/#{new_resource.cluster}"

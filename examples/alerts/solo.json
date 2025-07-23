@@ -1,0 +1,169 @@
+{
+  "axonops": {
+      "api": {
+      "org": "testorg1",
+      "cluster": "test50cluster"
+    },
+    "alert_rules": [
+      {
+        "name": "High CPU Alert",
+        "dashboard": "System",
+        "chart": "Used Disk Space Per Node",
+        "metric": "host_CPU_Percent_Merge",
+        "operator": ">",
+        "warning_value": 80,
+        "critical_value": 90,
+        "duration": "15m",
+        "description": "CPU usage is too high",
+        "routing": ["default"],
+        "action": "create"
+      },
+      {
+        "name": "Low Disk Space",
+        "dashboard": "System", 
+        "chart": "Used Disk Space Per Node",
+        "metric": "host_Disk_Percent_Used",
+        "operator": ">",
+        "warning_value": 85,
+        "critical_value": 95,
+        "duration": "10m",
+        "description": "Disk space is running low",
+        "routing": ["critical-alerts"],
+        "action": "create"
+      }
+    ],
+    
+    "log_alert_rules": [
+      {
+        "name": "Node Down",
+        "warning_value": 1,
+        "critical_value": 5,
+        "duration": "5m",
+        "content": "is now DOWN",
+        "description": "Detected node down",
+        "source": "/var/log/cassandra/system.log",
+        "action": "create"
+      },
+      {
+        "name": "GC overhead high",
+        "warning_value": 10,
+        "critical_value": 20,
+        "duration": "15m",
+        "content": "ConcurrentMarkSweep GC in",
+        "description": "High Garbage Collection overhead",
+        "source": "/var/log/cassandra/gc.log",
+        "action": "create"
+      },
+      {
+        "name": "Out of memory error",
+        "warning_value": 1,
+        "critical_value": 1,
+        "duration": "1m",
+        "content": "java.lang.OutOfMemoryError",
+        "source": "/var/log/cassandra/system.log",
+        "description": "Cassandra ran out of memory",
+        "action": "create"
+      },
+      {
+        "name": "Too many open files",
+        "warning_value": 1,
+        "critical_value": 5,
+        "duration": "10m",
+        "content": "Too many open files",
+        "source": "/var/log/cassandra/system.log",
+        "description": "File descriptor limit reached",
+        "action": "create"
+      },
+      {
+        "name": "Version mismatch",
+        "warning_value": 1,
+        "critical_value": 10,
+        "duration": "30m",
+        "content": "Received a higher version than current",
+        "source": "/var/log/cassandra/system.log",
+        "description": "Cassandra version mismatch detected",
+        "action": "create"
+      }
+    ],
+    
+    "tcp_checks": [
+      {
+        "name": "Cassandra CQL Port",
+        "tcp": "localhost:9042",
+        "interval": "30s",
+        "timeout": "5s",
+        "action": "create"
+      },
+      {
+        "name": "Cassandra JMX Port",
+        "tcp": "localhost:7199",
+        "interval": "1m",
+        "timeout": "10s",
+        "action": "create"
+      }
+    ],
+    
+    "shell_checks": [
+      {
+        "name": "Check Cassandra Process",
+        "script": "ps aux | grep -c '[c]assandra'",
+        "shell": "/bin/bash",
+        "interval": "1m",
+        "timeout": "10s",
+        "action": "create"
+      },
+      {
+        "name": "Check Disk Space",
+        "script": "df -h /var/lib/cassandra | tail -1 | awk '{print substr($5, 1, length($5)-1)}'",
+        "shell": "/bin/bash",
+        "interval": "5m",
+        "timeout": "5s",
+        "action": "create"
+      }
+    ],
+    
+    "http_checks": [
+      {
+        "name": "AxonOps API Health",
+        "url": "http://localhost:8080/api/v1/health",
+        "method": "GET",
+        "interval": "1m",
+        "timeout": "10s",
+        "action": "create"
+      }
+    ],
+    
+    "backups": [
+      {
+        "name": "Daily Backup",
+        "keyspace": "system_auth",
+        "schedule_expr": "0 2 * * *",
+        "schedule": true,
+        "retention_days": 7,
+        "location": "s3://backup-bucket/cassandra",
+        "action": "create"
+      }
+    ],
+    
+    "integrations": [
+      {
+        "name": "Slack Alerts",
+        "integration_type": "slack",
+        "webhook_url": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
+        "channel": "#alerts",
+        "username": "AxonOps",
+        "action": "create"
+      },
+      {
+        "name": "PagerDuty Critical",
+        "integration_type": "pagerduty",
+        "integration_key": "1234567890abcdef1234567890abcdef",
+        "action": "create"
+      }
+    ]
+  },
+  
+  "run_list": [
+    "recipe[axonops::alert_rules]"
+  ]
+}
