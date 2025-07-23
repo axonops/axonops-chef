@@ -17,6 +17,8 @@ default['axonops']['server']['elastic']['tarball_checksum'] = nil
 default['axonops']['server']['elastic']['listen_address'] = '127.0.0.1'
 default['axonops']['server']['elastic']['listen_port'] = 9200
 default['axonops']['server']['elastic']['tarball_url'] = 'https://artifacts.elastic.co/downloads/elasticsearch'
+default['axonops']['server']['elastic']['install'] = true
+default['axonops']['server']['elastic']['url'] = 'http://127.0.0.1:9200'
 
 # Internal Cassandra for AxonOps Metrics Storage
 default['axonops']['server']['cassandra']['version'] = '5.0.4'
@@ -27,6 +29,8 @@ default['axonops']['server']['cassandra']['install_dir'] = '/opt'
 default['axonops']['server']['cassandra']['data_dir'] = '/var/lib/axonops-data'
 default['axonops']['server']['cassandra']['data_file_directories'] = ['/var/lib/cassandra/data']
 default['axonops']['server']['cassandra']['compaction_strategy'] = 'SizeTieredCompactionStrategy'
+default['axonops']['server']['cassandra']['install'] = true
+default['axonops']['server']['cassandra']['hosts'] = ['localhost:9042']
 
 # TLS Configuration
 default['axonops']['server']['tls']['mode'] = 'disabled' # 'disabled', 'TLS', 'mTLS'
