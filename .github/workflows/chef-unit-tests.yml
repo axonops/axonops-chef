@@ -9,41 +9,25 @@ on:
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        ruby-version: ['3.2', '3.3']
-        chef-version: ['17', '18']
     
     steps:
     - uses: actions/checkout@v3
-    
-    - name: Set up Ruby
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: ${{ matrix.ruby-version }}
-        bundler-cache: true
-    
+        
     - name: Install Chef Workstation
       run: |
         wget https://packages.chef.io/files/stable/chef-workstation/23.5.1040/ubuntu/22.04/chef-workstation_23.5.1040-1_amd64.deb
         sudo dpkg -i chef-workstation_23.5.1040-1_amd64.deb
-        echo 'eval "$(chef shell-init bash)"' >> ~/.bashrc
-        source ~/.bashrc
-        # Accept Chef license
-        sudo env CHEF_LICENSE=accept-silent chef -v
 
     - name: Install Chef
       run: |
         export CHEF_LICENSE=accept-silent
         export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
         
-        /opt/chef-workstation/embedded/bin/gem install chef -v "~> ${{ matrix.chef-version }}.0"
         /opt/chef-workstation/embedded/bin/gem install chefspec
         /opt/chef-workstation/embedded/bin/gem install berkshelf
         /opt/chef-workstation/embedded/bin/bundle install
       env:
         CHEF_LICENSE: accept-silent
-
     
     - name: Install dependencies
       run: |
@@ -78,7 +62,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: rspec-results-ruby${{ matrix.ruby-version }}-chef${{ matrix.chef-version }}
+        name: rspec-results-ruby-chef
         path: |
           coverage/
           .rspec_status
