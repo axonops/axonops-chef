@@ -23,20 +23,10 @@ jobs:
         export CHEF_LICENSE=accept-silent
         export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
         
-        /opt/chef-workstation/embedded/bin/gem install chefspec
-        /opt/chef-workstation/embedded/bin/gem install berkshelf
         /opt/chef-workstation/embedded/bin/bundle install
       env:
         CHEF_LICENSE: accept-silent
-    
-    - name: Install dependencies
-      run: |
-        export CHEF_LICENSE=accept-silent
-        export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
-        /opt/chef-workstation/bin/chef exec bundle lock --normalize-platforms || true
-        /opt/chef-workstation/bin/chef exec bundle install --jobs 4 --retry 3
-        /opt/chef-workstation/bin/chef exec berks install
-    
+        
     - name: Run RuboCop (linting)
       run: |
         export CHEF_LICENSE=accept-silent
@@ -48,8 +38,6 @@ jobs:
       run: |
         export CHEF_LICENSE=accept-silent
         export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
-        /opt/chef-workstation/embedded/bin/gem install berkshelf
-        /opt/chef-workstation/embedded/bin/bundle install
         /opt/chef-workstation/bin/chef exec rspec spec/unit/recipes/alert_rules_spec.rb --format documentation --color
     
     - name: Run all unit tests
