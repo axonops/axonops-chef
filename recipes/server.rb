@@ -5,12 +5,15 @@
 # Deploys AxonOps Server for self-hosted monitoring
 #
 if node['axonops']['server']['cassandra']['install']
-  node.override['axonops']['cassandra']['compaction_strategy'] = 'SizeTieredCompactionStrategy'
+  # The configuration for Cassandra is now in the server attributes
+  node['axonops']['server']['cassandra'].each do |key, value|
+    node.override['axonops']['cassandra'][key] = value
+  end
   include_recipe 'axonops::cassandra'
 end
 
 # Install dependencies if needed
-if node['axonops']['server']['elasticsearch']['install']
+if node['axonops']['server']['elastic']['install']
   include_recipe 'axonops::elastic'
 end
 
@@ -58,17 +61,8 @@ else
 end
 
 # Determine Elasticsearch and Cassandra endpoints
-elastic_url = if node['axonops']['server']['elasticsearch']['install']
-                'http://127.0.0.1:9200'
-              else
-                node['axonops']['server']['elasticsearch']['url']
-              end
-
-cassandra_hosts = if node['axonops']['server']['cassandra']['install']
-                    ['127.0.0.1']
-                  else
-                    node['axonops']['server']['cassandra']['hosts']
-                  end
+elastic_url = node['axonops']['server']['elastic']['url'] || 'http://127.0.0.1:9200'
+cassandra_hosts = node['axonops']['server']['cassandra']['install'] || ['127.0.0.1']
 
 # Generate server configuration
 template '/etc/axonops/axon-server.yml' do

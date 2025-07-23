@@ -50,8 +50,8 @@
 -XX:+UseCondCardMark
 
 # Error handling
--XX:ErrorFile=/var/log/axonops-cassandra/hs_err_pid%p.log
--XX:HeapDumpPath=/var/log/axonops-cassandra/
+-XX:ErrorFile=<%= node['axonops']['cassandra']['directories']['gc_logs'] %>/hs_err_pid%p.log
+-XX:HeapDumpPath=<%= node['axonops']['cassandra']['directories']['gc_logs'] %>
 
 # Thread settings
 -XX:+UseThreadPriorities
