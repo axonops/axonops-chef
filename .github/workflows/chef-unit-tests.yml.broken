@@ -21,6 +21,7 @@ jobs:
     - name: Run RuboCop (linting)
       run: |
         export CHEF_LICENSE=accept-silent
+        export PATH=/opt/hostedtoolcache/Ruby/3.1.7/x64/bin:$PATH
         chef exec rubocop --display-cop-names --extra-details
       continue-on-error: true
     
