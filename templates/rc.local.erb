@@ -1,0 +1,73 @@
+#!/bin/sh -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# Managed by Chef - do not edit manually
+#
+
+# Disable transparent huge pages for Cassandra
+if [ -f /sys/kernel/mm/transparent_hugepage/enabled ]; then
+    echo never > /sys/kernel/mm/transparent_hugepage/enabled
+fi
+
+if [ -f /sys/kernel/mm/transparent_hugepage/defrag ]; then
+    echo never > /sys/kernel/mm/transparent_hugepage/defrag
+fi
+
+# Disable swap
+swapoff -a
+
+# Set I/O scheduler to deadline or noop for SSDs
+# Detect if we have SSDs
+for disk in $(ls /sys/block/ | grep -E '^sd[a-z]$|^nvme[0-9]+n[0-9]+$'); do
+    if [ -f /sys/block/$disk/queue/rotational ]; then
+        rotational=$(cat /sys/block/$disk/queue/rotational)
+        if [ "$rotational" = "0" ]; then
+            # SSD detected - use noop or none scheduler
+            if [ -f /sys/block/$disk/queue/scheduler ]; then
+                if grep -q '\[none\]' /sys/block/$disk/queue/scheduler 2>/dev/null; then
+                    echo "Scheduler already set to none for $disk"
+                elif grep -q 'none' /sys/block/$disk/queue/scheduler 2>/dev/null; then
+                    echo none > /sys/block/$disk/queue/scheduler
+                    echo "Set scheduler to none for SSD $disk"
+                elif grep -q 'noop' /sys/block/$disk/queue/scheduler 2>/dev/null; then
+                    echo noop > /sys/block/$disk/queue/scheduler
+                    echo "Set scheduler to noop for SSD $disk"
+                else
+                    echo "Could not set optimal scheduler for SSD $disk"
+                fi
+            fi
+        else
+            # HDD detected - use deadline scheduler
+            if [ -f /sys/block/$disk/queue/scheduler ]; then
+                if grep -q 'deadline' /sys/block/$disk/queue/scheduler 2>/dev/null; then
+                    echo deadline > /sys/block/$disk/queue/scheduler
+                    echo "Set scheduler to deadline for HDD $disk"
+                fi
+            fi
+        fi
+    fi
+done
+
+# Disable CPU frequency scaling for consistent performance
+if [ -f /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor ]; then
+    for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+        echo performance > $cpu 2>/dev/null || true
+    done
+fi
+
+# Set readahead for Cassandra data directories
+# Adjust this value based on your workload (typically 8KB for SSDs, 64KB for HDDs)
+<% if @cassandra_data_dirs && !@cassandra_data_dirs.empty? %>
+for device in $(df <%= @cassandra_data_dirs.join(' ') %> | tail -n +2 | awk '{print $1}' | sed 's/[0-9]*$//' | sort -u); do
+    if [ -b "$device" ]; then
+        blockdev --setra 16 $device 2>/dev/null || true
+    fi
+done
+<% end %>
+
+exit 0

@@ -1,0 +1,18 @@
+# Limits configuration for Cassandra
+# Managed by Chef - do not edit manually
+
+# File descriptor limits
+<%= @user %>    soft    nofile    <%= @file_limit %>
+<%= @user %>    hard    nofile    <%= @file_limit %>
+
+# Memory lock limits
+<%= @user %>    soft    memlock   <%= @memlock_limit %>
+<%= @user %>    hard    memlock   <%= @memlock_limit %>
+
+# Address space limits
+<%= @user %>    soft    as        <%= @as_limit %>
+<%= @user %>    hard    as        <%= @as_limit %>
+
+# Process limits
+<%= @user %>    soft    nproc     <%= @nproc_limit %>
+<%= @user %>    hard    nproc     <%= @nproc_limit %>
