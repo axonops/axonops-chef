@@ -22,6 +22,7 @@ jobs:
       run: |
         export CHEF_LICENSE=accept-silent
         export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
+        sudo apt-get -y install build-essential ruby-dev
         
         /opt/chef-workstation/embedded/bin/bundle install
       env:
