@@ -42,6 +42,27 @@ cookbook 'axonops', git: 'https://github.com/axonops/axonops-chef.git', tag: 'v1
 cookbook 'axonops', git: 'https://github.com/axonops/axonops-chef.git', ref: '2bb38d8'
 ```
 
+### Install Chef Workstation Prerequisites
+
+Before deploying AxonOps, you may need to set up nodes with Chef Workstation tools:
+
+```ruby
+# Install knife and chef tools on a management node
+include_recipe 'axonops::chef_workstation'
+```
+
+This recipe installs:
+- Development tools (gcc, make, etc.)
+- Ruby and required gems
+- Chef Workstation (optional)
+- Knife configuration template
+
+Supported platforms:
+- RHEL/CentOS/Rocky Linux 7+
+- Ubuntu 18.04+
+- Amazon Linux 2
+- Debian 9+
+
 ### Install AxonOps Agent on Existing Cassandra
 
 ```ruby
@@ -62,6 +83,244 @@ include_recipe 'axonops::dashboard'
 ```ruby
 # Fresh Cassandra installation
 include_recipe 'axonops::cassandra'
+```
+
+## Chef Server Deployment
+
+### Installing to Chef Server with Berkshelf
+
+First, ensure you have Berkshelf installed:
+
+```bash
+gem install berkshelf
+```
+
+#### 1. Configure knife.rb
+
+Create or update your `~/.chef/knife.rb` with your Chef server details:
+
+```ruby
+# knife.rb
+chef_server_url   'https://your-chef-server/organizations/your-org'
+node_name         'your-username'
+client_key        '/path/to/your-username.pem'
+ssl_verify_mode   :verify_none  # Use :verify_peer in production with proper certs
+```
+
+#### 2. Install and Upload Cookbooks
+
+```bash
+# Install cookbook dependencies locally
+berks install
+
+# Upload all cookbooks to Chef Server
+berks upload
+
+# Or upload to a specific Chef environment
+berks upload --except production
+
+# For air-gapped environments, package cookbooks
+berks package cookbooks.tar.gz
+# Then on the Chef server:
+tar -xzf cookbooks.tar.gz -C /path/to/chef-repo/cookbooks/
+```
+
+#### 3. Verify Upload
+
+```bash
+# List cookbooks on Chef server
+knife cookbook list
+
+# Show specific cookbook details
+knife cookbook show axonops
+```
+
+## Node Configuration
+
+### Setting Up Nodes with Knife
+
+#### 1. Bootstrap a New Node
+
+```bash
+# Bootstrap a node with the axonops::agent recipe
+knife bootstrap NODE_IP -x USERNAME -P PASSWORD \
+  --node-name cassandra-node-01 \
+  --run-list 'recipe[axonops::agent]'
+
+# Or with sudo
+knife bootstrap NODE_IP -x USERNAME --sudo \
+  --node-name cassandra-node-01 \
+  --run-list 'recipe[axonops::agent]'
+```
+
+#### 2. Set Node Run List
+
+```bash
+# Set a single recipe
+knife node run_list set NODE_NAME 'recipe[axonops::agent]'
+
+# Set multiple recipes
+knife node run_list set NODE_NAME \
+  'recipe[axonops::java]' \
+  'recipe[axonops::cassandra]' \
+  'recipe[axonops::agent]'
+
+# Add to existing run list
+knife node run_list add NODE_NAME 'recipe[axonops::server]'
+
+# Remove from run list
+knife node run_list remove NODE_NAME 'recipe[axonops::agent]'
+```
+
+#### 3. Set Node Attributes
+
+```bash
+# Set individual attributes
+knife node attribute set cassandra-node-01 \
+  axonops.agent.endpoint 'agents.axonops.cloud'
+
+knife node attribute set cassandra-node-01 \
+  axonops.agent.api_key 'your-api-key-here'
+
+# Set nested attributes
+knife node attribute set cassandra-node-01 \
+  axonops.cassandra.cluster_name 'Production Cluster'
+
+# Set from JSON file
+knife node from file nodes/cassandra-node-01.json
+```
+
+#### 4. Using Environments
+
+```bash
+# Create environment
+knife environment create production
+
+# Set node environment
+knife node environment set NODE_NAME production
+
+# Upload environment from file
+knife environment from file environments/production.json
+```
+
+#### 5. Using Roles
+
+```bash
+# Create a role for Cassandra nodes
+cat > roles/cassandra.json <<EOF
+{
+  "name": "cassandra",
+  "description": "Cassandra database node with AxonOps agent",
+  "run_list": [
+    "recipe[axonops::java]",
+    "recipe[axonops::cassandra]",
+    "recipe[axonops::agent]"
+  ],
+  "default_attributes": {
+    "axonops": {
+      "cassandra": {
+        "heap_size": "8G"
+      }
+    }
+  }
+}
+EOF
+
+# Upload role
+knife role from file roles/cassandra.json
+
+# Assign role to node
+knife node run_list set NODE_NAME 'role[cassandra]'
+```
+
+#### 6. Check Deployment Status
+
+```bash
+# Show node details
+knife node show NODE_NAME
+
+# Show node with all attributes
+knife node show NODE_NAME -l
+
+# Show specific attributes
+knife node show NODE_NAME -a axonops.agent.endpoint
+knife node show NODE_NAME -a axonops.cassandra.cluster_name
+
+# List all nodes
+knife node list
+
+# Check last chef-client run
+knife status
+knife status "role:cassandra" --run-list
+
+# Check specific node's last run
+knife node show NODE_NAME -a ohai_time
+knife node show NODE_NAME -a uptime
+
+# View run list
+knife node show NODE_NAME -r
+
+# Check for failed runs
+knife search node "ohai_time:[* TO $(date -d '1 hour ago' +%s)] AND NOT chef_environment:_default"
+
+# Search nodes by status
+knife search node "platform:ubuntu AND recipes:axonops\\:\\:agent"
+knife search node "roles:cassandra AND chef_environment:production"
+
+# SSH into node to check services
+knife ssh "name:NODE_NAME" "sudo systemctl status cassandra"
+knife ssh "name:NODE_NAME" "sudo systemctl status axon-agent"
+knife ssh "name:NODE_NAME" "sudo journalctl -u axon-agent -n 50"
+
+# Run commands on multiple nodes
+knife ssh "role:cassandra" "nodetool status" -x ubuntu
+knife ssh "recipe:axonops\\:\\:agent" "ps aux | grep axon-agent"
+
+# Check chef-client logs
+knife ssh "name:NODE_NAME" "sudo tail -n 100 /var/log/chef-client.log"
+
+# Force chef-client run
+knife ssh "name:NODE_NAME" "sudo chef-client" -x USERNAME
+
+# View converge history
+knife runs list NODE_NAME
+
+# Check node connectivity
+knife node show NODE_NAME -a ipaddress
+knife node show NODE_NAME -a platform
+knife node show NODE_NAME -a platform_version
+
+# Export node data
+knife node show NODE_NAME -F json > node-backup.json
+
+# Verify AxonOps agent connection
+knife ssh "name:NODE_NAME" "curl -s http://localhost:9916/metrics | head -20"
+
+# Check Cassandra cluster status from any Cassandra node
+knife ssh "role:cassandra" "nodetool describecluster" -x ubuntu | head -50
+```
+
+### Troubleshooting Deployment Issues
+
+```bash
+# Debug chef-client run
+knife ssh "name:NODE_NAME" "sudo chef-client -l debug"
+
+# Check why chef-client failed
+knife ssh "name:NODE_NAME" "sudo grep -i error /var/log/chef-client.log | tail -20"
+
+# Verify cookbook versions
+knife cookbook show axonops
+
+# Check environment constraints
+knife environment show production -F json
+
+# Verify node has latest cookbooks
+knife ssh "name:NODE_NAME" "sudo chef-client --why-run"
+
+# Reset node configuration
+knife node delete NODE_NAME -y && knife client delete NODE_NAME -y
+# Then re-bootstrap the node
 ```
 
 ## Documentation
@@ -90,10 +349,75 @@ axonops/
 │   ├── cassandra.rb    # Cassandra setup
 │   ├── elasticsearch.rb # Elasticsearch install
 │   ├── java.rb         # Java installation
+│   ├── chef_workstation.rb # Chef/Knife prerequisites
 │   └── configure_api.rb # API configuration
 ├── templates/          # Configuration templates
 ├── files/              # Static files
 └── docs/               # Component documentation
+```
+
+## Example Node Configuration Files
+
+Example node configuration files are available in the `examples/nodes/` directory:
+
+### [cassandra-node.json](examples/nodes/cassandra-node.json)
+Production-ready Cassandra node with AxonOps agent monitoring. Includes:
+- Cassandra configuration with proper heap sizes
+- AxonOps agent connected to cloud or self-hosted server
+- Java 17 with production JVM settings
+
+```bash
+# Upload and apply configuration
+knife node from file examples/nodes/cassandra-node.json
+knife node run_list set cassandra-node-01 'recipe[axonops::java],recipe[axonops::cassandra],recipe[axonops::agent]'
+```
+
+### [server-node.json](examples/nodes/server-node.json)
+Self-hosted AxonOps server with dashboard and Elasticsearch. Features:
+- Full AxonOps server stack
+- Integrated Elasticsearch for metrics storage
+- Nginx-fronted dashboard with SSL
+- Retention policies for metrics and logs
+
+```bash
+# Upload and apply configuration
+knife node from file examples/nodes/server-node.json
+```
+
+### [full-stack-node.json](examples/nodes/full-stack-node.json)
+All-in-one development/testing setup. Includes:
+- Complete AxonOps stack on single node
+- Cassandra, Elasticsearch, Server, and Agent
+- Minimal resource requirements for development
+
+```bash
+# Perfect for testing or development
+knife node from file examples/nodes/full-stack-node.json
+```
+
+### [multi-role-node.json](examples/nodes/multi-role-node.json)
+Multi-purpose node with various roles. Demonstrates:
+- Combining Cassandra with application workloads
+- Advanced monitoring and alerting rules
+- System tuning and security settings
+- Production-grade configurations
+
+```bash
+# Upload and apply configuration
+knife node from file examples/nodes/multi-role-node.json
+```
+
+### [container-node.json](examples/nodes/container-node.json)
+Containerized/restricted environment setup. Features:
+- System tuning disabled for container compatibility
+- vm.max_map_count skipped (managed by orchestrator)
+- Kubernetes service discovery DNS names
+- External Elasticsearch and Cassandra services
+- Minimal run_list for container deployments
+
+```bash
+# Perfect for Kubernetes or Docker environments
+knife node from file examples/nodes/container-node.json
 ```
 
 ## Common Use Cases
@@ -140,6 +464,41 @@ node.override['axonops']['offline_packages_path'] = '/path/to/packages'
 include_recipe 'axonops::server'
 ```
 
+### 5. Setting Up Chef Workstation on Nodes
+
+```ruby
+# Install knife and chef tools for management
+node.override['axonops']['chef_workstation']['install_chef_workstation'] = true
+node.override['axonops']['chef_workstation']['version'] = 'latest'
+
+include_recipe 'axonops::chef_workstation'
+```
+
+Or use it in a run list:
+
+```bash
+# Bootstrap a management node with chef workstation
+knife bootstrap MANAGEMENT_NODE_IP -x USERNAME --sudo \
+  --node-name chef-management-01 \
+  --run-list 'recipe[axonops::chef_workstation]'
+
+# Or add to existing node
+knife node run_list add chef-management-01 'recipe[axonops::chef_workstation]'
+```
+
+### 6. Running in Restricted Environments
+
+```ruby
+# Skip vm.max_map_count setting (e.g., in containers or managed environments)
+node.override['axonops']['skip_vm_max_map_count'] = true
+
+# Skip all system tuning
+node.override['axonops']['skip_system_tuning'] = true
+
+include_recipe 'axonops::server'
+include_recipe 'axonops::agent'
+```
+
 ## Requirements
 
 - **Chef**: 15.0+
@@ -166,6 +525,15 @@ default['axonops']['cassandra']['heap_size'] = '2G'
 
 # Java options
 default['axonops']['java']['version'] = '17'
+
+# Chef Workstation options
+default['axonops']['chef_workstation']['install_chef_workstation'] = true
+default['axonops']['chef_workstation']['version'] = 'latest'
+default['axonops']['chef_workstation']['install_additional_gems'] = true
+
+# System tuning options
+default['axonops']['skip_system_tuning'] = false
+default['axonops']['skip_vm_max_map_count'] = false
 ```
 
 See individual documentation files for complete attribute references.

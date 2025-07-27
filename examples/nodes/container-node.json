@@ -1,0 +1,95 @@
+{
+  "name": "axonops-container-01",
+  "description": "AxonOps deployment for containerized/restricted environments",
+  "chef_environment": "container",
+  "normal": {
+    "tags": ["container", "restricted", "kubernetes", "docker"],
+    "axonops": {
+      "skip_system_tuning": true,
+      "skip_vm_max_map_count": true,
+      "agent": {
+        "endpoint": "axonops-server.axonops.svc.cluster.local:8080",
+        "api_key": "container-api-key",
+        "tls": true,
+        "org": "container-org",
+        "cluster": "k8s-cluster",
+        "tags": {
+          "environment": "kubernetes",
+          "namespace": "axonops",
+          "deployment": "containerized"
+        }
+      },
+      "server": {
+        "listen_address": "0.0.0.0",
+        "listen_port": 8080,
+        "tls": {
+          "enabled": true,
+          "cert_file": "/etc/axonops/tls/tls.crt",
+          "key_file": "/etc/axonops/tls/tls.key"
+        },
+        "auth": {
+          "enabled": true,
+          "type": "kubernetes"
+        },
+        "elasticsearch": {
+          "install": false,
+          "url": "http://elasticsearch.elastic.svc.cluster.local:9200",
+          "heap_size": "2g"
+        },
+        "cassandra": {
+          "install": false,
+          "hosts": ["cassandra-0.cassandra.cassandra.svc.cluster.local", "cassandra-1.cassandra.cassandra.svc.cluster.local"],
+          "port": 9042,
+          "keyspace": "axonops",
+          "replication_factor": 2
+        },
+        "retention": {
+          "metrics": "14d",
+          "logs": "7d",
+          "events": "30d"
+        }
+      },
+      "cassandra": {
+        "cluster_name": "K8sCassandra",
+        "datacenter": "k8s-dc1",
+        "rack": "k8s-rack1",
+        "heap_size": "2G",
+        "seeds": ["cassandra-0.cassandra.cassandra.svc.cluster.local"],
+        "listen_address": null,
+        "rpc_address": "0.0.0.0",
+        "broadcast_address": null,
+        "broadcast_rpc_address": null,
+        "data_file_directories": ["/var/lib/cassandra/data"],
+        "commitlog_directory": "/var/lib/cassandra/commitlog",
+        "saved_caches_directory": "/var/lib/cassandra/saved_caches"
+      },
+      "dashboard": {
+        "enabled": true,
+        "port": 3000,
+        "nginx": {
+          "enabled": false
+        }
+      },
+      "java": {
+        "version": "17",
+        "jvm_options": {
+          "heap_dump_on_out_of_memory_error": true,
+          "heap_dump_path": "/tmp/heap_dumps"
+        }
+      }
+    }
+  },
+  "run_list": [
+    "recipe[axonops::agent]"
+  ],
+  "override_attributes": {
+    "comment": "This example shows configuration for containerized environments where:",
+    "notes": [
+      "1. System tuning is disabled (containers have limited kernel access)",
+      "2. vm.max_map_count setting is skipped (managed by container orchestrator)",
+      "3. External Elasticsearch and Cassandra are used (running in separate containers)",
+      "4. Service discovery uses Kubernetes DNS names",
+      "5. Minimal run_list as most components run in separate containers"
+    ]
+  }
+}

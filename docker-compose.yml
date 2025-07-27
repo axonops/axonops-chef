@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+  chef-server:
+    image: quay.io/3ofcoins/chef-server:12.18.14
+    hostname: chef-server
+    networks: [chefnet]
+    ports: ["443:443"]
+    volumes:
+      - chef:/var/opt/opscode
+      - chef-etc:/etc/opscode
+
+  ubuntu-node:
+    image: ubuntu:22.04
+    hostname: ubuntu-node
+    command: sleep infinity
+    networks: [chefnet]
+
+  rocky-node:
+    image: rockylinux:9
+    hostname: rocky-node
+    command: sleep infinity
+    networks: [chefnet]
+
+volumes:
+  chef:
+  chef-etc:
+
+networks:
+  chefnet:

@@ -35,13 +35,13 @@ end
 
 # Ensure sysctl settings for network and memory
 file '/etc/sysctl.d/99-axonops.conf' do
-  content <<-EOF
-# AxonOps recommended settings
-vm.max_map_count=1048575
-net.ipv4.tcp_keepalive_time=60
-net.ipv4.tcp_keepalive_probes=3
-net.ipv4.tcp_keepalive_intvl=10
-  EOF
+  sysctl_content = ["# AxonOps recommended settings"]
+  sysctl_content << "vm.max_map_count=1048575" unless node['axonops']['skip_vm_max_map_count']
+  sysctl_content << "net.ipv4.tcp_keepalive_time=60"
+  sysctl_content << "net.ipv4.tcp_keepalive_probes=3"
+  sysctl_content << "net.ipv4.tcp_keepalive_intvl=10"
+  
+  content sysctl_content.join("\n") + "\n"
   mode '0644'
   notifies :run, 'execute[sysctl-reload]', :immediately
 end

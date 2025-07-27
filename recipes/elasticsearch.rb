@@ -21,11 +21,13 @@ elastic_group = 'elasticsearch'
 execute 'set-vm-max-map-count' do
   command 'sysctl -w vm.max_map_count=262144'
   not_if 'test $(sysctl -n vm.max_map_count) -ge 262144'
+  not_if { node['axonops']['skip_vm_max_map_count'] }
 end
 
 file '/etc/sysctl.d/99-elasticsearch.conf' do
   content 'vm.max_map_count=262144'
   mode '0644'
+  not_if { node['axonops']['skip_vm_max_map_count'] }
 end
 
 # Create elasticsearch user and group

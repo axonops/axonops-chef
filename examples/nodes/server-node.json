@@ -1,0 +1,66 @@
+{
+  "name": "axonops-server-01",
+  "description": "AxonOps Server node with dashboard and Elasticsearch",
+  "chef_environment": "production",
+  "normal": {
+    "tags": ["axonops-server", "monitoring", "dashboard"],
+    "axonops": {
+      "skip_vm_max_map_count": false,
+      "server": {
+        "listen_address": "0.0.0.0",
+        "listen_port": 8080,
+        "tls": {
+          "enabled": true,
+          "cert_file": "/etc/axonops/server.crt",
+          "key_file": "/etc/axonops/server.key"
+        },
+        "auth": {
+          "enabled": true,
+          "type": "local"
+        },
+        "elasticsearch": {
+          "install": true,
+          "url": "http://localhost:9200",
+          "heap_size": "4g",
+          "cluster_name": "axonops-metrics",
+          "node_name": "es-node-01",
+          "data_path": "/var/lib/elasticsearch",
+          "log_path": "/var/log/elasticsearch"
+        },
+        "cassandra": {
+          "install": false,
+          "hosts": ["10.0.1.20", "10.0.1.21", "10.0.1.22"],
+          "port": 9042,
+          "keyspace": "axonops",
+          "replication_factor": 3
+        },
+        "retention": {
+          "metrics": "30d",
+          "logs": "7d",
+          "events": "90d"
+        }
+      },
+      "dashboard": {
+        "enabled": true,
+        "port": 3000,
+        "nginx": {
+          "enabled": true,
+          "ssl": true,
+          "ssl_certificate": "/etc/nginx/ssl/axonops.crt",
+          "ssl_certificate_key": "/etc/nginx/ssl/axonops.key",
+          "server_name": "axonops.example.com"
+        }
+      },
+      "java": {
+        "version": "17"
+      }
+    }
+  },
+  "run_list": [
+    "recipe[axonops::java]",
+    "recipe[axonops::elasticsearch]",
+    "recipe[axonops::server]",
+    "recipe[axonops::dashboard]",
+    "recipe[axonops::dashboard_nginx]"
+  ]
+}

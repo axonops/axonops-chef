@@ -1,0 +1,98 @@
+{
+  "name": "axonops-all-in-one",
+  "description": "Complete AxonOps stack on a single node (development/testing)",
+  "chef_environment": "development",
+  "normal": {
+    "tags": ["all-in-one", "development", "test"],
+    "axonops": {
+      "offline_install": false,
+      "skip_vm_max_map_count": false,
+      "agent": {
+        "endpoint": "localhost:8080",
+        "api_key": "dev-api-key",
+        "tls": false,
+        "org": "dev-org",
+        "tags": {
+          "environment": "development",
+          "purpose": "testing"
+        }
+      },
+      "server": {
+        "listen_address": "0.0.0.0",
+        "listen_port": 8080,
+        "tls": {
+          "enabled": false
+        },
+        "auth": {
+          "enabled": false
+        },
+        "elasticsearch": {
+          "install": true,
+          "url": "http://localhost:9200",
+          "heap_size": "2g",
+          "cluster_name": "axonops-dev",
+          "node_name": "es-dev-01"
+        },
+        "cassandra": {
+          "install": true,
+          "hosts": ["localhost"],
+          "port": 9042,
+          "keyspace": "axonops",
+          "replication_factor": 1
+        },
+        "retention": {
+          "metrics": "7d",
+          "logs": "3d",
+          "events": "14d"
+        }
+      },
+      "cassandra": {
+        "cluster_name": "DevCluster",
+        "datacenter": "datacenter1",
+        "rack": "rack1",
+        "heap_size": "2G",
+        "seeds": ["127.0.0.1"],
+        "listen_address": "127.0.0.1",
+        "rpc_address": "127.0.0.1",
+        "native_transport_port": 9042,
+        "storage_port": 7000,
+        "ssl_storage_port": 7001,
+        "jmx_port": 7199,
+        "compaction_throughput_mb_per_sec": 16,
+        "concurrent_reads": 16,
+        "concurrent_writes": 16,
+        "endpoint_snitch": "SimpleSnitch"
+      },
+      "dashboard": {
+        "enabled": true,
+        "port": 3000,
+        "nginx": {
+          "enabled": false
+        }
+      },
+      "java": {
+        "version": "17",
+        "jvm_options": {
+          "enable_assertions": true,
+          "thread_priority_policy": 42
+        }
+      },
+      "system_tuning": {
+        "enabled": true,
+        "vm_max_map_count": 1048575,
+        "tcp_keepalive_time": 60,
+        "tcp_keepalive_intvl": 60,
+        "tcp_keepalive_probes": 9
+      }
+    }
+  },
+  "run_list": [
+    "recipe[axonops::java]",
+    "recipe[axonops::system_tuning]",
+    "recipe[axonops::elasticsearch]",
+    "recipe[axonops::cassandra]",
+    "recipe[axonops::server]",
+    "recipe[axonops::dashboard]",
+    "recipe[axonops::agent]"
+  ]
+}

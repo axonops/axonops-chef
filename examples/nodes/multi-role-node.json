@@ -1,0 +1,132 @@
+{
+  "name": "app-db-monitor-01",
+  "description": "Multi-purpose node with application, Cassandra, and monitoring",
+  "chef_environment": "staging",
+  "normal": {
+    "tags": ["multi-role", "cassandra", "monitoring", "application"],
+    "axonops": {
+      "agent": {
+        "endpoint": "axonops-server.internal:8080",
+        "api_key": "staging-api-key",
+        "tls": true,
+        "org": "staging-org",
+        "cluster": "staging-cluster",
+        "tags": {
+          "datacenter": "us-west-2",
+          "rack": "rack2",
+          "environment": "staging",
+          "role": "multi-purpose"
+        }
+      },
+      "cassandra": {
+        "cluster_name": "Staging Cluster",
+        "datacenter": "DC-WEST",
+        "rack": "RAC2",
+        "heap_size": "4G",
+        "seeds": ["10.0.2.10", "10.0.2.11"],
+        "listen_address": "10.0.2.30",
+        "rpc_address": "10.0.2.30",
+        "broadcast_address": "10.0.2.30",
+        "native_transport_port": 9042,
+        "num_tokens": 256,
+        "auto_bootstrap": true,
+        "hinted_handoff_enabled": true,
+        "max_hint_window_in_ms": 10800000,
+        "hints_directory": "/var/lib/cassandra/hints",
+        "authenticator": "PasswordAuthenticator",
+        "authorizer": "CassandraAuthorizer",
+        "role_manager": "CassandraRoleManager",
+        "permissions_validity_in_ms": 2000,
+        "commitlog_sync": "periodic",
+        "commitlog_sync_period_in_ms": 10000,
+        "key_cache_size_in_mb": 100,
+        "row_cache_size_in_mb": 0,
+        "counter_cache_size_in_mb": 50,
+        "file_cache_size_in_mb": 512,
+        "memtable_heap_space_in_mb": 2048,
+        "memtable_offheap_space_in_mb": 2048,
+        "tombstone_warn_threshold": 1000,
+        "tombstone_failure_threshold": 100000,
+        "batch_size_warn_threshold_in_kb": 5,
+        "batch_size_fail_threshold_in_kb": 50,
+        "unlogged_batch_across_partitions_warn_threshold": 10
+      },
+      "java": {
+        "version": "17",
+        "jvm_options": {
+          "heap_dump_on_out_of_memory_error": true,
+          "heap_dump_path": "/var/lib/cassandra/heap_dumps",
+          "gc_log_file_rotation": true,
+          "number_of_gc_log_files": 10,
+          "gc_log_file_size": "10M",
+          "print_gc_details": true,
+          "print_gc_date_stamps": true
+        }
+      },
+      "skip_vm_max_map_count": false,
+      "system_tuning": {
+        "enabled": true,
+        "limits": {
+          "memlock": "unlimited",
+          "nofile": 100000,
+          "nproc": 32768,
+          "as": "unlimited"
+        },
+        "sysctl": {
+          "net.ipv4.tcp_keepalive_time": 60,
+          "net.ipv4.tcp_keepalive_intvl": 60,
+          "net.ipv4.tcp_keepalive_probes": 9,
+          "net.core.rmem_max": 134217728,
+          "net.core.wmem_max": 134217728,
+          "net.ipv4.tcp_rmem": "4096 87380 134217728",
+          "net.ipv4.tcp_wmem": "4096 65536 134217728",
+          "vm.max_map_count": 1048575
+        }
+      },
+      "api": {
+        "org": "staging-org",
+        "cluster": "staging-cluster"
+      },
+      "alert_rules": [
+        {
+          "name": "High CPU Usage",
+          "dashboard": "System",
+          "chart": "CPU Usage",
+          "metric": "host_CPU_Percent_Merge",
+          "operator": ">",
+          "warning_value": 70,
+          "critical_value": 85,
+          "duration": "10m",
+          "routing": ["email", "slack"]
+        },
+        {
+          "name": "Low Disk Space",
+          "dashboard": "System",
+          "chart": "Disk Usage",
+          "metric": "host_Disk_Percent_Used",
+          "operator": ">",
+          "warning_value": 75,
+          "critical_value": 90,
+          "duration": "5m",
+          "routing": ["email", "pagerduty"]
+        }
+      ]
+    },
+    "application": {
+      "name": "myapp",
+      "port": 8000,
+      "database": {
+        "keyspace": "myapp_staging",
+        "connection_pool_size": 10
+      }
+    }
+  },
+  "run_list": [
+    "recipe[axonops::java]",
+    "recipe[axonops::system_tuning]",
+    "recipe[axonops::cassandra]",
+    "recipe[axonops::agent]",
+    "recipe[axonops::alert_rules]",
+    "role[application]"
+  ]
+}

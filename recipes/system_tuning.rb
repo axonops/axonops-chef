@@ -9,6 +9,7 @@
 sysctl 'vm.max_map_count' do
   value node['cassandra']['system']['max_map_count']
   action :apply
+  not_if { node['axonops']['skip_vm_max_map_count'] }
 end
 
 sysctl 'vm.swappiness' do

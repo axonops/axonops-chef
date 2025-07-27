@@ -71,3 +71,10 @@ default['axonops']['packages'] = {
   'java_agent' => nil              # Auto-detected based on Java/Cassandra version
 }
 
+# Chef Workstation Configuration
+default['axonops']['chef_workstation']['enabled'] = false
+default['axonops']['chef_workstation']['version'] = 'latest'
+default['axonops']['chef_workstation']['install_chef_workstation'] = true
+default['axonops']['chef_workstation']['install_additional_gems'] = true
+default['axonops']['chef_workstation']['update_cache'] = true
+

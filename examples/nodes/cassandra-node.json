@@ -1,0 +1,48 @@
+{
+  "name": "chef01",
+  "description": "Cassandra database node with AxonOps agent monitoring",
+  "normal": {
+    "tags": ["cassandra", "database", "monitoring"],
+    "axonops": {
+      "agent": {
+        "endpoint": "10.0.3.1",
+        "port": 1888,
+        "org": "axonops_dev",
+        "tls": "disabled",
+        "tags": {
+          "datacenter": "us-east-1",
+          "rack": "rack1",
+          "environment": "production"
+        }
+      },
+      "cassandra": {
+        "cluster_name": "Production Cluster",
+        "datacenter": "DC1",
+        "rack": "RAC1",
+        "heap_size": "4G",
+        "seeds": ["10.0.3.209."],
+        "listen_address": "10.0.3.209",
+        "rpc_address": "10.0.3.209",
+        "commitlog_directory": "/var/lib/cassandra/commitlog",
+        "data_file_directories": ["/var/lib/cassandra/data"],
+        "saved_caches_directory": "/var/lib/cassandra/saved_caches",
+        "compaction_throughput_mb_per_sec": 64,
+        "concurrent_reads": 32,
+        "concurrent_writes": 32,
+        "concurrent_counter_writes": 32
+      },
+      "java": {
+        "version": "17",
+        "jvm_options": {
+          "heap_dump_on_out_of_memory_error": true,
+          "heap_dump_path": "/var/lib/cassandra/heap_dumps"
+        }
+      }
+    }
+  },
+  "run_list": [
+    "recipe[axonops::java]",
+    "recipe[axonops::cassandra]",
+    "recipe[axonops::agent]"
+  ]
+}
