@@ -37,9 +37,18 @@
           "replication_factor": 3
         },
         "retention": {
-          "metrics": "30d",
-          "logs": "7d",
-          "events": "90d"
+          "events": "90d",
+          "security_events": "12w",
+          "metrics": {
+            "high_resolution": "30d",
+            "medium_resolution": "12w",
+            "low_resolution": "18M",
+            "super_low_resolution": "3y"
+          },
+          "backups": {
+            "local": "14d",
+            "remote": "60d"
+          }
         }
       },
       "dashboard": {

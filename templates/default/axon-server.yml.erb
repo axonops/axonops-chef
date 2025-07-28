@@ -33,15 +33,15 @@ tls:
 <% end -%>
 
 retention:
-  events: <%= @retention['events'] %>w
-  security_events: <%= @retention['security_events'] %>w
+  events: <%= @retention['events'] %>
+  security_events: <%= @retention['security_events'] %>
   
   metrics:
-    high_resolution: <%= @retention['metrics']['high_resolution'] %>d
-    medium_resolution: <%= @retention['metrics']['medium_resolution'] %>w
-    low_resolution: <%= @retention['metrics']['low_resolution'] %>M
-    super_low_resolution: <%= @retention['metrics']['super_low_resolution'] %>y
+    high_resolution: <%= @retention['metrics']['high_resolution'] %>
+    medium_resolution: <%= @retention['metrics']['medium_resolution'] %>
+    low_resolution: <%= @retention['metrics']['low_resolution'] %>
+    super_low_resolution: <%= @retention['metrics']['super_low_resolution'] %>
   
   backups:
-    local: <%= @retention['backups']['local'] %>d
-    remote: <%= @retention['backups']['remote'] %>d
+    local: <%= @retention['backups']['local'] %>
+    remote: <%= @retention['backups']['remote'] %>

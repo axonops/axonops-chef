@@ -45,9 +45,18 @@
           "replication_factor": 1
         },
         "retention": {
-          "metrics": "7d",
-          "logs": "3d",
-          "events": "14d"
+          "events": "14d",
+          "security_events": "8w",
+          "metrics": {
+            "high_resolution": "7d",
+            "medium_resolution": "4w",
+            "low_resolution": "6M",
+            "super_low_resolution": "1y"
+          },
+          "backups": {
+            "local": "10d",
+            "remote": "30d"
+          }
         }
       },
       "cassandra": {

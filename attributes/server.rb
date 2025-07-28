@@ -40,14 +40,14 @@ default['axonops']['server']['tls']['key_file'] = nil
 default['axonops']['server']['tls']['ca_file'] = nil
 
 # Retention Configuration
-default['axonops']['server']['retention']['events'] = 4 # weeks
-default['axonops']['server']['retention']['security_events'] = 8 # weeks
-default['axonops']['server']['retention']['metrics']['high_resolution'] = 30 # days
-default['axonops']['server']['retention']['metrics']['medium_resolution'] = 24 # weeks
-default['axonops']['server']['retention']['metrics']['low_resolution'] = 24 # months
-default['axonops']['server']['retention']['metrics']['super_low_resolution'] = 3 # years
-default['axonops']['server']['retention']['backups']['local'] = 10 # days
-default['axonops']['server']['retention']['backups']['remote'] = 30 # days
+default['axonops']['server']['retention']['events'] = '4w' # weeks
+default['axonops']['server']['retention']['security_events'] = '8w' # weeks
+default['axonops']['server']['retention']['metrics']['high_resolution'] = '30d' # days
+default['axonops']['server']['retention']['metrics']['medium_resolution'] = '24w' # weeks
+default['axonops']['server']['retention']['metrics']['low_resolution'] = '24M' # months
+default['axonops']['server']['retention']['metrics']['super_low_resolution'] = '3y' # years
+default['axonops']['server']['retention']['backups']['local'] = '10d' # days
+default['axonops']['server']['retention']['backups']['remote'] = '30d' # days
 
 # Server Configuration
 # Package name is set in attributes/default.rb
