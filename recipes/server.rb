@@ -62,7 +62,7 @@ end
 
 # Determine Elasticsearch and Cassandra endpoints
 elastic_url = node['axonops']['server']['elastic']['url'] || 'http://127.0.0.1:9200'
-cassandra_hosts = node['axonops']['server']['cassandra']['install'] || ['127.0.0.1']
+cassandra_hosts = node['axonops']['server']['cassandra']['hosts'] || ['127.0.0.1']
 
 # Generate server configuration
 template '/etc/axonops/axon-server.yml' do
