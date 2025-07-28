@@ -8,7 +8,7 @@
     "axonops": {
       "agent": {
         "hosts": "axonops-server.internal",
-        "port": 8080,
+        "port": 1888,
         "api_key": "staging-api-key",
         "tls_mode": "TLS",
         "org_name": "staging-org",

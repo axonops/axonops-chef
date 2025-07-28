@@ -12,7 +12,7 @@
       "skip_vm_swappiness": true,
       "agent": {
         "hosts": "localhost",
-        "port": 8080,
+        "port": 1888,
         "api_key": "dev-api-key",
         "tls_mode": "disabled",
         "org_name": "dev-org",

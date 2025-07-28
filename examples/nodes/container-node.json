@@ -11,7 +11,7 @@
       "skip_vm_swappiness": true,
       "agent": {
         "hosts": "axonops-server.axonops.svc.cluster.local",
-        "port": 8080,
+        "port": 1888,
         "api_key": "container-api-key",
         "tls_mode": "TLS",
         "org_name": "container-org",
