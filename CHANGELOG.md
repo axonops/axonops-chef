@@ -5,6 +5,17 @@ All notable changes to the AxonOps Chef Cookbook will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-07-27
+
+### Added
+- Added `skip_vm_swappiness` attribute to control vm.swappiness setting
+- Added not_if condition to vm.swappiness sysctl resource in system_tuning recipe
+- Updated example node configurations to include skip_vm_swappiness attribute
+
+### Changed
+- Updated cookbook version from 0.1.0 to 0.2.0 in metadata.rb
+- Updated cookbook_version field in all example JSON files to match new version
+
 ## [Unreleased] - 2025-07-27
 
 ### Added
@@ -69,6 +80,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Reason**: Improve documentation clarity and ensure users follow the correct deployment sequence.
 
+### Fixed
+
+#### Example File Cookbook Version
+- Added `cookbook_version: "0.1.0"` field to all example JSON files
+- Files updated:
+  - `/examples/alerts/solo.json`
+  - `/examples/nodes/cassandra-node.json`
+  - `/examples/nodes/container-node.json`
+  - `/examples/nodes/full-stack-node.json`
+  - `/examples/nodes/multi-role-node.json`
+  - `/examples/nodes/server-node.json`
+
+**Reason**: Track which cookbook version the examples were created for, helping users understand compatibility when the cookbook is updated.
+
+#### Example File Attribute Names
+- Fixed agent configuration attributes to match recipe expectations:
+  - Changed `endpoint` to `hosts` (splitting host:port when needed)
+  - Changed `org` to `org_name`
+  - Changed `tls` to `tls_mode` with proper values ("disabled", "TLS", "mTLS")
+  - Kept `api_key` as-is (recipe already handles this correctly)
+  
+- Fixed cassandra configuration attributes:
+  - Changed `datacenter` to `dc` in all cassandra sections
+  
+- Fixed server configuration attributes:
+  - Changed `elasticsearch` to `elastic` in server sections
+  - Fixed TLS configuration structure from `enabled: true/false` to `mode: "TLS"/"disabled"`
+
+**Reason**: The example files were using different attribute names than what the cookbook recipes expected, causing the generated configuration files to have default values instead of the user-specified values. These fixes ensure that node configurations work correctly with the cookbook.
+
 ### Technical Details
 
 #### Files Created
@@ -87,6 +128,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `/recipes/common.rb` - Conditional vm.max_map_count setting
 - `/recipes/system_tuning.rb` - Added conditional guard
 - `/recipes/elasticsearch.rb` - Added conditional guards
+- `/examples/alerts/solo.json` - Added cookbook_version field
+- `/examples/nodes/cassandra-node.json` - Added cookbook_version field and fixed attribute names
+- `/examples/nodes/container-node.json` - Added cookbook_version field and fixed attribute names
+- `/examples/nodes/full-stack-node.json` - Added cookbook_version field and fixed attribute names
+- `/examples/nodes/multi-role-node.json` - Added cookbook_version field and fixed attribute names
+- `/examples/nodes/server-node.json` - Added cookbook_version field and fixed attribute names
 
 ### Migration Notes
 

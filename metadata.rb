@@ -3,7 +3,7 @@ maintainer 'AxonOps'
 maintainer_email 'support@axonops.com'
 license 'Apache-2.0'
 description 'Installs/Configures AxonOps monitoring and management platform for Apache Cassandra'
-version '0.1.0'
+version '0.2.0'
 chef_version '>= 16.0'
 
 # The long_description is optional and can be read from README.md if it exists

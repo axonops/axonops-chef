@@ -1,11 +1,13 @@
 {
   "name": "axonops-server-01",
+  "cookbook_version": "0.2.0",
   "description": "AxonOps Server node with dashboard and Elasticsearch",
   "chef_environment": "production",
   "normal": {
     "tags": ["axonops-server", "monitoring", "dashboard"],
     "axonops": {
       "skip_vm_max_map_count": false,
+      "skip_vm_swappiness": false,
       "server": {
         "listen_address": "0.0.0.0",
         "listen_port": 8080,
@@ -18,7 +20,7 @@
           "enabled": true,
           "type": "local"
         },
-        "elasticsearch": {
+        "elastic": {
           "install": true,
           "url": "http://localhost:9200",
           "heap_size": "4g",

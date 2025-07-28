@@ -492,6 +492,9 @@ knife node run_list add chef-management-01 'recipe[axonops::chef_workstation]'
 # Skip vm.max_map_count setting (e.g., in containers or managed environments)
 node.override['axonops']['skip_vm_max_map_count'] = true
 
+# Skip vm.swappiness setting (e.g., in containers or managed environments)
+node.override['axonops']['skip_vm_swappiness'] = true
+
 # Skip all system tuning
 node.override['axonops']['skip_system_tuning'] = true
 
@@ -534,6 +537,7 @@ default['axonops']['chef_workstation']['install_additional_gems'] = true
 # System tuning options
 default['axonops']['skip_system_tuning'] = false
 default['axonops']['skip_vm_max_map_count'] = false
+default['axonops']['skip_vm_swappiness'] = false
 ```
 
 See individual documentation files for complete attribute references.

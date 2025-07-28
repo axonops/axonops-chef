@@ -15,6 +15,7 @@ end
 sysctl 'vm.swappiness' do
   value node['cassandra']['system']['vm_swappiness']
   action :apply
+  not_if { node['axonops']['skip_vm_swappiness'] }
 end
 
 sysctl 'vm.dirty_ratio' do

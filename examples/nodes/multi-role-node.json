@@ -1,15 +1,17 @@
 {
   "name": "app-db-monitor-01",
+  "cookbook_version": "0.2.0",
   "description": "Multi-purpose node with application, Cassandra, and monitoring",
   "chef_environment": "staging",
   "normal": {
     "tags": ["multi-role", "cassandra", "monitoring", "application"],
     "axonops": {
       "agent": {
-        "endpoint": "axonops-server.internal:8080",
+        "hosts": "axonops-server.internal",
+        "port": 8080,
         "api_key": "staging-api-key",
-        "tls": true,
-        "org": "staging-org",
+        "tls_mode": "TLS",
+        "org_name": "staging-org",
         "cluster": "staging-cluster",
         "tags": {
           "datacenter": "us-west-2",
@@ -20,7 +22,7 @@
       },
       "cassandra": {
         "cluster_name": "Staging Cluster",
-        "datacenter": "DC-WEST",
+        "dc": "DC-WEST",
         "rack": "RAC2",
         "heap_size": "4G",
         "seeds": ["10.0.2.10", "10.0.2.11"],
@@ -64,6 +66,7 @@
         }
       },
       "skip_vm_max_map_count": false,
+      "skip_vm_swappiness": false,
       "system_tuning": {
         "enabled": true,
         "limits": {

@@ -1,5 +1,6 @@
 {
   "name": "axonops-container-01",
+  "cookbook_version": "0.2.0",
   "description": "AxonOps deployment for containerized/restricted environments",
   "chef_environment": "container",
   "normal": {
@@ -7,11 +8,13 @@
     "axonops": {
       "skip_system_tuning": true,
       "skip_vm_max_map_count": true,
+      "skip_vm_swappiness": true,
       "agent": {
-        "endpoint": "axonops-server.axonops.svc.cluster.local:8080",
+        "hosts": "axonops-server.axonops.svc.cluster.local",
+        "port": 8080,
         "api_key": "container-api-key",
-        "tls": true,
-        "org": "container-org",
+        "tls_mode": "TLS",
+        "org_name": "container-org",
         "cluster": "k8s-cluster",
         "tags": {
           "environment": "kubernetes",
@@ -23,7 +26,7 @@
         "listen_address": "0.0.0.0",
         "listen_port": 8080,
         "tls": {
-          "enabled": true,
+          "mode": "TLS",
           "cert_file": "/etc/axonops/tls/tls.crt",
           "key_file": "/etc/axonops/tls/tls.key"
         },
@@ -31,7 +34,7 @@
           "enabled": true,
           "type": "kubernetes"
         },
-        "elasticsearch": {
+        "elastic": {
           "install": false,
           "url": "http://elasticsearch.elastic.svc.cluster.local:9200",
           "heap_size": "2g"
@@ -51,7 +54,7 @@
       },
       "cassandra": {
         "cluster_name": "K8sCassandra",
-        "datacenter": "k8s-dc1",
+        "dc": "k8s-dc1",
         "rack": "k8s-rack1",
         "heap_size": "2G",
         "seeds": ["cassandra-0.cassandra.cassandra.svc.cluster.local"],
