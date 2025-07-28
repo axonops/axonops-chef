@@ -94,6 +94,7 @@ For air-gapped environments:
 ```ruby
 node.override['axonops']['offline_install'] = true
 node.override['axonops']['offline_packages_path'] = '/path/to/packages'
+# For offline install, specify the full RPM/DEB filename
 node.override['axonops']['server']['package'] = 'axon-server-2.0.3-1.x86_64.rpm'
 
 include_recipe 'axonops::server'
@@ -109,7 +110,7 @@ Core AxonOps Server settings:
 |-----------|---------|-------------|
 | `['axonops']['server']['listen_address']` | `0.0.0.0` | IP address for API server |
 | `['axonops']['server']['listen_port']` | `8080` | Port for API server |
-| `['axonops']['server']['package']` | `axon-server-2.0.3-1.x86_64.rpm` | Package name for offline install |
+| `['axonops']['server']['package']` | `axon-server` | Package name (use full filename for offline) |
 | `['axonops']['server']['version']` | `latest` | Version to install (online mode) |
 
 ### Elasticsearch Configuration

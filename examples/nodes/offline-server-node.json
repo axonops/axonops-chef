@@ -1,0 +1,75 @@
+{
+  "name": "axonops-offline-server",
+  "cookbook_version": "0.2.0",
+  "description": "AxonOps server deployment for offline/air-gapped environments",
+  "chef_environment": "production",
+  "normal": {
+    "tags": ["offline", "server", "production"],
+    "axonops": {
+      "offline_install": true,
+      "offline_packages_path": "/opt/axonops/packages",
+      "repository": {
+        "enabled": false
+      },
+      "server": {
+        "enabled": true,
+        "listen_address": "0.0.0.0",
+        "listen_port": 8080,
+        "package": "axon-server-2.0.3-1.x86_64.rpm",
+        "elastic": {
+          "install": true,
+          "tarball_url": "file:///opt/axonops/packages/elasticsearch-7.17.26-linux-x86_64.tar.gz",
+          "heap_size": "4g",
+          "cluster_name": "axonops-prod"
+        },
+        "cassandra": {
+          "install": true,
+          "tarball_url": "file:///opt/axonops/packages/apache-cassandra-5.0.4-bin.tar.gz",
+          "cluster_name": "AxonOpsMetrics",
+          "dc": "datacenter1",
+          "heap_size": "8G",
+          "data_file_directories": ["/data/cassandra/data"],
+          "commitlog_directory": "/data/cassandra/commitlog",
+          "saved_caches_directory": "/data/cassandra/saved_caches"
+        },
+        "tls": {
+          "mode": "TLS",
+          "cert_file": "/etc/axonops/certs/server.crt",
+          "key_file": "/etc/axonops/certs/server.key",
+          "ca_file": "/etc/axonops/certs/ca.crt"
+        },
+        "retention": {
+          "events": 8,
+          "security_events": 12,
+          "metrics": {
+            "high_resolution": 30,
+            "medium_resolution": 24,
+            "low_resolution": 24,
+            "super_low_resolution": 3
+          },
+          "backups": {
+            "local": 14,
+            "remote": 60
+          }
+        }
+      },
+      "java": {
+        "version": "17",
+        "tarball_url": "file:///opt/axonops/packages/amazon-corretto-17-x64-linux-jdk.tar.gz",
+        "jvm_options": {
+          "enable_assertions": false,
+          "thread_priority_policy": 42
+        }
+      },
+      "packages": {
+        "agent": "axon-agent-1.0.0-1.x86_64.rpm",
+        "dashboard": "axon-dash-1.0.0-1.x86_64.rpm"
+      }
+    }
+  },
+  "run_list": [
+    "recipe[axonops::java]",
+    "recipe[axonops::system_tuning]",
+    "recipe[axonops::server]"
+  ]
+}

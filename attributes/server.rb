@@ -50,7 +50,8 @@ default['axonops']['server']['retention']['backups']['local'] = 10 # days
 default['axonops']['server']['retention']['backups']['remote'] = 30 # days
 
 # Server Configuration
-default['axonops']['server']['package'] = 'axon-server-2.0.3-1.x86_64.rpm' # Default package name for offline installation
+# Package name is set in attributes/default.rb
+# For offline installation, override with full RPM/DEB filename in node attributes
 
 # Dashboard Configuration
 default['axonops']['dashboard']['listen_address'] = node['ipaddress']
