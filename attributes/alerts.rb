@@ -110,10 +110,6 @@ default['axonops']['alert_rules'] = [
     'name' => 'Coordinator Read Latency - LOCAL_QUORUM 99thPercentile',
     'dashboard' => 'Coordinator',
     'chart' => 'Coordinator Read $consistency Latency - $percentile',
-    'metric' => {
-      'consistency' => ['LOCAL_QUORUM'],
-      'percentile' => ['99thPercentile']
-    },
     'operator' => '>=',
     'critical_value' => 2000000,
     'warning_value' => 1000000,
@@ -129,10 +125,6 @@ default['axonops']['alert_rules'] = [
     'name' => 'Coordinator Read Latency - LOCAL_ONE 99thPercentile',
     'dashboard' => 'Coordinator',
     'chart' => 'Coordinator Read $consistency Latency - $percentile',
-    'metric' => {
-      'consistency' => ['LOCAL_ONE'],
-      'percentile' => ['99thPercentile']
-    },
     'operator' => '>=',
     'critical_value' => 2000000,
     'warning_value' => 1000000,
@@ -148,9 +140,6 @@ default['axonops']['alert_rules'] = [
     'name' => 'Coordinator Range Read Latency - 99thPercentile',
     'dashboard' => 'Coordinator',
     'chart' => 'Coordinator Range Read Request Latency - $percentile',
-    'metric' => {
-      'percentile' => ['99thPercentile']
-    },
     'operator' => '>=',
     'critical_value' => 2500000,
     'warning_value' => 1500000,
@@ -166,10 +155,6 @@ default['axonops']['alert_rules'] = [
     'name' => 'Coordinator Write Latency - LOCAL_QUORUM 99thPercentile',
     'dashboard' => 'Coordinator',
     'chart' => 'Coordinator Write $consistency Latency - $percentile',
-    'metric' => {
-      'consistency' => ['LOCAL_QUORUM'],
-      'percentile' => ['99thPercentile']
-    },
     'operator' => '>=',
     'critical_value' => 1500000,
     'warning_value' => 1000000,
@@ -181,10 +166,6 @@ default['axonops']['alert_rules'] = [
     'name' => 'Coordinator Write Latency - LOCAL_ONE 99thPercentile',
     'dashboard' => 'Coordinator',
     'chart' => 'Coordinator Write $consistency Latency - $percentile',
-    'metric' => {
-      'consistency' => ['LOCAL_ONE'],
-      'percentile' => ['99thPercentile']
-    },
     'operator' => '>=',
     'critical_value' => 1500000,
     'warning_value' => 1000000,
