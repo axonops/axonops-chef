@@ -5,6 +5,8 @@ server:
   host: <%= @listen_address %>
   port: <%= @listen_port %>
 
+<% if @use_new_format -%>
+# New format for axon-server >= 2.0.4
 search_db:
   hosts:
 <% @search_db_hosts.each do |host| -%>
@@ -24,6 +26,11 @@ search_db:
 <% end -%>
 <% if @search_db_shards -%>
   shards: <%= @search_db_shards %>
+<% end -%>
+<% else -%>
+# Old format for axon-server < 2.0.4
+elastic_host: <%= @elastic_host %>
+elastic_port: <%= @elastic_port %>
 <% end -%>
 
 cassandra:

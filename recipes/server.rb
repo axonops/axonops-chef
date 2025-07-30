@@ -62,13 +62,36 @@ end
 
 cassandra_hosts = node['axonops']['server']['cassandra']['hosts'] || ['127.0.0.1']
 
-# Prepare search_db hosts array
-search_db_hosts = if node['axonops']['server']['search_db']['hosts']
-                    node['axonops']['server']['search_db']['hosts']
-                  else
-                    # Fall back to old elastic configuration for backward compatibility
-                    ["#{elastic_url}/"]
-                  end
+# Determine server version to decide configuration format
+# Version 2.0.4 and above use the new search_db format
+server_version = node['axonops']['server']['version']
+use_new_format = if server_version == 'latest' || server_version.nil?
+                   true # Assume latest supports new format
+                 else
+                   # Parse version and compare
+                   require 'chef/version_constraint'
+                   Chef::VersionConstraint.new('>= 2.0.4').include?(server_version)
+                 end
+
+# Prepare configuration based on version
+if use_new_format
+  # New format for axon-server >= 2.0.4
+  search_db_hosts = node['axonops']['server']['search_db']['hosts'] || ['http://localhost:9200/']
+  elastic_host = nil
+  elastic_port = nil
+else
+  # Old format for axon-server < 2.0.4
+  search_db_hosts = nil
+  # Extract host and port from the first search_db host or use defaults
+  if node['axonops']['server']['search_db']['hosts'] && !node['axonops']['server']['search_db']['hosts'].empty?
+    url = URI.parse(node['axonops']['server']['search_db']['hosts'].first.chomp('/'))
+    elastic_host = url.host || '127.0.0.1'
+    elastic_port = url.port || 9200
+  else
+    elastic_host = node['axonops']['server']['elastic']['listen_address'] || '127.0.0.1'
+    elastic_port = node['axonops']['server']['elastic']['listen_port'] || 9200
+  end
+end
 
 # Generate server configuration
 template '/etc/axonops/axon-server.yml' do
@@ -79,12 +102,15 @@ template '/etc/axonops/axon-server.yml' do
   variables(
     listen_address: node['axonops']['server']['listen_address'],
     listen_port: node['axonops']['server']['listen_port'],
+    use_new_format: use_new_format,
     search_db_hosts: search_db_hosts,
     search_db_username: node['axonops']['server']['search_db']['username'],
     search_db_password: node['axonops']['server']['search_db']['password'],
     search_db_skip_verify: node['axonops']['server']['search_db']['skip_verify'],
     search_db_replicas: node['axonops']['server']['search_db']['replicas'],
     search_db_shards: node['axonops']['server']['search_db']['shards'],
+    elastic_host: elastic_host,
+    elastic_port: elastic_port,
     cassandra_hosts: cassandra_hosts,
     cassandra_dc: node['axonops']['server']['cassandra']['dc'],
     cassandra_username: node['axonops']['server']['cassandra']['username'],

@@ -132,6 +132,8 @@ Settings for embedded Elasticsearch:
 
 Settings for Elasticsearch connection (new `search_db` format):
 
+**Note:** The new `search_db` format is only supported in axon-server version 2.0.4 and above. For older versions, the cookbook automatically uses the legacy `elastic_host` and `elastic_port` format.
+
 | Attribute | Default | Description |
 |-----------|---------|-------------|
 | `['axonops']['server']['search_db']['hosts']` | `['http://localhost:9200/']` | Array of Elasticsearch hosts |
@@ -140,6 +142,10 @@ Settings for Elasticsearch connection (new `search_db` format):
 | `['axonops']['server']['search_db']['skip_verify']` | `false` | Skip SSL/TLS verification |
 | `['axonops']['server']['search_db']['replicas']` | `0` | Number of replicas per shard |
 | `['axonops']['server']['search_db']['shards']` | `1` | Number of shards per index |
+
+The cookbook automatically detects the axon-server version and uses the appropriate configuration format:
+- **axon-server >= 2.0.4**: Uses the new `search_db` format
+- **axon-server < 2.0.4**: Uses the legacy `elastic_host` and `elastic_port` format
 
 ### Cassandra Configuration
 

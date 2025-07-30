@@ -437,9 +437,14 @@ include_recipe 'axonops::agent'
 ```ruby
 # Use existing Elasticsearch and Cassandra
 node.override['axonops']['server']['elastic']['install'] = false
+
+# For axon-server >= 2.0.4, use the new search_db format
 node.override['axonops']['server']['search_db']['hosts'] = ['http://elastic:9200/']
 node.override['axonops']['server']['search_db']['username'] = 'elastic'
 node.override['axonops']['server']['search_db']['password'] = 'secure-password'
+
+# The cookbook automatically handles older versions using elastic_host/elastic_port
+
 node.override['axonops']['server']['cassandra']['install'] = false
 node.override['axonops']['server']['cassandra']['hosts'] = ['cassandra1', 'cassandra2']
 
