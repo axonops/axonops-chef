@@ -5,9 +5,26 @@ server:
   host: <%= @listen_address %>
   port: <%= @listen_port %>
 
-elastic:
-  host: "<%= @elastic_host %>"
-  port: <%= @elastic_port %>
+search_db:
+  hosts:
+<% @search_db_hosts.each do |host| -%>
+    - <%= host %>
+<% end -%>
+<% if @search_db_username -%>
+  username: <%= @search_db_username %>
+<% end -%>
+<% if @search_db_password -%>
+  password: <%= @search_db_password %>
+<% end -%>
+<% if @search_db_skip_verify -%>
+  skip_verify: <%= @search_db_skip_verify %>
+<% end -%>
+<% if @search_db_replicas -%>
+  replicas: <%= @search_db_replicas %>
+<% end -%>
+<% if @search_db_shards -%>
+  shards: <%= @search_db_shards %>
+<% end -%>
 
 cassandra:
   hosts:

@@ -436,8 +436,10 @@ include_recipe 'axonops::agent'
 
 ```ruby
 # Use existing Elasticsearch and Cassandra
-node.override['axonops']['server']['elasticsearch']['install'] = false
-node.override['axonops']['server']['elasticsearch']['url'] = 'http://elastic:9200'
+node.override['axonops']['server']['elastic']['install'] = false
+node.override['axonops']['server']['search_db']['hosts'] = ['http://elastic:9200/']
+node.override['axonops']['server']['search_db']['username'] = 'elastic'
+node.override['axonops']['server']['search_db']['password'] = 'secure-password'
 node.override['axonops']['server']['cassandra']['install'] = false
 node.override['axonops']['server']['cassandra']['hosts'] = ['cassandra1', 'cassandra2']
 

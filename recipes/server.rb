@@ -60,9 +60,15 @@ else
   end
 end
 
-# Determine Elasticsearch and Cassandra endpoints
-elastic_url = node['axonops']['server']['elastic']['url'] || 'http://127.0.0.1:9200'
 cassandra_hosts = node['axonops']['server']['cassandra']['hosts'] || ['127.0.0.1']
+
+# Prepare search_db hosts array
+search_db_hosts = if node['axonops']['server']['search_db']['hosts']
+                    node['axonops']['server']['search_db']['hosts']
+                  else
+                    # Fall back to old elastic configuration for backward compatibility
+                    ["#{elastic_url}/"]
+                  end
 
 # Generate server configuration
 template '/etc/axonops/axon-server.yml' do
@@ -73,8 +79,12 @@ template '/etc/axonops/axon-server.yml' do
   variables(
     listen_address: node['axonops']['server']['listen_address'],
     listen_port: node['axonops']['server']['listen_port'],
-    elastic_host: elastic_url,
-    elastic_port: URI.parse(elastic_url).port || 9200,
+    search_db_hosts: search_db_hosts,
+    search_db_username: node['axonops']['server']['search_db']['username'],
+    search_db_password: node['axonops']['server']['search_db']['password'],
+    search_db_skip_verify: node['axonops']['server']['search_db']['skip_verify'],
+    search_db_replicas: node['axonops']['server']['search_db']['replicas'],
+    search_db_shards: node['axonops']['server']['search_db']['shards'],
     cassandra_hosts: cassandra_hosts,
     cassandra_dc: node['axonops']['server']['cassandra']['dc'],
     cassandra_username: node['axonops']['server']['cassandra']['username'],
