@@ -151,13 +151,18 @@ default['axonops']['cassandra']['credentials_cache_max_entries'] = 1000
 default['axonops']['cassandra']['credentials_update_interval'] = nil
 default['axonops']['cassandra']['auth_cache_warming_enabled'] = true
 
+# Whether to create a self-signed keystore
+default['axonops']['cassandra']['ssl']['self_signed'] = true
+## path to keytool if required
+default['axonops']['cassandra']['ssl']['keytool'] = nil
+
 # Encryption Configuration
 default['axonops']['cassandra']['server_encryption_options'] = {
   'internode_encryption' => 'none',
   'legacy_ssl_storage_port_enabled' => false,
-  'keystore' => '/etc/cassandra/cassandra.keystore',
+  'keystore' => '/opt/cassandra/cassandra.keystore',
   'keystore_password' => 'cassandra',
-  'truststore' => '/etc/cassandra/cassandra.truststore',
+  'truststore' => '/opt/cassandra/cassandra.truststore',
   'truststore_password' => 'cassandra',
   'protocol' => 'TLS',
   'accepted_protocols' => ['TLSv1.2', 'TLSv1.3'],
@@ -169,11 +174,11 @@ default['axonops']['cassandra']['server_encryption_options'] = {
 }
 
 default['axonops']['cassandra']['client_encryption_options'] = {
-  'enabled' => false,
-  'keystore' => '/etc/cassandra/cassandra.keystore',
+  'enabled' => true,
+  'keystore' => '/opt/cassandra/cassandra.keystore',
   'keystore_password' => 'cassandra',
   'require_client_auth' => false,
-  'truststore' => '/etc/cassandra/cassandra.truststore',
+  'truststore' => '/opt/cassandra/cassandra.truststore',
   'truststore_password' => 'cassandra',
   'protocol' => 'TLS',
   'accepted_protocols' => ['TLSv1.2', 'TLSv1.3'],

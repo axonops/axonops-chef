@@ -18,6 +18,10 @@ directory "#{cassandra_home}/conf" do
   mode '0755'
 end
 
+if node['axonops']['cassandra']['ssl']['self_signed']
+  include_recipe 'axonops::cassandra_self_signed'
+end
+
 # Main cassandra.yaml configuration
 template "#{cassandra_home}/conf/cassandra.yaml" do
   source 'cassandra.yaml.erb'
