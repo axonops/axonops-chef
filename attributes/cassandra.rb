@@ -155,9 +155,9 @@ default['axonops']['cassandra']['ssl']['enabled'] = true
 # Whether to create a self-signed keystore
 default['axonops']['cassandra']['ssl']['self_signed'] = true
 default['axonops']['cassandra']['ssl']['skip_verify'] = true
-default['axonops']['cassandra']['ssl']['ca_file'] = '/opt/cassandra/ca.pem'
-default['axonops']['cassandra']['ssl']['cert_file'] = '/opt/cassandra/cert.pem'
-default['axonops']['cassandra']['ssl']['key_file'] = '/opt/cassandra/key.pem'
+default['axonops']['cassandra']['ssl']['ca_file'] = '/opt/cassandra/conf/ca.pem'
+default['axonops']['cassandra']['ssl']['cert_file'] = '/opt/cassandra/conf/cert.pem'
+default['axonops']['cassandra']['ssl']['key_file'] = '/opt/cassandra/conf/key.pem'
 
 ## path to keytool if required
 default['axonops']['cassandra']['ssl']['keytool'] = nil

@@ -70,3 +70,38 @@ end
 
 # Configure Cassandra
 include_recipe 'axonops::configure_cassandra'
+
+systemd_unit 'cassandra.service' do
+  content({
+    'Unit' => {
+      'Description' => 'Apache Cassandra',
+      'After' => 'network.target'
+    },
+    'Service' => {
+      'Type' => 'forking',
+      'ExecStart' => "#{cassandra_current}/bin/cassandra -p /var/run/cassandra/cassandra.pid",
+      'User' => cassandra_user,
+      'Group' => cassandra_group,
+      'LimitNOFILE' => 100000,
+      'LimitMEMLOCK' => 'infinity',
+      'LimitNPROC' => 32768,
+      'LimitAS' => 'infinity',
+      'Environment' => "CASSANDRA_HOME=#{cassandra_current}",
+      'PIDFile' => '/var/run/cassandra/cassandra.pid',
+      'RuntimeDirectory' => 'cassandra',
+      'RuntimeDirectoryMode' => '0755',
+      'Restart' => 'on-failure',
+      'RestartSec' => 10
+    },
+    'Install' => {
+      'WantedBy' => 'multi-user.target'
+    }
+  })
+  action [:create, :enable, :start]
+  notifies :run, 'execute[systemctl-daemon-reload]', :immediately
+end
+
+execute 'systemctl-daemon-reload' do
+  command 'systemctl daemon-reload'
+  action :nothing
+end
