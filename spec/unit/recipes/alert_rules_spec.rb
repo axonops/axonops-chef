@@ -417,6 +417,33 @@ describe 'axonops::alert_rules' do
   end
 
   context 'edge cases and error handling' do
+    it 'handles routing as a Hash structure' do
+      chef_run = ChefSpec::ServerRunner.new(platform: 'ubuntu', version: '20.04') do |node|
+        node.automatic['axonops']['api']['org'] = 'test-org'
+        node.automatic['axonops']['api']['cluster'] = 'test-cluster'
+        node.automatic['axonops']['alert_rules'] = [
+          {
+            'name' => 'Hash Routing Alert',
+            'dashboard' => 'System',
+            'chart' => 'CPU usage',
+            'operator' => '>',
+            'warning_value' => 80,
+            'critical_value' => 90,
+            'duration' => '15m',
+            'routing' => {
+              'error' => ['example_pagerduty_integration_developer'],
+              'warning' => ['example_pagerduty_integration_developer', 'example_pagerduty_integration_ops']
+            }
+          }
+        ]
+      end.converge(described_recipe)
+      
+      # Should flatten the hash values into a single array
+      expect(chef_run).to create_axonops_alert_rule('Hash Routing Alert').with(
+        routing: ['example_pagerduty_integration_developer', 'example_pagerduty_integration_ops']
+      )
+    end
+
     it 'handles empty configurations gracefully' do
       chef_run = ChefSpec::ServerRunner.new(platform: 'ubuntu', version: '20.04') do |node|
         node.automatic['axonops']['alert_rules'] = []
