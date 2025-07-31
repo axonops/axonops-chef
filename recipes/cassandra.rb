@@ -71,6 +71,9 @@ end
 # Configure Cassandra
 include_recipe 'axonops::configure_cassandra'
 
+install_dir = node['axonops']['cassandra']['install_dir']
+cassandra_current = "#{install_dir}/cassandra"
+
 systemd_unit 'cassandra.service' do
   content({
     'Unit' => {
