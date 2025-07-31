@@ -77,8 +77,8 @@ Use existing Elasticsearch and/or Cassandra installations:
 
 ```ruby
 # Use external Elasticsearch
-node.override['axonops']['server']['elasticsearch']['install'] = false
-node.override['axonops']['server']['elasticsearch']['url'] = 'http://elastic.example.com:9200'
+node.override['axonops']['server']['elastic']['install'] = false
+node.override['axonops']['server']['search_db']['hosts'] = ['http://elastic.example.com:9200/']
 
 # Use external Cassandra
 node.override['axonops']['server']['cassandra']['install'] = false
@@ -119,8 +119,7 @@ Settings for embedded Elasticsearch:
 
 | Attribute | Default | Description |
 |-----------|---------|-------------|
-| `['axonops']['server']['elasticsearch']['install']` | `true` | Install embedded Elasticsearch |
-| `['axonops']['server']['elasticsearch']['url']` | `http://127.0.0.1:9200` | Elasticsearch URL (if external) |
+| `['axonops']['server']['elastic']['install']` | `true` | Install embedded Elasticsearch |
 | `['axonops']['server']['elastic']['version']` | `7.17.26` | Elasticsearch version |
 | `['axonops']['server']['elastic']['heap_size']` | `512m` | JVM heap size |
 | `['axonops']['server']['elastic']['cluster_name']` | `axonops-cluster` | Cluster name |
@@ -128,6 +127,25 @@ Settings for embedded Elasticsearch:
 | `['axonops']['server']['elastic']['listen_port']` | `9200` | Listen port |
 | `['axonops']['server']['elastic']['data_dir']` | `/var/lib/axonops-search/data` | Data directory |
 | `['axonops']['server']['elastic']['logs_dir']` | `/var/log/axonops-search` | Logs directory |
+
+### Search Database Configuration (New Format)
+
+Settings for Elasticsearch connection (new `search_db` format):
+
+**Note:** The new `search_db` format is only supported in axon-server version 2.0.4 and above. For older versions, the cookbook automatically uses the legacy `elastic_host` and `elastic_port` format.
+
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `['axonops']['server']['search_db']['hosts']` | `['http://localhost:9200/']` | Array of Elasticsearch hosts |
+| `['axonops']['server']['search_db']['username']` | `nil` | Username for authentication |
+| `['axonops']['server']['search_db']['password']` | `nil` | Password for authentication |
+| `['axonops']['server']['search_db']['skip_verify']` | `false` | Skip SSL/TLS verification |
+| `['axonops']['server']['search_db']['replicas']` | `0` | Number of replicas per shard |
+| `['axonops']['server']['search_db']['shards']` | `1` | Number of shards per index |
+
+The cookbook automatically detects the axon-server version and uses the appropriate configuration format:
+- **axon-server >= 2.0.4**: Uses the new `search_db` format
+- **axon-server < 2.0.4**: Uses the legacy `elastic_host` and `elastic_port` format
 
 ### Cassandra Configuration
 
@@ -238,11 +256,18 @@ Using existing Elasticsearch and Cassandra clusters:
 
 ```ruby
 # Don't install embedded services
-node.override['axonops']['server']['elasticsearch']['install'] = false
+node.override['axonops']['server']['elastic']['install'] = false
 node.override['axonops']['server']['cassandra']['install'] = false
 
-# Point to external services
-node.override['axonops']['server']['elasticsearch']['url'] = 'http://elastic-cluster.internal:9200'
+# Point to external services using new search_db format
+node.override['axonops']['server']['search_db']['hosts'] = [
+  'http://elastic-cluster.internal:9200/',
+  'http://elastic-cluster2.internal:9200/'
+]
+node.override['axonops']['server']['search_db']['username'] = 'elastic'
+node.override['axonops']['server']['search_db']['password'] = 'secure_password'
+node.override['axonops']['server']['search_db']['skip_verify'] = true  # For self-signed certs
+
 node.override['axonops']['server']['cassandra']['hosts'] = [
   'cassandra1.internal',
   'cassandra2.internal',
@@ -264,9 +289,9 @@ For HA deployments (requires external load balancer):
 node.override['axonops']['server']['listen_address'] = '10.0.1.10'
 
 # Use shared external storage
-node.override['axonops']['server']['elasticsearch']['install'] = false
+node.override['axonops']['server']['elastic']['install'] = false
 node.override['axonops']['server']['cassandra']['install'] = false
-node.override['axonops']['server']['elasticsearch']['url'] = 'http://elastic-vip:9200'
+node.override['axonops']['server']['search_db']['hosts'] = ['http://elastic-vip:9200/']
 node.override['axonops']['server']['cassandra']['hosts'] = ['cassandra-vip']
 
 # Enable mTLS for inter-service communication

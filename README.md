@@ -436,8 +436,15 @@ include_recipe 'axonops::agent'
 
 ```ruby
 # Use existing Elasticsearch and Cassandra
-node.override['axonops']['server']['elasticsearch']['install'] = false
-node.override['axonops']['server']['elasticsearch']['url'] = 'http://elastic:9200'
+node.override['axonops']['server']['elastic']['install'] = false
+
+# For axon-server >= 2.0.4, use the new search_db format
+node.override['axonops']['server']['search_db']['hosts'] = ['http://elastic:9200/']
+node.override['axonops']['server']['search_db']['username'] = 'elastic'
+node.override['axonops']['server']['search_db']['password'] = 'secure-password'
+
+# The cookbook automatically handles older versions using elastic_host/elastic_port
+
 node.override['axonops']['server']['cassandra']['install'] = false
 node.override['axonops']['server']['cassandra']['hosts'] = ['cassandra1', 'cassandra2']
 
@@ -585,6 +592,6 @@ AxonOps is a comprehensive monitoring and management platform designed specifica
 
 Learn more at [axonops.com](https://axonops.com/)
 
----
+***
 
-**Note**: This cookbook is designed for Chef Supermarket distribution. For the latest updates and releases, check the [Chef Supermarket](https://supermarket.chef.io/cookbooks/axonops) page.
+*This project may contain trademarks or logos for projects, products, or services. Any use of third-party trademarks or logos are subject to those third-party's policies. AxonOps is a registered trademark of AxonOps Limited. Apache, Apache Cassandra, Cassandra, Apache Spark, Spark, Apache TinkerPop, TinkerPop, Apache Kafka and Kafka are either registered trademarks or trademarks of the Apache Software Foundation or its subsidiaries in Canada, the United States and/or other countries. Elasticsearch is a trademark of Elasticsearch B.V., registered in the U.S. and in other countries. Docker is a trademark or registered trademark of Docker, Inc. in the United States and/or other countries.*

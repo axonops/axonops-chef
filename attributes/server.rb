@@ -18,7 +18,14 @@ default['axonops']['server']['elastic']['listen_address'] = '127.0.0.1'
 default['axonops']['server']['elastic']['listen_port'] = 9200
 default['axonops']['server']['elastic']['tarball_url'] = 'https://artifacts.elastic.co/downloads/elasticsearch'
 default['axonops']['server']['elastic']['install'] = true
-default['axonops']['server']['elastic']['url'] = 'http://127.0.0.1:9200'
+
+# Search DB configuration (new format)
+default['axonops']['server']['search_db']['hosts'] = ['http://localhost:9200/']
+default['axonops']['server']['search_db']['username'] = nil
+default['axonops']['server']['search_db']['password'] = nil
+default['axonops']['server']['search_db']['skip_verify'] = false
+default['axonops']['server']['search_db']['replicas'] = 0
+default['axonops']['server']['search_db']['shards'] = 1
 
 # Internal Cassandra for AxonOps Metrics Storage
 default['axonops']['server']['cassandra']['version'] = '5.0.4'
