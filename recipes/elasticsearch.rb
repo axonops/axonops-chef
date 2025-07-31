@@ -168,6 +168,8 @@ execute "fix-elasticsearch-permissions" do
   only_if { ::File.exist?(elastic_install_dir_versioned) }
 end
 
+include_recipe 'axonops::elastic_self_signed'
+
 # Reload systemd
 execute 'systemctl-daemon-reload' do
   command 'systemctl daemon-reload'
