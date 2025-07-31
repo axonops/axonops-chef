@@ -1612,7 +1612,6 @@ client_encryption_options:
 <% end %>
   # Set keystore and keystore_password to valid keystores if enabled is true
   keystore: <%= @client_encryption_options['keystore'] %>
-  keystore_password: <%= @client_encryption_options['keystore_password'] %>
 <% if @client_encryption_options['keystore_password_file'] && !@client_encryption_options['keystore_password_file'].empty? %>
   keystore_password_file: <%= @server_encryption_options['keystore_password_file'] %>
 <% else %>

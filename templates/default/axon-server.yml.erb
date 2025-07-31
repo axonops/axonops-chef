@@ -52,7 +52,7 @@ cql_key_file: <%= node['axonops']['cassandra']['ssl']['key_file'] %>
 <% end %>
 <% end %>
 cql_autocreate_tables: <%= node['axonops']['cassandra']['ssl']['autocreate_tables'] || true %>
-cql_keyspace_replication: <%= node['axonops']['cassandra']['ssl']['keyspace_replication'] || "{ 'class' : 'SimpleStrategy', 'replication_factor' : 1 }" %>
+cql_keyspace_replication: "<%= node['axonops']['server']['cassandra']['keyspace_replication'] %>"
 cql_read_consistency: <%= node['axonops']['cassandra']['ssl']['read_consistency'] || "LOCAL_ONE" %>
 cql_write_consistency: <%= node['axonops']['cassandra']['ssl']['read_consistency'] || "WRITE_ONE" %>
 

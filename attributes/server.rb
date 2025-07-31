@@ -34,8 +34,9 @@ default['axonops']['server']['search_db']['shards'] = 1
 
 # Internal Cassandra for AxonOps Metrics Storage
 default['axonops']['server']['cassandra']['version'] = '5.0.4'
-default['axonops']['server']['cassandra']['cluster_name'] = 'axonops-cluster'
-default['axonops']['server']['cassandra']['dc'] = 'axonops'
+default['axonops']['server']['cassandra']['cluster_name'] = nil
+default['axonops']['server']['cassandra']['dc'] = nil
+default['axonops']['server']['cassandra']['rack'] = nil
 default['axonops']['server']['cassandra']['username'] = 'cassandra'
 default['axonops']['server']['cassandra']['password'] = 'cassandra'
 default['axonops']['server']['cassandra']['install_dir'] = '/opt'
@@ -44,6 +45,7 @@ default['axonops']['server']['cassandra']['data_file_directories'] = ['/var/lib/
 default['axonops']['server']['cassandra']['compaction_strategy'] = 'SizeTieredCompactionStrategy'
 default['axonops']['server']['cassandra']['install'] = true
 default['axonops']['server']['cassandra']['hosts'] = ['localhost:9042']
+default['axonops']['server']['cassandra']['keyspace_replication'] = "{ 'class' : 'SimpleStrategy', 'replication_factor' : 1 }"
 
 # TLS Configuration
 default['axonops']['server']['tls']['mode'] = 'disabled' # 'disabled', 'TLS', 'mTLS'

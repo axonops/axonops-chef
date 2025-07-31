@@ -96,7 +96,7 @@ bash 'generate_cassandra_keystore' do
     chmod 600 #{truststore_path}
     chmod 644 #{node['axonops']['cassandra']['ssl']['cert_file']}
     chmod 644 #{node['axonops']['cassandra']['ssl']['ca_file']}
-    chmod 600 #{node['axonops']['cassandra']['ssl']['key_file']}
+    chmod 640 #{node['axonops']['cassandra']['ssl']['key_file']}
   EOH
   not_if { ::File.exist?(keystore_path) && ::File.exist?(truststore_path) }
 end
@@ -124,6 +124,12 @@ port = 9042
 
 [ssl]
 validate = false
+; The path to a trusted certificate file.
+ca_certs = #{node['axonops']['cassandra']['ssl']['cert_file']}
+; The path to your client certificate file.
+certfile = #{node['axonops']['cassandra']['ssl']['cert_file']}
+; The path to your client private key file.
+keyfile = #{node['axonops']['cassandra']['ssl']['key_file']}
 EOH
     owner 'root'
     group 'root'

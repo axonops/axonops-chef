@@ -29,7 +29,7 @@ template "#{cassandra_home}/conf/cassandra.yaml" do
   group cassandra_group
   mode '0644'
   variables(
-    cluster_name: node['axonops']['cassandra']['cluster_name'],
+    cluster_name: node['axonops']['server']['cassandra']['cluster_name'] ||  node['axonops']['cassandra']['cluster_name'],
     num_tokens: node['axonops']['cassandra']['num_tokens'],
     data_file_directories: ["#{data_root}/data"],
     commitlog_directory: "#{data_root}/commitlog",
@@ -152,8 +152,8 @@ if node['axonops']['cassandra']['endpoint_snitch'].include?('PropertyFileSnitch'
     group cassandra_group
     mode '0644'
     variables(
-      datacenter: node['axonops']['cassandra']['datacenter'],
-      rack: node['axonops']['cassandra']['rack']
+      datacenter: node['axonops']['server']['cassandra']['dc'] || node['axonops']['cassandra']['datacenter'],
+      rack: node['axonops']['server']['cassandra']['rack'] || node['axonops']['cassandra']['rack']
     )
     notifies :restart, 'service[cassandra]', :delayed
   end
