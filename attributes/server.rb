@@ -20,14 +20,15 @@ default['axonops']['server']['elastic']['tarball_url'] = 'https://artifacts.elas
 default['axonops']['server']['elastic']['install'] = true
 default['axonops']['server']['elastic']['ssl']['enabled'] = true
 default['axonops']['server']['elastic']['ssl']['self_signed'] = true
-# this would contain server-cert.pem, server-key.pm and ca-cert.pem
+# this would contain server-cert.pem, server-key.pem and ca-cert.pem
 default['axonops']['server']['elastic']['ssl']['path'] = '/opt/axonops-search/config/certs'
 
 # Search DB configuration (new format)
-default['axonops']['server']['search_db']['hosts'] = ['http://localhost:9200/']
+default['axonops']['server']['search_db']['hosts'] = ['https://localhost:9200/']
 default['axonops']['server']['search_db']['username'] = nil
 default['axonops']['server']['search_db']['password'] = nil
-default['axonops']['server']['search_db']['skip_verify'] = false
+# change to false if you're not using the self-signed certs provided with this recipe
+default['axonops']['server']['search_db']['skip_verify'] = true
 default['axonops']['server']['search_db']['replicas'] = 0
 default['axonops']['server']['search_db']['shards'] = 1
 
