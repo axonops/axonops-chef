@@ -110,66 +110,45 @@ default['axonops']['alert_rules'] = [
     'name' => 'Coordinator Read Latency - LOCAL_QUORUM 99thPercentile',
     'dashboard' => 'Coordinator',
     'chart' => 'Coordinator Read $consistency Latency - $percentile',
-    'metric' => {
-      'consistency' => ['LOCAL_QUORUM'],
-      'percentile' => ['99thPercentile']
-    },
     'operator' => '>=',
     'critical_value' => 2000000,
     'warning_value' => 1000000,
     'duration' => '15m',
     'description' => 'Detected high LOCAL_QUORUM Coordinator Read 99thPercentile latency',
-    'routing' => {
-      'error' => ['example_pagerduty_integration_developer'],
-      'warning' => ['example_pagerduty_integration_developer', 'example_pagerduty_integration_ops']
-    },
+    'routing' => ['example_pagerduty_integration_developer', 'example_pagerduty_integration_ops'],
+    'routing_severity' => 'warning',
     'action' => 'create'
   },
   {
     'name' => 'Coordinator Read Latency - LOCAL_ONE 99thPercentile',
     'dashboard' => 'Coordinator',
     'chart' => 'Coordinator Read $consistency Latency - $percentile',
-    'metric' => {
-      'consistency' => ['LOCAL_ONE'],
-      'percentile' => ['99thPercentile']
-    },
     'operator' => '>=',
     'critical_value' => 2000000,
     'warning_value' => 1000000,
     'duration' => '15m',
     'description' => 'Detected high LOCAL_ONE Coordinator Read 99thPercentile latency',
-    'routing' => {
-      'error' => ['example_pagerduty_integration_developer'],
-      'warning' => ['example_pagerduty_integration_developer', 'example_pagerduty_integration_ops']
-    },
+    'routing' => ['example_pagerduty_integration_developer', 'example_pagerduty_integration_ops'],
+    'routing_severity' => 'warning',
     'action' => 'create'
   },
   {
     'name' => 'Coordinator Range Read Latency - 99thPercentile',
     'dashboard' => 'Coordinator',
     'chart' => 'Coordinator Range Read Request Latency - $percentile',
-    'metric' => {
-      'percentile' => ['99thPercentile']
-    },
     'operator' => '>=',
     'critical_value' => 2500000,
     'warning_value' => 1500000,
     'duration' => '15m',
     'description' => 'Detected high Coordinator Read 99thPercentile latency',
-    'routing' => {
-      'error' => ['example_pagerduty_integration_developer'],
-      'warning' => ['example_pagerduty_integration_developer', 'example_pagerduty_integration_ops']
-    },
+    'routing' => ['example_pagerduty_integration_developer', 'example_pagerduty_integration_ops'],
+    'routing_severity' => 'warning',
     'action' => 'create'
   },
   {
     'name' => 'Coordinator Write Latency - LOCAL_QUORUM 99thPercentile',
     'dashboard' => 'Coordinator',
     'chart' => 'Coordinator Write $consistency Latency - $percentile',
-    'metric' => {
-      'consistency' => ['LOCAL_QUORUM'],
-      'percentile' => ['99thPercentile']
-    },
     'operator' => '>=',
     'critical_value' => 1500000,
     'warning_value' => 1000000,
@@ -181,10 +160,6 @@ default['axonops']['alert_rules'] = [
     'name' => 'Coordinator Write Latency - LOCAL_ONE 99thPercentile',
     'dashboard' => 'Coordinator',
     'chart' => 'Coordinator Write $consistency Latency - $percentile',
-    'metric' => {
-      'consistency' => ['LOCAL_ONE'],
-      'percentile' => ['99thPercentile']
-    },
     'operator' => '>=',
     'critical_value' => 1500000,
     'warning_value' => 1000000,
