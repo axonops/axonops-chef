@@ -130,8 +130,6 @@ default['axonops']['cassandra']['endpoint_snitch'] = 'SimpleSnitch'
 default['axonops']['cassandra']['dynamic_snitch_update_interval'] = '100ms'
 default['axonops']['cassandra']['dynamic_snitch_reset_interval'] = '600000ms'
 default['axonops']['cassandra']['dynamic_snitch_badness_threshold'] = 0.1
-default['axonops']['cassandra']['dc'] = nil  # For GossipingPropertyFileSnitch
-default['axonops']['cassandra']['rack'] = nil  # For GossipingPropertyFileSnitch
 default['axonops']['cassandra']['prefer_local'] = nil  # For GossipingPropertyFileSnitch
 
 # Security Configuration
@@ -174,7 +172,7 @@ default['axonops']['cassandra']['server_encryption_options'] = {
   'accepted_protocols' => ['TLSv1.2', 'TLSv1.3'],
   'algorithm' => 'SunX509',
   'store_type' => 'JKS',
-  'cipher_suites' => ['TLS_RSA_WITH_AES_128_CBC_SHA', 'TLS_RSA_WITH_AES_256_CBC_SHA'],
+  'cipher_suites' => ['TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384', 'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA', 'TLS_RSA_WITH_AES_256_CBC_SHA'],
   'require_client_auth' => false,
   'require_endpoint_verification' => false
 }
@@ -190,7 +188,7 @@ default['axonops']['cassandra']['client_encryption_options'] = {
   'accepted_protocols' => ['TLSv1.2', 'TLSv1.3'],
   'algorithm' => 'SunX509',
   'store_type' => 'JKS',
-  'cipher_suites' => ['TLS_RSA_WITH_AES_128_CBC_SHA', 'TLS_RSA_WITH_AES_256_CBC_SHA']
+  'cipher_suites' => ['TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384', 'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA', 'TLS_RSA_WITH_AES_256_CBC_SHA'],
 }
 
 # Timeouts

@@ -44,7 +44,7 @@ default['axonops']['server']['cassandra']['data_dir'] = '/var/lib/axonops-data'
 default['axonops']['server']['cassandra']['data_file_directories'] = ['/var/lib/cassandra/data']
 default['axonops']['server']['cassandra']['compaction_strategy'] = 'SizeTieredCompactionStrategy'
 default['axonops']['server']['cassandra']['install'] = true
-default['axonops']['server']['cassandra']['hosts'] = ['localhost:9042']
+default['axonops']['server']['cassandra']['hosts'] = ['127.0.0.1:9042']
 default['axonops']['server']['cassandra']['keyspace_replication'] = "{ 'class' : 'SimpleStrategy', 'replication_factor' : 1 }"
 
 # TLS Configuration
