@@ -18,7 +18,7 @@ when 'debian'
   # Add AxonOps GPG key
   execute 'add-axonops-apt-key' do
     command 'curl -L https://packages.axonops.com/apt/repo-signing-key.gpg | gpg --dearmor -o /usr/share/keyrings/axonops.gpg'
-    not_if { ::File.exists?('/usr/share/keyrings/axonops.gpg') }
+    not_if { ::File.exist?('/usr/share/keyrings/axonops.gpg') }
   end
 
   # Configure APT repository
