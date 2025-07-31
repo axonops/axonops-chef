@@ -151,8 +151,14 @@ default['axonops']['cassandra']['credentials_cache_max_entries'] = 1000
 default['axonops']['cassandra']['credentials_update_interval'] = nil
 default['axonops']['cassandra']['auth_cache_warming_enabled'] = true
 
+default['axonops']['cassandra']['ssl']['enabled'] = true
 # Whether to create a self-signed keystore
 default['axonops']['cassandra']['ssl']['self_signed'] = true
+default['axonops']['cassandra']['ssl']['skip_verify'] = true
+default['axonops']['cassandra']['ssl']['ca_file'] = '/opt/cassandra/ca.pem'
+default['axonops']['cassandra']['ssl']['cert_file'] = '/opt/cassandra/cert.pem'
+default['axonops']['cassandra']['ssl']['key_file'] = '/opt/cassandra/key.pem'
+
 ## path to keytool if required
 default['axonops']['cassandra']['ssl']['keytool'] = nil
 
