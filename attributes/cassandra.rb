@@ -407,7 +407,7 @@ default['axonops']['cassandra']['audit_log_max_history'] = 30
 default['axonops']['cassandra']['audit_log_total_size_cap'] = '5GB'
 
 # Rack/DC configuration for GossipingPropertyFileSnitch
-default['axonops']['cassandra']['datacenter'] = 'dc1'
+default['axonops']['cassandra']['dc'] = 'dc1'
 default['axonops']['cassandra']['rack'] = 'rack1'
 default['axonops']['cassandra']['dc_suffix'] = nil
 default['axonops']['cassandra']['prefer_local'] = nil
