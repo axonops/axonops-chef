@@ -16,9 +16,26 @@ http.port: <%= @listen_port %>
 discovery.type: <%= @discovery_type %>
 
 # Security
+<% if node['axonops']['server']['elastic']['ssl']['enabled'] %>
+xpack.security.http.ssl.enabled: true
+
+# HTTP Layer (Client to Elasticsearch)
+xpack.security.http.ssl.verification_mode: certificate # or full, if you want hostname verification
+xpack.security.http.ssl.certificate_authorities: <%= node['axonops']['server']['elastic']['ssl']['path'] %>/ca-cert.pem
+xpack.security.http.ssl.certificate: <%= node['axonops']['server']['elastic']['ssl']['path'] %>/server-cert.pem
+xpack.security.http.ssl.key: <%= node['axonops']['server']['elastic']['ssl']['path'] %>/server-key.pem
+
+# Transport Layer (Inter-node communication)
+xpack.security.transport.ssl.enabled: true
+xpack.security.transport.ssl.verification_mode: certificate # or full, if you want hostname verification
+xpack.security.transport.ssl.certificate_authorities: <%= node['axonops']['server']['elastic']['ssl']['path'] %>/ca-cert.pem
+xpack.security.transport.ssl.certificate: <%= node['axonops']['server']['elastic']['ssl']['path'] %>/server-cert.pem
+xpack.security.transport.ssl.key: <%= node['axonops']['server']['elastic']['ssl']['path'] %>/server-key.pem
+<% else %>
 xpack.security.enabled: false
 xpack.security.transport.ssl.enabled: false
 xpack.security.http.ssl.enabled: false
+<% end %>
 
 # Monitoring
 xpack.monitoring.enabled: true

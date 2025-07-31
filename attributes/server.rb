@@ -6,7 +6,7 @@
 #
 
 # Internal Elasticsearch for AxonOps Server
-default['axonops']['server']['elastic']['version'] = '7.17.26'
+default['axonops']['server']['elastic']['version'] = '7.17.28'
 default['axonops']['server']['elastic']['heap_size'] = '512m'
 default['axonops']['server']['elastic']['cluster_name'] = 'axonops-cluster'
 default['axonops']['server']['elastic']['install_dir'] = '/opt/axonops-search'
@@ -18,12 +18,17 @@ default['axonops']['server']['elastic']['listen_address'] = '127.0.0.1'
 default['axonops']['server']['elastic']['listen_port'] = 9200
 default['axonops']['server']['elastic']['tarball_url'] = 'https://artifacts.elastic.co/downloads/elasticsearch'
 default['axonops']['server']['elastic']['install'] = true
+default['axonops']['server']['elastic']['ssl']['enabled'] = true
+default['axonops']['server']['elastic']['ssl']['self_signed'] = true
+# this would contain server-cert.pem, server-key.pem and ca-cert.pem
+default['axonops']['server']['elastic']['ssl']['path'] = '/opt/axonops-search/config/certs'
 
 # Search DB configuration (new format)
-default['axonops']['server']['search_db']['hosts'] = ['http://localhost:9200/']
+default['axonops']['server']['search_db']['hosts'] = ['https://localhost:9200/']
 default['axonops']['server']['search_db']['username'] = nil
 default['axonops']['server']['search_db']['password'] = nil
-default['axonops']['server']['search_db']['skip_verify'] = false
+# change to false if you're not using the self-signed certs provided with this recipe
+default['axonops']['server']['search_db']['skip_verify'] = true
 default['axonops']['server']['search_db']['replicas'] = 0
 default['axonops']['server']['search_db']['shards'] = 1
 
