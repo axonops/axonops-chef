@@ -20,12 +20,11 @@ if node['axonops'] && node['axonops']['alert_rules']
       routing_value = alert_rule['routing']
       if routing_value.is_a?(Hash)
         # If routing is a Hash with severity levels, flatten all values into a single array
-        routing_value.values.flatten.compact.uniq
-      else
+        routing routing_value.values.flatten.compact.uniq
+      elsif routing_value
         # If routing is already an Array or can be converted to one
-        Array(routing_value).compact
+        routing Array(routing_value).compact
       end
-      routing        routing_value
       routing_severity alert_rule['routing_severity'] if alert_rule['routing_severity']
       action         alert_rule['action'] ? alert_rule['action'].to_sym : :create
     end

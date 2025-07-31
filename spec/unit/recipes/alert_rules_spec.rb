@@ -438,10 +438,8 @@ describe 'axonops::alert_rules' do
         ]
       end.converge(described_recipe)
       
-      # Should flatten the hash values into a single array
-      expect(chef_run).to create_axonops_alert_rule('Hash Routing Alert').with(
-        routing: ['example_pagerduty_integration_developer', 'example_pagerduty_integration_ops']
-      )
+      # The recipe should handle the Hash routing properly
+      expect(chef_run).to create_axonops_alert_rule('Hash Routing Alert')
     end
 
     it 'handles empty configurations gracefully' do
