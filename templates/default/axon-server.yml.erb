@@ -42,14 +42,12 @@ cql_password: "<%= @cassandra_password %>"
 cql_local_dc: "<%= @cassandra_dc %>"
 cql_ssl: <%= node['axonops']['cassandra']['ssl']['enabled'] %>
 cql_skip_verify: <%= node['axonops']['cassandra']['ssl']['cql_skip_verify'] || true %>
-<% if !node['axonops']['cassandra']['ssl']['self_signed'] %>
 <% if node['axonops']['cassandra']['ssl']['ca_file'] %>
 cql_ca_file: <%= node['axonops']['cassandra']['ssl']['ca_file'] %>
 <% end %>
 <% if node['axonops']['cassandra']['ssl']['cert_file'] && node['axonops']['cassandra']['ssl']['key_file'] %>
 cql_cert_file: <%= node['axonops']['cassandra']['ssl']['cert_file'] %>
 cql_key_file: <%= node['axonops']['cassandra']['ssl']['key_file'] %>
-<% end %>
 <% end %>
 cql_autocreate_tables: <%= node['axonops']['cassandra']['ssl']['autocreate_tables'] || true %>
 cql_keyspace_replication: "<%= node['axonops']['server']['cassandra']['keyspace_replication'] %>"

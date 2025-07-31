@@ -16,7 +16,7 @@ default['axonops']['cassandra']['directories'] = {
 }
 
 # Cluster Configuration
-default['axonops']['cassandra']['cluster_name'] = 'Test Cluster'
+default['axonops']['cassandra']['cluster_name'] = 'AxonOps Cluster'
 default['axonops']['cassandra']['num_tokens'] = 16
 default['axonops']['cassandra']['allocate_tokens_for_local_replication_factor'] = 3
 default['axonops']['cassandra']['initial_token'] = nil
