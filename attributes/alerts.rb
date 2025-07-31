@@ -115,10 +115,8 @@ default['axonops']['alert_rules'] = [
     'warning_value' => 1000000,
     'duration' => '15m',
     'description' => 'Detected high LOCAL_QUORUM Coordinator Read 99thPercentile latency',
-    'routing' => {
-      'error' => ['example_pagerduty_integration_developer'],
-      'warning' => ['example_pagerduty_integration_developer', 'example_pagerduty_integration_ops']
-    },
+    'routing' => ['example_pagerduty_integration_developer', 'example_pagerduty_integration_ops'],
+    'routing_severity' => 'warning',
     'action' => 'create'
   },
   {
@@ -130,10 +128,8 @@ default['axonops']['alert_rules'] = [
     'warning_value' => 1000000,
     'duration' => '15m',
     'description' => 'Detected high LOCAL_ONE Coordinator Read 99thPercentile latency',
-    'routing' => {
-      'error' => ['example_pagerduty_integration_developer'],
-      'warning' => ['example_pagerduty_integration_developer', 'example_pagerduty_integration_ops']
-    },
+    'routing' => ['example_pagerduty_integration_developer', 'example_pagerduty_integration_ops'],
+    'routing_severity' => 'warning',
     'action' => 'create'
   },
   {
@@ -145,10 +141,8 @@ default['axonops']['alert_rules'] = [
     'warning_value' => 1500000,
     'duration' => '15m',
     'description' => 'Detected high Coordinator Read 99thPercentile latency',
-    'routing' => {
-      'error' => ['example_pagerduty_integration_developer'],
-      'warning' => ['example_pagerduty_integration_developer', 'example_pagerduty_integration_ops']
-    },
+    'routing' => ['example_pagerduty_integration_developer', 'example_pagerduty_integration_ops'],
+    'routing_severity' => 'warning',
     'action' => 'create'
   },
   {
