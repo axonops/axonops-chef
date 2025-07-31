@@ -37,24 +37,24 @@ cql_hosts:
 <% @cassandra_hosts.each do |host| -%>
   - "<%= host %>"
 <% end -%>
-  cql_username: "<%= @cassandra_username %>"
-  cql_password: "<%= @cassandra_password %>"
-  cql_local_dc: "<%= @cassandra_dc %>"
-  cql_ssl: <%= node['axonops']['cassandra']['ssl']['enabled'] %>
-  cql_skip_verify: <%= node['axonops']['cassandra']['ssl']['cql_skip_verify'] || true %>
+cql_username: "<%= @cassandra_username %>"
+cql_password: "<%= @cassandra_password %>"
+cql_local_dc: "<%= @cassandra_dc %>"
+cql_ssl: <%= node['axonops']['cassandra']['ssl']['enabled'] %>
+cql_skip_verify: <%= node['axonops']['cassandra']['ssl']['cql_skip_verify'] || true %>
 <% if !node['axonops']['cassandra']['ssl']['self_signed'] %>
 <% if node['axonops']['cassandra']['ssl']['ca_file'] %>
-  cql_ca_file: <%= node['axonops']['cassandra']['ssl']['ca_file'] %>
+cql_ca_file: <%= node['axonops']['cassandra']['ssl']['ca_file'] %>
 <% end %>
 <% if node['axonops']['cassandra']['ssl']['cert_file'] && node['axonops']['cassandra']['ssl']['key_file'] %>
-  cql_cert_file: <%= node['axonops']['cassandra']['ssl']['cert_file'] %>
-  cql_key_file: <%= node['axonops']['cassandra']['ssl']['key_file'] %>
+cql_cert_file: <%= node['axonops']['cassandra']['ssl']['cert_file'] %>
+cql_key_file: <%= node['axonops']['cassandra']['ssl']['key_file'] %>
 <% end %>
 <% end %>
-  cql_autocreate_tables: <%= node['axonops']['cassandra']['ssl']['autocreate_tables'] || true %>
-  cql_keyspace_replication: "{ 'class' : 'SimpleStrategy', 'replication_factor' : 1 }" # (CQL_KS_REPLICATION) keyspace replication for the metrics tables
-  cql_read_consistency: <%= node['axonops']['cassandra']['ssl']['read_consistency'] || "LOCAL_ONE" %>
-  cql_write_consistency: <%= node['axonops']['cassandra']['ssl']['read_consistency'] || "WRITE_ONE" %>
+cql_autocreate_tables: <%= node['axonops']['cassandra']['ssl']['autocreate_tables'] || true %>
+cql_keyspace_replication: <%= node['axonops']['cassandra']['ssl']['keyspace_replication'] || "{ 'class' : 'SimpleStrategy', 'replication_factor' : 1 }" %>
+cql_read_consistency: <%= node['axonops']['cassandra']['ssl']['read_consistency'] || "LOCAL_ONE" %>
+cql_write_consistency: <%= node['axonops']['cassandra']['ssl']['read_consistency'] || "WRITE_ONE" %>
 
 <% if @tls_mode != 'disabled' -%>
 tls:
