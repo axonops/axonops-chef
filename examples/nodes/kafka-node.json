@@ -1,0 +1,21 @@
+{
+  "name": "chef01",
+  "description": "Kafka node with AxonOps agent monitoring",
+  "normal": {
+    "tags": ["kafka", "axonops"],
+    "axonops": {
+      "agent": {
+        "org_name": "axonops_dev",
+        "tls_mode": "disabled"
+      },
+      "kafka": {
+        "version": "3.9.1"
+      }
+    }
+  },
+  "run_list": [
+    "recipe[axonops::java]",
+    "recipe[axonops::kafka]",
+    "recipe[axonops::agent]"
+  ]
+}

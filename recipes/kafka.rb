@@ -88,7 +88,7 @@ end
 
 link kafka_install_dir do
   to kafka_install_dir_versioned
-  link_type :soft
+  link_type :symbolic
   action :create
 end
 

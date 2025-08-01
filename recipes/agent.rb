@@ -75,6 +75,60 @@ ruby_block 'detect-cassandra' do
   end
 end
 
+# Detect existing Kafka installation
+kafka_home = nil
+kafka_config = nil
+kafka_detected = false
+
+# Common Kafka installation paths
+kafka_search_paths = [
+  '/opt/kafka',
+  '/usr/share/kafka',
+  '/var/lib/kafka',
+  '/opt/apache-kafka*',
+  node['axonops']['kafka']['install_dir'],
+].compact.uniq
+
+# Search for Kafka installation
+ruby_block 'detect-kafka' do
+  block do
+    kafka_search_paths.each do |path|
+      expanded_paths = Dir.glob(path)
+      expanded_paths.each do |expanded_path|
+        next unless ::File.exist?("#{expanded_path}/bin/kafka-server-start.sh")
+        kafka_home = expanded_path
+        # Look for config directory
+        %w(config conf /etc/kafka).each do |conf_dir|
+          full_conf_path = conf_dir.start_with?('/') ? conf_dir : "#{kafka_home}/#{conf_dir}"
+          if ::File.exist?("#{full_conf_path}/server.properties")
+            kafka_config = full_conf_path
+            break
+          end
+        end
+        kafka_detected = true
+        break
+      end
+      break if kafka_detected
+    end
+
+    # Store in node for use in templates
+    node.run_state['kafka_home'] = kafka_home || node['axonops']['agent']['kafka_home']
+    node.run_state['kafka_config'] = kafka_config || node['axonops']['agent']['kafka_config']
+
+    Chef::Log.info("Detected Kafka installation at: #{kafka_home}") if kafka_home
+    Chef::Log.info("Detected Kafka config at: #{kafka_config}") if kafka_config
+  end
+end
+
+if node.run_list.include?('recipe[axonops::kafka]')
+  java_agent_package = node['axonops']['java_agent']['kafka']
+elsif node.run_list.include?('recipe[axonops::cassandra]') || cassandra_detected
+  java_agent_package = node['axonops']['java_agent']['package'] || kafka_detected
+else
+  Chef::Log.error("Could not detect Cassandra or Kafka")
+  return
+end
+
 # Install AxonOps agent package
 if node['axonops']['offline_install']
   # Offline installation from local package
@@ -90,8 +144,8 @@ if node['axonops']['offline_install']
 
   case node['platform_family']
   when 'debian'
-    dpkg_package node['axonops']['java_agent']['package'] do
-      source ::File.join(node['axonops']['offline_packages_path'], node['axonops']['java_agent']['package'])
+    dpkg_package java_agent_package do
+      source ::File.join(node['axonops']['offline_packages_path'], java_agent_package)
       action :install
     end
     dpkg_package 'axon-agent' do
@@ -100,8 +154,8 @@ if node['axonops']['offline_install']
       notifies :restart, 'service[axon-agent]', :delayed
     end
   when 'rhel', 'fedora'
-    rpm_package node['axonops']['java_agent']['package'] do
-      source ::File.join(node['axonops']['offline_packages_path'], node['axonops']['java_agent']['package'])
+    rpm_package java_agent_package do
+      source ::File.join(node['axonops']['offline_packages_path'], java_agent_package)
       action :install
       notifies :restart, 'service[axon-agent]', :delayed
     end
@@ -116,7 +170,7 @@ else
     action :install
     notifies :restart, 'service[axon-agent]', :delayed
   end
-  package node['axonops']['java_agent']['package'] do
+  package java_agent_package do
     action :install
   end
 end
@@ -153,7 +207,7 @@ template '/etc/axonops/axon-agent.yml' do
       node_address: node['axonops']['cassandra']['listen_address'] || node['ipaddress'],
       node_dc: node['axonops']['cassandra']['dc'] || 'dc1',
       node_rack: node['axonops']['cassandra']['rack'] || 'rack1',
-      pkg: node['axonops']['java_agent']['package'],
+      pkg: java_agent_package,
       # Additional variables for new template
       cassandra_home: node.run_state['cassandra_home'] || node['axonops']['agent']['cassandra_home'],
       cassandra_config: node.run_state['cassandra_config'] || node['axonops']['agent']['cassandra_config'],
@@ -196,14 +250,17 @@ ruby_block 'configure-cassandra-jvm-agent' do
   only_if { node.run_state['cassandra_home'] }
 end
 
-# Log configuration info
-log 'axonops-agent-info' do
-  message lazy {
-    if node.run_state['cassandra_home']
-      "AxonOps agent configured to monitor Cassandra at: #{node.run_state['cassandra_home']}"
-    else
-      'AxonOps agent installed but no Cassandra installation detected. Please configure cassandra_home manually.'
-    end
-  }
-  level :info
+ruby_block 'configure-kafka-jvm-agent' do
+  kafka_home = node.run_state['kafka_home']
+  return unless kafka_home
+  agent_line = ". /usr/share/axonops/axonops-jvm.options"
+
+  block do
+    file = Chef::Util::FileEdit.new("#{kafka_home}/bin/kafka-server-start.sh")
+    file.insert_line_if_no_match(agent_line)
+    file.write_file
+  end
+
+  notifies :restart, 'service[kafka]', :delayed
+  only_if { node.run_state['kafka_home'] }
 end
