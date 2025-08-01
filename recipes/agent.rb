@@ -122,11 +122,11 @@ end
 
 if node.run_list.include?('recipe[axonops::kafka]')
   java_agent_package = node['axonops']['java_agent']['kafka']
-  java_agent_env_file = "#{node.run_state['kafka_home']}/bin/kafka-server-start.sh"
+  java_agent_env_file = "#{kafka_home}/bin/kafka-server-start.sh"
   service = "kafka"
 elsif node.run_list.include?('recipe[axonops::cassandra]') || cassandra_detected
   java_agent_package = node['axonops']['java_agent']['package'] || kafka_detected
-  java_agent_env_file = "#{node.run_state['cassandra_home']}/conf/cassandra-env.sh"
+  java_agent_env_file = "#{cassandra_home}/conf/cassandra-env.sh"
   service = "cassandra"
 else
   Chef::Log.error("Could not detect Cassandra or Kafka")
