@@ -30,7 +30,14 @@ unless node['axonops']['offline_install']
 end
 
 # Detect existing Cassandra installation
-cassandra_home = nil
+cassandra_version = node['axonops']['cassandra']['version']
+cassandra_install_dir = node['axonops']['cassandra']['install_dir']
+
+# Installation paths
+tarball_name = "apache-cassandra-#{cassandra_version}-bin.tar.gz"
+cassandra_home = "#{cassandra_install_dir}/apache-cassandra-#{cassandra_version}"
+
+cassandra_home = node['axonops']['cassandra']['install_dir']
 cassandra_config = nil
 cassandra_detected = false
 
@@ -41,7 +48,7 @@ cassandra_search_paths = [
   '/var/lib/cassandra',
   '/opt/apache-cassandra*',
   '/opt/dse',
-  node['axonops']['cassandra']['install_dir'],
+  cassandra_home,
 ].compact.uniq
 
 # Search for Cassandra installation
@@ -76,7 +83,7 @@ ruby_block 'detect-cassandra' do
 end
 
 # Detect existing Kafka installation
-kafka_home = nil
+kafka_home = node['axonops']['kafka']['install_dir']
 kafka_config = nil
 kafka_detected = false
 
@@ -86,7 +93,7 @@ kafka_search_paths = [
   '/usr/share/kafka',
   '/var/lib/kafka',
   '/opt/apache-kafka*',
-  node['axonops']['kafka']['install_dir'],
+  kafka_home,
 ].compact.uniq
 
 # Search for Kafka installation
