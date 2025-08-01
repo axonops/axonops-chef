@@ -11,11 +11,20 @@ cassandra_group = node['axonops']['cassandra']['group']
 cassandra_home = "#{node['axonops']['cassandra']['install_dir']}/cassandra"
 data_root = node['axonops']['cassandra']['data_root']
 
+# Use server attributes if defined, otherwise use cassandra attributes
+cluster_name = node['axonops']['server']['cassandra']['cluster_name'] || node['axonops']['cassandra']['cluster_name']
+datacenter = node['axonops']['server']['cassandra']['dc'] || node['axonops']['cassandra']['dc']
+rack = node['axonops']['server']['cassandra']['rack'] || node['axonops']['cassandra']['rack']
+
 # Ensure configuration directory exists
 directory "#{cassandra_home}/conf" do
   owner cassandra_user
   group cassandra_group
   mode '0755'
+end
+
+if node['axonops']['cassandra']['ssl']['self_signed']
+  include_recipe 'axonops::cassandra_self_signed'
 end
 
 # Main cassandra.yaml configuration
@@ -25,7 +34,7 @@ template "#{cassandra_home}/conf/cassandra.yaml" do
   group cassandra_group
   mode '0644'
   variables(
-    cluster_name: node['axonops']['cassandra']['cluster_name'],
+    cluster_name: cluster_name,
     num_tokens: node['axonops']['cassandra']['num_tokens'],
     data_file_directories: ["#{data_root}/data"],
     commitlog_directory: "#{data_root}/commitlog",
@@ -148,8 +157,8 @@ if node['axonops']['cassandra']['endpoint_snitch'].include?('PropertyFileSnitch'
     group cassandra_group
     mode '0644'
     variables(
-      datacenter: node['axonops']['cassandra']['datacenter'],
-      rack: node['axonops']['cassandra']['rack']
+      datacenter: datacenter,
+      rack: rack
     )
     notifies :restart, 'service[cassandra]', :delayed
   end

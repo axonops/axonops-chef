@@ -9,7 +9,7 @@
 
 # The name of the cluster. This is mainly used to prevent machines in
 # one logical cluster from joining another.
-cluster_name: '<%= node['''axonops''']['''cassandra''']['''cluster_name'''] %>'
+cluster_name: '<%= @cluster_name %>'
 
 # This defines the number of tokens randomly assigned to this node on the ring
 # The more tokens, relative to other nodes, the larger the proportion of data
@@ -1612,7 +1612,6 @@ client_encryption_options:
 <% end %>
   # Set keystore and keystore_password to valid keystores if enabled is true
   keystore: <%= @client_encryption_options['keystore'] %>
-  keystore_password: <%= @client_encryption_options['keystore_password'] %>
 <% if @client_encryption_options['keystore_password_file'] && !@client_encryption_options['keystore_password_file'].empty? %>
   keystore_password_file: <%= @server_encryption_options['keystore_password_file'] %>
 <% else %>

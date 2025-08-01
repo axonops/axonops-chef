@@ -159,7 +159,7 @@ template '/etc/axonops/axon-agent.yml' do
       cassandra_config: node.run_state['cassandra_config'] || node['axonops']['agent']['cassandra_config'],
       cassandra_logs: node['axonops']['cassandra']['directories']['logs'],
       org_agent_hostname: node['axonops']['agent']['hostname'] || nil,
-      cluster_name: node['axonops']['cassandra']['cluster_name'] || 'Test Cluster',
+      cluster_name: node['axonops']['cassandra']['cluster_name'],
       human_readable_identifier: node['axonops']['agent']['human_readable_identifier'] || nil,
       force_send_all_metrics_prom: node['axonops']['agent']['force_send_all_metrics_prom'] || nil,
       tmp_path: node['axonops']['agent']['tmp_path'] || nil,

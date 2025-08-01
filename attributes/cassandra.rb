@@ -16,7 +16,7 @@ default['axonops']['cassandra']['directories'] = {
 }
 
 # Cluster Configuration
-default['axonops']['cassandra']['cluster_name'] = 'Test Cluster'
+default['axonops']['cassandra']['cluster_name'] = 'AxonOps Cluster'
 default['axonops']['cassandra']['num_tokens'] = 16
 default['axonops']['cassandra']['allocate_tokens_for_local_replication_factor'] = 3
 default['axonops']['cassandra']['initial_token'] = nil
@@ -130,8 +130,6 @@ default['axonops']['cassandra']['endpoint_snitch'] = 'SimpleSnitch'
 default['axonops']['cassandra']['dynamic_snitch_update_interval'] = '100ms'
 default['axonops']['cassandra']['dynamic_snitch_reset_interval'] = '600000ms'
 default['axonops']['cassandra']['dynamic_snitch_badness_threshold'] = 0.1
-default['axonops']['cassandra']['dc'] = nil  # For GossipingPropertyFileSnitch
-default['axonops']['cassandra']['rack'] = nil  # For GossipingPropertyFileSnitch
 default['axonops']['cassandra']['prefer_local'] = nil  # For GossipingPropertyFileSnitch
 
 # Security Configuration
@@ -151,35 +149,46 @@ default['axonops']['cassandra']['credentials_cache_max_entries'] = 1000
 default['axonops']['cassandra']['credentials_update_interval'] = nil
 default['axonops']['cassandra']['auth_cache_warming_enabled'] = true
 
+default['axonops']['cassandra']['ssl']['enabled'] = true
+# Whether to create a self-signed keystore
+default['axonops']['cassandra']['ssl']['self_signed'] = true
+default['axonops']['cassandra']['ssl']['skip_verify'] = true
+default['axonops']['cassandra']['ssl']['ca_file'] = '/opt/cassandra/conf/ca.pem'
+default['axonops']['cassandra']['ssl']['cert_file'] = '/opt/cassandra/conf/cert.pem'
+default['axonops']['cassandra']['ssl']['key_file'] = '/opt/cassandra/conf/key.pem'
+
+## path to keytool if required
+default['axonops']['cassandra']['ssl']['keytool'] = nil
+
 # Encryption Configuration
 default['axonops']['cassandra']['server_encryption_options'] = {
   'internode_encryption' => 'none',
   'legacy_ssl_storage_port_enabled' => false,
-  'keystore' => '/etc/cassandra/cassandra.keystore',
+  'keystore' => '/opt/cassandra/conf/keystore.jks',
   'keystore_password' => 'cassandra',
-  'truststore' => '/etc/cassandra/cassandra.truststore',
+  'truststore' => '/opt/cassandra/conf/truststore.jks',
   'truststore_password' => 'cassandra',
   'protocol' => 'TLS',
   'accepted_protocols' => ['TLSv1.2', 'TLSv1.3'],
   'algorithm' => 'SunX509',
   'store_type' => 'JKS',
-  'cipher_suites' => ['TLS_RSA_WITH_AES_128_CBC_SHA', 'TLS_RSA_WITH_AES_256_CBC_SHA'],
+  'cipher_suites' => ['TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384', 'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA', 'TLS_RSA_WITH_AES_256_CBC_SHA'],
   'require_client_auth' => false,
   'require_endpoint_verification' => false
 }
 
 default['axonops']['cassandra']['client_encryption_options'] = {
-  'enabled' => false,
-  'keystore' => '/etc/cassandra/cassandra.keystore',
+  'enabled' => true,
+  'keystore' => '/opt/cassandra/conf/keystore.jks',
   'keystore_password' => 'cassandra',
   'require_client_auth' => false,
-  'truststore' => '/etc/cassandra/cassandra.truststore',
+  'truststore' => '/opt/cassandra/conf/truststore.jks',
   'truststore_password' => 'cassandra',
   'protocol' => 'TLS',
   'accepted_protocols' => ['TLSv1.2', 'TLSv1.3'],
   'algorithm' => 'SunX509',
   'store_type' => 'JKS',
-  'cipher_suites' => ['TLS_RSA_WITH_AES_128_CBC_SHA', 'TLS_RSA_WITH_AES_256_CBC_SHA']
+  'cipher_suites' => ['TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384', 'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA', 'TLS_RSA_WITH_AES_256_CBC_SHA'],
 }
 
 # Timeouts
@@ -396,7 +405,7 @@ default['axonops']['cassandra']['audit_log_max_history'] = 30
 default['axonops']['cassandra']['audit_log_total_size_cap'] = '5GB'
 
 # Rack/DC configuration for GossipingPropertyFileSnitch
-default['axonops']['cassandra']['datacenter'] = 'dc1'
+default['axonops']['cassandra']['dc'] = 'dc1'
 default['axonops']['cassandra']['rack'] = 'rack1'
 default['axonops']['cassandra']['dc_suffix'] = nil
 default['axonops']['cassandra']['prefer_local'] = nil

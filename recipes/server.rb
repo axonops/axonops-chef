@@ -5,9 +5,11 @@
 # Deploys AxonOps Server for self-hosted monitoring
 #
 if node['axonops']['server']['cassandra']['install']
-  # The configuration for Cassandra is now in the server attributes
+  # Override cassandra attributes with server attributes only if they are not nil
   node['axonops']['server']['cassandra'].each do |key, value|
-    node.override['axonops']['cassandra'][key] = value
+    unless value.nil?
+      node.override['axonops']['cassandra'][key] = value
+    end
   end
   include_recipe 'axonops::cassandra'
 end
@@ -112,7 +114,7 @@ template '/etc/axonops/axon-server.yml' do
     elastic_host: elastic_host,
     elastic_port: elastic_port,
     cassandra_hosts: cassandra_hosts,
-    cassandra_dc: node['axonops']['server']['cassandra']['dc'],
+    cassandra_dc: node['axonops']['server']['cassandra']['dc'] || node['axonops']['cassandra']['dc'],
     cassandra_username: node['axonops']['server']['cassandra']['username'],
     cassandra_password: node['axonops']['server']['cassandra']['password'],
     tls_mode: node['axonops']['server']['tls']['mode'],
