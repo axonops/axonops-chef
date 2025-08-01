@@ -1,0 +1,40 @@
+[Unit]
+Description=Apache Kafka Connect
+Documentation=http://kafka.apache.org/documentation.html
+Requires=kafka.service
+After=kafka.service
+
+[Service]
+Type=simple
+User=<%= @kafka_user %>
+Group=<%= @kafka_group %>
+Environment="JAVA_HOME=<%= @java_home %>"
+Environment="KAFKA_HEAP_OPTS=-Xmx<%= @kafka_heap_size %> -Xms<%= @kafka_heap_size %>"
+Environment="KAFKA_LOG_DIR=<%= @kafka_log_dir %>"
+Environment="LOG_DIR=<%= @kafka_log_dir %>"
+Environment="CONNECT_LOG_DIR=<%= @kafka_log_dir %>"
+
+ExecStart=<%= @kafka_install_dir %>/bin/connect-distributed.sh <%= @kafka_install_dir %>/config/connect-distributed.properties
+
+# Restart settings
+Restart=on-failure
+RestartSec=30s
+
+# Process management
+SuccessExitStatus=143
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kafka-connect
+
+# Resource limits
+LimitNOFILE=1048576
+LimitMEMLOCK=infinity
+LimitNPROC=32768
+LimitAS=infinity
+LimitCORE=infinity
+
+# Kill only the connect process, not all processes in the cgroup
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
