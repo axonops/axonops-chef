@@ -122,8 +122,12 @@ end
 
 if node.run_list.include?('recipe[axonops::kafka]')
   java_agent_package = node['axonops']['java_agent']['kafka']
+  java_agent_env_file = "#{node.run_state['kafka_home']}/bin/kafka-server-start.sh"
+  service = "kafka"
 elsif node.run_list.include?('recipe[axonops::cassandra]') || cassandra_detected
   java_agent_package = node['axonops']['java_agent']['package'] || kafka_detected
+  java_agent_env_file = "#{node.run_state['cassandra_home']}/conf/cassandra-env.sh"
+  service = "cassandra"
 else
   Chef::Log.error("Could not detect Cassandra or Kafka")
   return
@@ -235,32 +239,16 @@ template '/etc/axonops/axon-agent.yml' do
   sensitive true if node['axonops']['agent']['api_key']
 end
 
-ruby_block 'configure-cassandra-jvm-agent' do
-  cassandra_home = node.run_state['cassandra_home']
-  return unless cassandra_home
-  agent_line = ". /usr/share/axonops/axonops-jvm.options"
+unless java_agent_env_file.nil?
+  ruby_block 'configure-jvm-agent' do
+    agent_line = ". /usr/share/axonops/axonops-jvm.options"
 
-  block do
-    file = Chef::Util::FileEdit.new("#{cassandra_home}/conf/cassandra-env.sh")
-    file.insert_line_if_no_match(agent_line)
-    file.write_file
+    block do
+      file = Chef::Util::FileEdit.new(java_agent_env_file)
+      file.insert_line_if_no_match(agent_line)
+      file.write_file
+    end
+
+    notifies :restart, "service[#{service}]", :delayed
   end
-
-  notifies :restart, 'service[cassandra]', :delayed
-  only_if { node.run_state['cassandra_home'] }
-end
-
-ruby_block 'configure-kafka-jvm-agent' do
-  kafka_home = node.run_state['kafka_home']
-  return unless kafka_home
-  agent_line = ". /usr/share/axonops/axonops-jvm.options"
-
-  block do
-    file = Chef::Util::FileEdit.new("#{kafka_home}/bin/kafka-server-start.sh")
-    file.insert_line_if_no_match(agent_line)
-    file.write_file
-  end
-
-  notifies :restart, 'service[kafka]', :delayed
-  only_if { node.run_state['kafka_home'] }
 end
