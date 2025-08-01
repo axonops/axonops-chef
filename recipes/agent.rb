@@ -252,7 +252,7 @@ unless java_agent_env_file.nil?
 
     block do
       file = Chef::Util::FileEdit.new(java_agent_env_file)
-      file.insert_line_if_no_match(agent_line)
+      file.insert_line_if_no_match(/axonops-jvm\.options/, agent_line)
       file.write_file
     end
 
