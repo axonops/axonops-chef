@@ -257,5 +257,6 @@ unless java_agent_env_file.nil?
     end
 
     notifies :restart, "service[#{service}]", :delayed
+    only_if { ::File.exist?(java_agent_env_file) }
   end
 end
