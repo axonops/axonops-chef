@@ -127,12 +127,12 @@ ruby_block 'detect-kafka' do
   end
 end
 
-if node.run_list.include?('recipe[axonops::kafka]')
+if node.run_list.include?('recipe[axonops::kafka]') || kafka_detected
   java_agent_package = node['axonops']['java_agent']['kafka']
   java_agent_env_file = "#{kafka_home}/bin/kafka-server-start.sh"
   service = "kafka"
 elsif node.run_list.include?('recipe[axonops::cassandra]') || cassandra_detected
-  java_agent_package = node['axonops']['java_agent']['package'] || kafka_detected
+  java_agent_package = node['axonops']['java_agent']['package']
   java_agent_env_file = "#{cassandra_home}/conf/cassandra-env.sh"
   service = "cassandra"
 else
