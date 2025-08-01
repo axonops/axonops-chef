@@ -46,21 +46,11 @@ file '/etc/security/limits.d/kafka.conf' do
   mode '0644'
 end
 
-# Create required directories
-[
-  kafka_install_dir_versioned,
-  kafka_data_dir,
-  kafka_log_dir,
-  kafka_tmp_dir,
-  "#{kafka_install_dir_versioned}/ssl",
-  node['axonops']['kafka']['connect']['plugin_path']
-].each do |dir|
-  directory dir do
-    owner kafka_user
-    group kafka_group
-    mode '0755'
-    recursive true
-  end
+directory kafka_install_dir_versioned do
+  owner kafka_user
+  group kafka_group
+  mode '0755'
+  recursive true
 end
 
 # Download or copy Kafka tarball
@@ -96,9 +86,25 @@ execute 'extract-kafka-tarball' do
   not_if { ::File.exist?("#{kafka_install_dir_versioned}/bin/kafka-server-start.sh") }
 end
 
-link kafka_install_dir_versioned do
-  to kafka_install_dir
+link kafka_install_dir do
+  to kafka_install_dir_versioned
+  link_type :soft
   action :create
+end
+
+[
+  kafka_data_dir,
+  kafka_log_dir,
+  kafka_tmp_dir,
+  "#{kafka_install_dir_versioned}/ssl",
+  node['axonops']['kafka']['connect']['plugin_path']
+].each do |dir|
+  directory dir do
+    owner kafka_user
+    group kafka_group
+    mode '0755'
+    recursive true
+  end
 end
 
 # Fix ownership after extraction
