@@ -40,6 +40,7 @@ default['axonops']['agent']['java_agent'] = {
 default['axonops']['java_agent']['version'] = 'latest'
 default['axonops']['java_agent']['package'] = 'axon-cassandra5.0-agent-jdk17' # Will be auto-selected based on Cassandra/Java version
 default['axonops']['java_agent']['jar_path'] = '/usr/share/axonops/axon-cassandra5.0-agent.jar'
+default['axonops']['java_agent']['kafka'] = 'axon-kafka3-agent'
 
 # Note: Package file names can be overridden via:
 # - default['axonops']['agent']['package'] = 'axon-agent_2.0.4_amd64.deb'
