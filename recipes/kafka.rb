@@ -52,7 +52,7 @@ end
   kafka_data_dir,
   kafka_log_dir,
   kafka_tmp_dir,
-  "#{kafka_install_dir}/ssl",
+  "#{kafka_install_dir_versioned}/ssl",
   node['axonops']['kafka']['connect']['plugin_path']
 ].each do |dir|
   directory dir do
@@ -96,8 +96,8 @@ execute 'extract-kafka-tarball' do
   not_if { ::File.exist?("#{kafka_install_dir_versioned}/bin/kafka-server-start.sh") }
 end
 
-link kafka_install_dir do
-  to kafka_install_dir_versioned
+link kafka_install_dir_versioned do
+  to kafka_install_dir
   action :create
 end
 

@@ -6,7 +6,7 @@
 #
 
 # Kafka version and installation
-default['axonops']['kafka']['version'] = '3.5.1'
+default['axonops']['kafka']['version'] = '3.9.1'
 default['axonops']['kafka']['scala_version'] = '2.13'
 default['axonops']['kafka']['install_dir'] = '/opt/kafka'
 default['axonops']['kafka']['user'] = 'kafka'
