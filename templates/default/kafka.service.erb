@@ -1,0 +1,44 @@
+[Unit]
+Description=Apache Kafka
+Documentation=http://kafka.apache.org/documentation.html
+Requires=network.target remote-fs.target
+After=network.target remote-fs.target
+
+[Service]
+Type=simple
+User=<%= @kafka_user %>
+Group=<%= @kafka_group %>
+Environment="JAVA_HOME=<%= @java_home %>"
+Environment="KAFKA_HEAP_OPTS=-Xmx<%= @kafka_heap_size %> -Xms<%= @kafka_heap_size %>"
+Environment="KAFKA_JVM_PERFORMANCE_OPTS=<%= @kafka_jvm_performance_opts %>"
+Environment="KAFKA_LOG_DIR=<%= @kafka_log_dir %>"
+Environment="JMX_PORT=9999"
+Environment="KAFKA_JMX_OPTS=-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Dcom.sun.management.jmxremote.port=9999"
+Environment="LOG_DIR=<%= @kafka_log_dir %>"
+Environment="KAFKA_OPTS=-Djava.io.tmpdir=<%= @kafka_tmp_dir %>"
+
+ExecStart=<%= @kafka_install_dir %>/bin/kafka-server-start.sh <%= @kafka_install_dir %>/config/server.properties
+ExecStop=<%= @kafka_install_dir %>/bin/kafka-server-stop.sh
+
+# Restart settings
+Restart=on-failure
+RestartSec=30s
+
+# Process management
+SuccessExitStatus=143
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kafka
+
+# Resource limits
+LimitNOFILE=1048576
+LimitMEMLOCK=infinity
+LimitNPROC=32768
+LimitAS=infinity
+LimitCORE=infinity
+
+# Kill only the kafka process, not all processes in the cgroup
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
