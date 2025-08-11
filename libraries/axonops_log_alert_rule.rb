@@ -92,34 +92,27 @@ class Chef
           
           # Add content filter if provided
           if new_resource.content && !new_resource.content.empty?
-            filters << "message='#{new_resource.content}'"
+            filters << "message=\"#{new_resource.content}\""
           end
           
           # Add level filter if provided
           if new_resource.level && new_resource.level.any?
             level_values = new_resource.level.is_a?(Array) ? new_resource.level.join(',') : new_resource.level
-            filters << "level='#{level_values}'"
+            filters << "level=\"#{level_values}\""
           end
           
           # Add type filter if provided
           if new_resource.type && new_resource.type.any?
             type_values = new_resource.type.is_a?(Array) ? new_resource.type.join(',') : new_resource.type
-            filters << "type='#{type_values}'"
+            filters << "type=\"#{type_values}\""
           end
           
           # Add source filter if provided
           if new_resource.source && new_resource.source.any?
             source_values = new_resource.source.is_a?(Array) ? new_resource.source.join(',') : new_resource.source
-            filters << "source='#{source_values}'"
+            filters << "source=\"#{source_values}\""
           end
-          
-          # Add host_id filter
-          if new_resource.host_id && new_resource.host_id.any?
-            filters << "host_id='#{new_resource.host_id.join(',')}'"
-          else
-            filters << "host_id=''"
-          end
-          
+                    
           # Build the expression
           filter_expression = filters.join(',')
           expression = "events{#{filter_expression}} #{new_resource.operator} #{new_resource.warning_value}"
