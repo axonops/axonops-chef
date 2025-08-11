@@ -367,14 +367,8 @@ default['axonops']['cassandra']['gc_conc_threads'] = nil  # Will use number of c
 
 # Shenandoah GC specific settings
 default['axonops']['cassandra']['gc_shenandoah_heuristics'] = 'adaptive'  # Options: adaptive, static, compact, aggressive
-default['axonops']['cassandra']['gc_shenandoah_init_free_threshold'] = 70  # Initial free threshold percentage
-default['axonops']['cassandra']['gc_shenandoah_min_free_threshold'] = 10  # Minimum free threshold percentage
-default['axonops']['cassandra']['gc_shenandoah_guaranteed_gc_interval'] = '5m'  # Guaranteed GC interval
-default['axonops']['cassandra']['gc_shenandoah_region_size'] = nil  # Auto-sized if nil
 default['axonops']['cassandra']['gc_shenandoah_parallel_gc_threads'] = nil  # Will use number of cores
 default['axonops']['cassandra']['gc_shenandoah_conc_gc_threads'] = nil  # Will use number of cores
-default['axonops']['cassandra']['gc_shenandoah_pacing'] = true  # Enable GC pacing
-default['axonops']['cassandra']['gc_shenandoah_pacing_max_delay'] = '10ms'  # Maximum pacing delay
 default['axonops']['cassandra']['gc_use_numa'] = true  # NUMA support for Shenandoah
 default['axonops']['cassandra']['gc_use_transparent_huge_pages'] = true  # THP support for Shenandoah
 

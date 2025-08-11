@@ -56,22 +56,8 @@
 ## Use the Shenandoah low-pause-time garbage collector
 -XX:+UseShenandoahGC
 
-# Shenandoah GC heuristics mode
+# Shenandoah GC heuristics mode (adaptive, static, compact, aggressive)
 -XX:ShenandoahGCHeuristics=<%= node['axonops']['cassandra']['gc_shenandoah_heuristics'] %>
-
-# Guaranteed GC interval
--XX:ShenandoahGuaranteedGCInterval=<%= node['axonops']['cassandra']['gc_shenandoah_guaranteed_gc_interval'] %>
-
-<% if node['axonops']['cassandra']['gc_shenandoah_region_size'] -%>
-# Shenandoah heap region size
--XX:ShenandoahRegionSize=<%= node['axonops']['cassandra']['gc_shenandoah_region_size'] %>
-<% end -%>
-
-<% if node['axonops']['cassandra']['gc_shenandoah_pacing'] -%>
-# Enable GC pacing
--XX:+ShenandoahPacing
--XX:ShenandoahPacingMaxDelay=<%= node['axonops']['cassandra']['gc_shenandoah_pacing_max_delay'] %>
-<% end -%>
 
 # NUMA support (recommended for Shenandoah)
 <% if node['axonops']['cassandra']['gc_use_numa'] -%>
