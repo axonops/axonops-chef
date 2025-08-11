@@ -188,6 +188,7 @@ template '/etc/systemd/system/cassandra.service' do
     cassandra_home: cassandra_home,
     cassandra_user: cassandra_user,
     cassandra_group: cassandra_group,
+    cassandra_log_dir: node['axonops']['cassandra']['log_dir'],
   )
   notifies :run, 'execute[systemctl-daemon-reload]', :immediately
   notifies :restart, 'service[cassandra]', :delayed
