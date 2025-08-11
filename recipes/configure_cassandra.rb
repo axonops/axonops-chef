@@ -180,6 +180,7 @@ template '/etc/systemd/system/cassandra.service' do
   variables(
     cassandra_home: cassandra_home,
     cassandra_user: cassandra_user,
+    cassandra_group: cassandra_group,
   )
   notifies :run, 'execute[systemctl-daemon-reload]', :immediately
   notifies :restart, 'service[cassandra]', :delayed
