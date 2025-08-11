@@ -59,9 +59,6 @@
 # Shenandoah GC heuristics mode
 -XX:ShenandoahGCHeuristics=<%= node['axonops']['cassandra']['gc_shenandoah_heuristics'] %>
 
-# Initial and minimum free thresholds
--XX:ShenandoahMinFreeThreshold=<%= node['axonops']['cassandra']['gc_shenandoah_min_free_threshold'] %>
-
 # Guaranteed GC interval
 -XX:ShenandoahGuaranteedGCInterval=<%= node['axonops']['cassandra']['gc_shenandoah_guaranteed_gc_interval'] %>
 
