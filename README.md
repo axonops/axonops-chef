@@ -33,10 +33,10 @@ Add the axonops cookbook to your Berksfile using one of these methods:
 source 'https://supermarket.chef.io'
 
 # Pull from a specific branch
-cookbook 'axonops', git: 'https://github.com/axonops/axonops-chef.git', branch: 'testing'
+cookbook 'axonops', git: 'https://github.com/axonops/axonops-chef.git', branch: 'main'
 
 # Or pull from a specific tag
-cookbook 'axonops', git: 'https://github.com/axonops/axonops-chef.git', tag: 'v1.0.0'
+cookbook 'axonops', git: 'https://github.com/axonops/axonops-chef.git', tag: 'v0.0.3'
 
 # Or pull from a specific commit
 cookbook 'axonops', git: 'https://github.com/axonops/axonops-chef.git', ref: '2bb38d8'
