@@ -84,6 +84,13 @@ if node['axonops']['cassandra']['version'].start_with?('5.')
     )
     notifies :restart, 'service[cassandra]', :delayed
   end
+  template "#{cassandra_home}/conf/jvm17-server.options" do
+    source 'cassandra-jvm17-server.options.erb'
+    owner cassandra_user
+    group cassandra_group
+    mode '0644'
+    notifies :restart, 'service[cassandra]', :delayed
+  end
 elsif node['axonops']['cassandra']['version'].start_with?('4.')
   # Cassandra 4.x uses jvm-server.options and jvm11-server.options
   template "#{cassandra_home}/conf/jvm-server.options" do
