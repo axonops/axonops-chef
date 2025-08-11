@@ -24,11 +24,21 @@
 #-XX:+CMSEdenChunksRecordAlways
 #-XX:+CMSClassUnloadingEnabled
 
-# G1 Settings (default for Java 11+)
+# GC Settings (Java 11+)
+<% if node['axonops']['cassandra']['gc_type'] == 'G1GC' -%>
+# G1 Garbage Collector
 -XX:+UseG1GC
 -XX:+ParallelRefProcEnabled
--XX:MaxGCPauseMillis=500
--XX:G1RSetUpdatingPauseTimePercent=5
+-XX:MaxGCPauseMillis=<%= node['axonops']['cassandra']['gc_g1_max_pause_millis'] %>
+-XX:G1RSetUpdatingPauseTimePercent=<%= node['axonops']['cassandra']['gc_g1_rset_updating_pause_time_percent'] %>
+<% elsif node['axonops']['cassandra']['gc_type'] == 'Shenandoah' -%>
+# Shenandoah Garbage Collector
+-XX:+UseShenandoahGC
+-XX:ShenandoahGCHeuristics=<%= node['axonops']['cassandra']['gc_shenandoah_heuristics'] %>
+<% if node['axonops']['cassandra']['gc_use_numa'] -%>
+-XX:+UseNUMA
+<% end -%>
+<% end -%>
 
 # GC logging options
 -XX:+PrintGCDetails
@@ -56,6 +66,3 @@
 # Thread settings
 -XX:+UseThreadPriorities
 -XX:ThreadPriorityPolicy=42
-
-# Biased locking
--XX:+UseBiasedLocking

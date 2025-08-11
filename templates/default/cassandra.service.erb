@@ -7,7 +7,7 @@ Type=forking
 User=<%= @cassandra_user %>
 Group=<%= @cassandra_group %>
 Environment=CASSANDRA_HOME=<%= @cassandra_home %>
-Environment=CASSANDRA_LOG_DIR=<%= @log_dir %>
+Environment=CASSANDRA_LOG_DIR=<%= @cassandra_log_dir %>
 ExecStart=<%= @cassandra_home %>/bin/cassandra -p /var/run/cassandra/cassandra.pid
 PIDFile=/var/run/cassandra/cassandra.pid
 RuntimeDirectory=cassandra
