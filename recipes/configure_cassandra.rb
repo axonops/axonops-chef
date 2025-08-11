@@ -71,6 +71,21 @@ end
 
 # JVM options configuration
 jvm_heap_size = node['axonops']['cassandra']['heap_size']
+if jvm_heap_size.nil? || jvm_heap_size.empty?
+  # node['memory']['total'] is in KB.
+  # Convert KB to GB by dividing by (1024 * 1024)
+  total_memory_gb = node['memory']['total'].to_i / (1024 * 1024)
+
+  # Calculate 1/3 of the total memory.
+  calculated_heap_gb = total_memory_gb / 3
+
+  # Set the heap size with a maximum of 30G.
+  jvm_heap_size = if calculated_heap_gb > 30
+                    '30G'
+                  else
+                    "#{calculated_heap_gb}G"
+                  end
+end
 
 # Cassandra 5.0 uses jvm-server.options
 if node['axonops']['cassandra']['version'].start_with?('5.')
@@ -82,6 +97,13 @@ if node['axonops']['cassandra']['version'].start_with?('5.')
     variables(
       heap_size: jvm_heap_size,
     )
+    notifies :restart, 'service[cassandra]', :delayed
+  end
+  template "#{cassandra_home}/conf/jvm17-server.options" do
+    source 'cassandra-jvm17-server.options.erb'
+    owner cassandra_user
+    group cassandra_group
+    mode '0644'
     notifies :restart, 'service[cassandra]', :delayed
   end
 elsif node['axonops']['cassandra']['version'].start_with?('4.')
@@ -181,6 +203,7 @@ template '/etc/systemd/system/cassandra.service' do
     cassandra_home: cassandra_home,
     cassandra_user: cassandra_user,
     cassandra_group: cassandra_group,
+    cassandra_log_dir: node['axonops']['cassandra']['log_dir'],
   )
   notifies :run, 'execute[systemctl-daemon-reload]', :immediately
   notifies :restart, 'service[cassandra]', :delayed

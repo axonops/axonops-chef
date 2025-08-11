@@ -56,7 +56,7 @@ end
   directory dir do
     owner elastic_user
     group elastic_group
-    mode '0775'
+    mode '0755'
     recursive true
   end
 end

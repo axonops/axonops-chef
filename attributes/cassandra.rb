@@ -356,12 +356,21 @@ default['axonops']['cassandra']['ideal_consistency_level'] = nil
 default['axonops']['cassandra']['heap_size'] = "2G"
 
 # JVM GC Configuration (for Java 17)
-default['axonops']['cassandra']['gc_type'] = 'G1GC'
+default['axonops']['cassandra']['gc_type'] = 'Shenandoah'  # Options: 'G1GC' or 'Shenandoah'
+
+# G1GC specific settings
 default['axonops']['cassandra']['gc_g1_heap_region_size'] = '16m'
 default['axonops']['cassandra']['gc_g1_max_pause_millis'] = 300
 default['axonops']['cassandra']['gc_g1_initiating_heap_occupancy_percent'] = 70
 default['axonops']['cassandra']['gc_parallel_threads'] = nil  # Will use number of cores
 default['axonops']['cassandra']['gc_conc_threads'] = nil  # Will use number of cores
+
+# Shenandoah GC specific settings
+default['axonops']['cassandra']['gc_shenandoah_heuristics'] = 'adaptive'  # Options: adaptive, static, compact, aggressive
+default['axonops']['cassandra']['gc_shenandoah_parallel_gc_threads'] = nil  # Will use number of cores
+default['axonops']['cassandra']['gc_shenandoah_conc_gc_threads'] = nil  # Will use number of cores
+default['axonops']['cassandra']['gc_use_numa'] = true  # NUMA support for Shenandoah
+default['axonops']['cassandra']['gc_use_transparent_huge_pages'] = true  # THP support for Shenandoah
 
 # Logging Configuration
 default['axonops']['cassandra']['log_level'] = 'INFO'
