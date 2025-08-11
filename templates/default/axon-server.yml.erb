@@ -88,7 +88,7 @@ alert_log:
   max_size_mb: <%= node['axonops']['server']['alert_log']['max_size_mb'] %>
   max_files: <%= node['axonops']['server']['alert_log']['max_files'] %>
 
-<% if node['axonops']['server']['auth']['enabled'] -%>
+<% if node['axonops']['server']['auth']['enabled'] && node['axonops']['server']['auth']['type'] == "LDAP" -%>
 # LDAP Authentication Configuration
 auth:
   enabled: true
