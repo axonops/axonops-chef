@@ -177,7 +177,13 @@ For air-gapped environments:
 node.override['axonops']['offline_install'] = true
 node.override['axonops']['offline_packages_path'] = '/path/to/packages'
 
-# Ensure elasticsearch-7.17.26-linux-x86_64.tar.gz is in the offline packages directory
+# Package filename is defined in attributes/default.rb under:
+# default['axonops']['offline_packages']['elasticsearch']
+# Example: 'elasticsearch-7.17.29-linux-x86_64.tar.gz'
+#
+# You can override the package filename if needed:
+node.override['axonops']['offline_packages']['elasticsearch'] = 'elasticsearch-7.17.26-linux-x86_64.tar.gz'
+
 include_recipe 'axonops::server'
 ```
 

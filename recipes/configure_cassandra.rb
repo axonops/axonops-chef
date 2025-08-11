@@ -173,6 +173,18 @@ file node['axonops']['cassandra']['jmx_password_file'] do
   only_if { node['axonops']['cassandra']['jmx_authentication'] }
 end
 
+# Create systemd service
+template '/etc/systemd/system/cassandra.service' do
+  source 'cassandra.service.erb'
+  mode '0644'
+  variables(
+    cassandra_home: cassandra_home,
+    cassandra_user: cassandra_user,
+  )
+  notifies :run, 'execute[systemctl-daemon-reload]', :immediately
+  notifies :restart, 'service[cassandra]', :delayed
+end
+
 # Enable and start Cassandra service
 service 'cassandra' do
   supports status: true, restart: true, reload: false

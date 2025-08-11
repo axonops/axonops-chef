@@ -1,0 +1,25 @@
+[Unit]
+Description=Apache Cassandra
+After=network.target
+
+[Service]
+Type=forking
+User=<%= @cassandra_user %>
+Group=<%= @cassandra_group %>
+Environment=CASSANDRA_HOME=<%= @cassandra_home %>
+Environment=CASSANDRA_LOG_DIR=<%= @log_dir %>
+ExecStart=<%= @cassandra_home %>/bin/cassandra -p /var/run/cassandra/cassandra.pid
+PIDFile=/var/run/cassandra/cassandra.pid
+RuntimeDirectory=cassandra
+RuntimeDirectoryMode=0755
+StandardOutput=journal
+StandardError=journal
+LimitNOFILE=100000
+LimitMEMLOCK=infinity
+LimitNPROC=32768
+LimitAS=infinity
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -176,8 +176,12 @@ For environments without internet access:
 node.override['axonops']['offline_install'] = true
 node.override['axonops']['offline_packages_path'] = '/path/to/offline/packages'
 
-# Specify the Kafka tarball name
-node.override['axonops']['packages']['kafka_tarball'] = 'kafka_2.13-3.9.1.tgz'
+# Package filename is defined in attributes/default.rb under:
+# default['axonops']['offline_packages']['kafka']
+# Example: 'kafka_2.13-3.6.1.tgz'
+#
+# You can override the package filename if needed:
+node.override['axonops']['offline_packages']['kafka'] = 'kafka_2.13-3.9.1.tgz'
 ```
 
 Ensure the Kafka tarball is present in the offline packages directory before running the recipe.

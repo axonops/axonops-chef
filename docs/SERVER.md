@@ -94,8 +94,13 @@ For air-gapped environments:
 ```ruby
 node.override['axonops']['offline_install'] = true
 node.override['axonops']['offline_packages_path'] = '/path/to/packages'
-# For offline install, specify the full RPM/DEB filename
-node.override['axonops']['server']['package'] = 'axon-server-2.0.3-1.x86_64.rpm'
+
+# Package filenames are defined in attributes/default.rb under:
+# default['axonops']['offline_packages']['server']
+# Example: 'axon-server-2.0.5-1.x86_64.rpm'
+#
+# You can override specific package filenames if needed:
+node.override['axonops']['offline_packages']['server'] = 'axon-server-2.0.3-1.x86_64.rpm'
 
 include_recipe 'axonops::server'
 ```
