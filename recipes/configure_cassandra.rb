@@ -71,6 +71,21 @@ end
 
 # JVM options configuration
 jvm_heap_size = node['axonops']['cassandra']['heap_size']
+if jvm_heap_size.nil? || jvm_heap_size.empty?
+  # node['memory']['total'] is in KB.
+  # Convert KB to GB by dividing by (1024 * 1024)
+  total_memory_gb = node['memory']['total'].to_i / (1024 * 1024)
+
+  # Calculate 1/3 of the total memory.
+  calculated_heap_gb = total_memory_gb / 3
+
+  # Set the heap size with a maximum of 30G.
+  jvm_heap_size = if calculated_heap_gb > 30
+                    '30G'
+                  else
+                    "#{calculated_heap_gb}G"
+                  end
+end
 
 # Cassandra 5.0 uses jvm-server.options
 if node['axonops']['cassandra']['version'].start_with?('5.')

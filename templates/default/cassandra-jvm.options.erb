@@ -35,7 +35,6 @@
 # Shenandoah Garbage Collector
 -XX:+UseShenandoahGC
 -XX:ShenandoahGCHeuristics=<%= node['axonops']['cassandra']['gc_shenandoah_heuristics'] %>
--XX:ShenandoahInitFreeThreshold=<%= node['axonops']['cassandra']['gc_shenandoah_init_free_threshold'] %>
 <% if node['axonops']['cassandra']['gc_use_numa'] -%>
 -XX:+UseNUMA
 <% end -%>
