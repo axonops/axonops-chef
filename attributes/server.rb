@@ -5,6 +5,8 @@
 # Attributes for AxonOps Server self-hosted deployment
 #
 
+default['axonops']['server']['version'] = 'latest' # Default to latest version
+
 # Internal Elasticsearch for AxonOps Server
 default['axonops']['server']['elastic']['version'] = '7.17.28'
 default['axonops']['server']['elastic']['heap_size'] = '512m'
