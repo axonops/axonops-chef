@@ -8,7 +8,7 @@
 default['axonops']['server']['version'] = 'latest' # Default to latest version
 
 # Internal Elasticsearch for AxonOps Server
-default['axonops']['server']['elastic']['version'] = '7.17.28'
+default['axonops']['server']['elastic']['version'] = '7.17.29'
 default['axonops']['server']['elastic']['heap_size'] = '512m'
 default['axonops']['server']['elastic']['cluster_name'] = 'axonops-cluster'
 default['axonops']['server']['elastic']['install_dir'] = '/opt/axonops-search'
