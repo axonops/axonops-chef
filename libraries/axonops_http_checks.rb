@@ -49,12 +49,12 @@ class Chef
           # Get existing health checks (includes httpchecks, tcpchecks, shellchecks)
           health_checks_url = "/api/v1/healthchecks/#{new_resource.org}/#{client.get_cluster_type}/#{new_resource.cluster}"
           Chef::Log.debug("Fetching health checks from: #{health_checks_url}")
-          
+
           response = client.do_request(health_checks_url, method: 'GET')
           if response.nil?
             raise "Failed to get health checks: No response from API"
           end
-          
+
           current_health_checks, error = response
           if error
             Chef::Log.error("Failed to get health checks: #{error}")
@@ -71,13 +71,13 @@ class Chef
 
           # Extract HTTP checks array
           current_http_checks = current_health_checks['httpchecks']
-          
+
           # Find existing HTTP check by name
           old_check = nil
           if current_http_checks && current_http_checks.is_a?(Array)
             old_check = current_http_checks.find { |check| check['name'] == new_resource.name }
           end
-          
+
           Chef::Log.debug("Found existing HTTP check: #{old_check ? 'YES' : 'NO'}")
           Chef::Log.debug("Existing HTTP check data: #{old_check}") if old_check
 
@@ -95,7 +95,7 @@ class Chef
             new_resource.headers.each do |key, value|
               headers_map[key] = value.is_a?(Array) ? value : [value.to_s]
             end
-            
+
             if old_check['interval'] == new_resource.interval &&
                old_check['timeout'] == new_resource.timeout &&
                old_check['http'] == new_resource.url &&
@@ -113,13 +113,13 @@ class Chef
             if new_resource.present
               # Create/Update HTTP check
               check_id = old_check ? old_check['id'] : SecureRandom.uuid
-              
+
               # Transform headers to map[string][]string format
               headers_map = {}
               new_resource.headers.each do |key, value|
                 headers_map[key] = value.is_a?(Array) ? value : [value.to_s]
               end
-              
+
               http_check_payload = {
                 'id' => check_id,
                 'name' => new_resource.name,
@@ -142,10 +142,10 @@ class Chef
               }
 
               Chef::Log.debug("HTTP check payload: #{http_check_payload}")
-              
+
               # Build the updated HTTP checks array
               updated_http_checks = current_http_checks.dup
-              
+
               if old_check
                 # Update existing check
                 updated_http_checks = updated_http_checks.map do |check|
@@ -155,22 +155,22 @@ class Chef
                 # Add new check
                 updated_http_checks << http_check_payload
               end
-              
+
               # Build complete payload with all check types
               complete_payload = {
                 'httpchecks' => updated_http_checks,
                 'tcpchecks' => current_health_checks['tcpchecks'],
                 'shellchecks' => current_health_checks['shellchecks']
               }
-              
+
               Chef::Log.debug("Sending complete payload to AxonOps")
-              
+
               # Send PUT request with the complete health checks payload
               response = client.do_request(health_checks_url, method: 'PUT', json_data: complete_payload)
               if response.nil?
                 raise "Failed to create/update HTTP check: No response from API"
               end
-              
+
               result, error = response
               if error
                 raise "Failed to create/update HTTP check: #{error}"
@@ -182,19 +182,19 @@ class Chef
               if old_check
                 # Remove the check from the HTTP checks array
                 updated_http_checks = current_http_checks.select { |check| check['id'] != old_check['id'] }
-                
+
                 # Build complete payload with all check types
                 complete_payload = {
                   'httpchecks' => updated_http_checks,
                   'tcpchecks' => current_health_checks['tcpchecks'],
                   'shellchecks' => current_health_checks['shellchecks']
                 }
-                
+
                 response = client.do_request(health_checks_url, method: 'PUT', json_data: complete_payload)
                 if response.nil?
                   raise "Failed to delete HTTP check: No response from API"
                 end
-                
+
                 result, error = response
                 if error
                   raise "Failed to delete HTTP check: #{error}"
@@ -227,52 +227,52 @@ class Chef
             cluster_type: new_resource.cluster_type,
             override_saas: new_resource.override_saas
           )
-          
+
           # Get existing health checks
           health_checks_url = "/api/v1/healthchecks/#{new_resource.org}/#{client.get_cluster_type}/#{new_resource.cluster}"
-          
+
           response = client.do_request(health_checks_url, method: 'GET')
           if response.nil?
             raise "Failed to get health checks: No response from API"
           end
-          
+
           current_health_checks, error = response
           if error
             Chef::Log.error("Failed to get health checks: #{error}")
             raise error
           end
-          
+
           # Ensure we have the proper structure
           current_health_checks ||= {}
           current_health_checks['httpchecks'] ||= []
           current_health_checks['tcpchecks'] ||= []
           current_health_checks['shellchecks'] ||= []
-          
+
           # Extract HTTP checks array
           current_http_checks = current_health_checks['httpchecks']
-          
+
           # Find existing HTTP check by name
           old_check = nil
           if current_http_checks && current_http_checks.is_a?(Array)
             old_check = current_http_checks.find { |check| check['name'] == new_resource.name }
           end
-          
+
           if old_check
             # Remove the check from the HTTP checks array
             updated_http_checks = current_http_checks.select { |check| check['id'] != old_check['id'] }
-            
+
             # Build complete payload with all check types
             complete_payload = {
               'httpchecks' => updated_http_checks,
               'tcpchecks' => current_health_checks['tcpchecks'],
               'shellchecks' => current_health_checks['shellchecks']
             }
-            
+
             response = client.do_request(health_checks_url, method: 'PUT', json_data: complete_payload)
             if response.nil?
               raise "Failed to delete HTTP check: No response from API"
             end
-            
+
             result, error = response
             if error
               raise "Failed to delete HTTP check: #{error}"

@@ -6,7 +6,7 @@ require 'cgi'
 
 
 module AxonOpsUtils
-  
+
   # Chef-style property definitions for AxonOps resources
   def self.base_properties
     {
@@ -64,52 +64,52 @@ module AxonOpsUtils
 
   def do_request(rel_url, method: 'GET', ok_codes: [200, 201, 204], data: nil, json_data: nil, form_field: '')
     # Perform a GET request to AxonOps and return the response or an error
-    
+
     # bearer empty is for anonymous
     bearer = ''
-    # 
+    #
     api_token = ''
-    
+
     # if we have auth_token, use it
     bearer = @auth_token if @auth_token
-    
+
     # if we have an api token for on prem axonserver instances
     api_token = @api_token if @api_token
-    
+
     # if we have jwt, use it
     bearer = @jwt if @jwt
-    
+
     full_url = @base_url + '/' + rel_url.sub(/^\/+/, '')
-    
+
     if data.nil? && !json_data.nil?
       data = JSON.generate(json_data)
     end
-    
+
     headers = {
       'Accept' => 'application/json',
       'User-Agent' => 'AxonOps Chef Cookbook'
     }
-    
+
     if !bearer.empty?
       headers['Authorization'] = "Bearer #{bearer}"
     end
-    
+
     if !api_token.empty?
       headers['Authorization'] = "AxonApi #{api_token}"
     end
-    
+
     if !form_field.empty?
       headers['Content-Type'] = 'application/x-www-form-urlencoded'
       data = "#{form_field}=#{CGI.escape(data)}"
     elsif !data.nil?
       headers['Content-Type'] = 'application/json'
     end
-    
+
     begin
       uri = URI(full_url)
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = (uri.scheme == 'https')
-      
+
       # Create the request
       case method.upcase
       when 'GET'
@@ -128,23 +128,23 @@ module AxonOpsUtils
       else
         return [nil, "Unsupported HTTP method: #{method}"]
       end
-      
+
       # Set headers
       headers.each { |key, value| request[key] = value }
-      
+
       # Make the request
       response = http.request(request)
-      
+
       unless ok_codes.include?(response.code.to_i)
         return [nil, "#{full_url} return code is #{response.code}"]
       end
-      
+
       content = response.body
-      
+
     rescue => e
       return [nil, "#{e.message} #{full_url}"]
     end
-    
+
     # Not all requests return a response so ignore json decoding errors
     begin
       return [JSON.parse(content), nil]
@@ -161,7 +161,7 @@ module AxonOpsUtils
   # Alternative method for getting configuration from environment or parameters
   def self.get_config(options = {})
     config = {}
-    
+
     config[:base_url] = options[:base_url] || ENV['AXONOPS_URL']
     config[:org] = options[:org] || ENV['AXONOPS_ORG']
     config[:cluster] = options[:cluster] || ENV['AXONOPS_CLUSTER']
@@ -170,7 +170,7 @@ module AxonOpsUtils
     config[:password] = options[:password] || ENV['AXONOPS_PASSWORD']
     config[:cluster_type] = options[:cluster_type] || ENV['AXONOPS_CLUSTER_TYPE'] || 'cassandra'
     config[:api_token] = options[:api_token] || ENV['AXONOPS_API_TOKEN']
-    config[:override_saas] = options.key?(:override_saas) ? options[:override_saas] : 
+    config[:override_saas] = options.key?(:override_saas) ? options[:override_saas] :
                               string_to_bool(ENV['AXONOPS_OVERRIDE_SAAS']) || false
 
     # Validate required parameters

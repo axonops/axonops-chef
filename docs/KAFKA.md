@@ -211,12 +211,12 @@ The recipe automatically configures:
 # For production workloads
 node.override['axonops']['kafka']['heap_size'] = '6G'
 node.override['axonops']['kafka']['jvm_performance_opts'] = <<-EOF
-  -server 
-  -XX:+UseG1GC 
-  -XX:MaxGCPauseMillis=20 
-  -XX:InitiatingHeapOccupancyPercent=35 
-  -XX:+ExplicitGCInvokesConcurrent 
-  -XX:MaxInlineLevel=15 
+  -server
+  -XX:+UseG1GC
+  -XX:MaxGCPauseMillis=20
+  -XX:InitiatingHeapOccupancyPercent=35
+  -XX:+ExplicitGCInvokesConcurrent
+  -XX:MaxInlineLevel=15
   -Djava.awt.headless=true
 EOF
 ```

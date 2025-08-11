@@ -96,7 +96,7 @@ elsif node['axonops']['cassandra']['version'].start_with?('4.')
     )
     notifies :restart, 'service[cassandra]', :delayed
   end
-  
+
   template "#{cassandra_home}/conf/jvm11-server.options" do
     source 'cassandra-jvm11-server.options.erb'
     owner cassandra_user
@@ -185,12 +185,12 @@ ruby_block 'wait-for-cassandra' do
   block do
     require 'socket'
     require 'timeout'
-    
+
     host = node['axonops']['cassandra']['listen_address']
     port = node['axonops']['cassandra']['native_transport_port']
-    
+
     Chef::Log.info("Waiting for Cassandra to be ready on #{host}:#{port}...")
-    
+
     begin
       Timeout.timeout(300) do
         loop do

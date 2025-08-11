@@ -52,7 +52,7 @@ The AxonOps Server deployment consists of:
 
 - **Operating System**: Linux (Ubuntu, CentOS, RHEL)
 - **Memory**: Minimum 8GB RAM (16GB+ recommended for production)
-- **Disk**: 
+- **Disk**:
   - 50GB+ for system and software
   - Additional space for data retention (depends on cluster size)
   - SSD recommended for better performance

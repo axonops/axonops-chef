@@ -40,7 +40,7 @@ file '/etc/sysctl.d/99-axonops.conf' do
   sysctl_content << "net.ipv4.tcp_keepalive_time=60"
   sysctl_content << "net.ipv4.tcp_keepalive_probes=3"
   sysctl_content << "net.ipv4.tcp_keepalive_intvl=10"
-  
+
   content sysctl_content.join("\n") + "\n"
   mode '0644'
   notifies :run, 'execute[sysctl-reload]', :immediately

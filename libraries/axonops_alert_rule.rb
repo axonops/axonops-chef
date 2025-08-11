@@ -23,17 +23,17 @@ class Chef
     property :dc, Array, default: []
     property :rack, Array, default: []
     property :host_id, Array, default: []
-    property :group_by, Array, default: [], 
+    property :group_by, Array, default: [],
              equal_to: ['dc', 'host_id', 'rack', 'scope', []]
     property :routing, Array, default: []
     property :routing_severity, String, default: 'warning',
              equal_to: ['info', 'warning', 'error']
     property :present, [true, false], default: true
     property :percentile, Array, default: [],
-             equal_to: [[], '', '75thPercentile', '95thPercentile', '98thPercentile', 
+             equal_to: [[], '', '75thPercentile', '95thPercentile', '98thPercentile',
                        '99thPercentile', '999thPercentile']
     property :consistency, Array, default: [],
-             equal_to: [[], '', 'ALL', 'ANY', 'ONE', 'TWO', 'THREE', 'SERIAL', 
+             equal_to: [[], '', 'ALL', 'ANY', 'ONE', 'TWO', 'THREE', 'SERIAL',
                        'QUORUM', 'EACH_QUORUM', 'LOCAL_ONE', 'LOCAL_QUORUM', 'LOCAL_SERIAL']
     property :keyspace, Array, default: []
     property :username, String, default: ''
@@ -50,7 +50,7 @@ class Chef
     action :create do
       # Validate required properties when present is true
       if new_resource.present
-        if new_resource.operator.nil? || new_resource.warning_value.nil? || 
+        if new_resource.operator.nil? || new_resource.warning_value.nil? ||
            new_resource.critical_value.nil? || new_resource.duration.nil?
           raise "operator, warning_value, critical_value, and duration are required when present is true"
         end
@@ -75,12 +75,12 @@ class Chef
           # Get existing alert rules
           alerts_url = "/api/v1/alert-rules/#{new_resource.org}/#{client.get_cluster_type}/#{new_resource.cluster}"
           Chef::Log.debug("Fetching alerts from: #{alerts_url}")
-          
+
           response = client.do_request(alerts_url, method: 'GET')
           if response.nil?
             raise "Failed to get alert rules: No response from API"
           end
-          
+
           current_rules, error = response
           if error
             Chef::Log.error("Failed to get alert rules: #{error}")
@@ -92,12 +92,12 @@ class Chef
           # Get dashboard templates
           dash_templates_url = "/api/v1/dashboardtemplate/#{new_resource.org}/#{client.get_cluster_type}/#{new_resource.cluster}"
           Chef::Log.debug("Fetching dashboard templates from: #{dash_templates_url}")
-          
+
           response = client.do_request(dash_templates_url)
           if response.nil?
             raise "Failed to get dashboard templates: No response from API"
           end
-          
+
           dash_templates, error = response
           if error
             error_message = "Error occurred fetching AxonOps dashboard template: #{dash_templates_url} - #{error}"
@@ -141,9 +141,9 @@ class Chef
           else
             new_chart = new_charts
           end
-          
+
           Chef::Log.debug("Selected chart: #{new_chart}")
-          
+
           # Determine alert name (use resource name or chart title)
           alert_name = new_resource.name.empty? ? new_resource.chart : new_resource.name
           Chef::Log.debug("Alert name: #{alert_name}")
@@ -190,16 +190,16 @@ class Chef
           if new_resource.routing && new_resource.routing.any?
             new_resource.routing.each do |integration_name|
               next if integration_name.nil? || integration_name.empty?
-              
+
               begin
                 Chef::Log.debug("Looking up integration: '#{integration_name}'")
                 integration_id = client.find_integration_id_by_name(new_resource.cluster, integration_name)
                 Chef::Log.debug("Integration lookup result: #{integration_id}")
-                
+
                 if integration_id && !integration_id.to_s.empty?
                   # Ensure integration_id is a string, not an array
                   id_string = integration_id.is_a?(Array) ? integration_id.first.to_s : integration_id.to_s
-                  
+
                   # Double check we have a valid string
                   unless id_string.nil? || id_string.empty?
                     routing_integrations << {
@@ -296,15 +296,15 @@ class Chef
             if new_resource.present
               # Create/Update alert with nil checks
               widget_url = "/#{new_resource.org}/#{new_resource.cluster_type}/#{new_resource.cluster}/dashboard/#{new_dash['uuid']}?#{new_resource.url_filter}"
-              
+
               # Ensure all required fields are not nil
               alert_id = old_alert ? old_alert['id'] : SecureRandom.uuid
               correlation_id = new_chart['uuid']
-              
+
               unless alert_id && correlation_id && expression
                 raise "Missing required fields: alert_id=#{alert_id}, correlation_id=#{correlation_id}, expression=#{expression}"
               end
-              
+
               payload = {
                 'alert' => alert_name || new_resource.chart,
                 'for' => new_resource.duration.to_s,
@@ -326,12 +326,12 @@ class Chef
               }
 
               Chef::Log.debug("Sending payload to AxonOps: #{payload}")
-              
+
               response = client.do_request(alerts_url, method: 'POST', json_data: payload)
               if response.nil?
                 raise "Failed to create/update alert rule: No response from API"
               end
-              
+
               result, error = response
               if error
                 raise "Failed to create/update alert rule: #{error}"
@@ -345,7 +345,7 @@ class Chef
                 if response.nil?
                   raise "Failed to delete alert rule: No response from API"
                 end
-                
+
                 result, error = response
                 if error
                   raise "Failed to delete alert rule: #{error}"
@@ -378,14 +378,14 @@ class Chef
             cluster_type: new_resource.cluster_type,
             override_saas: new_resource.override_saas
           )
-          
+
           alerts_url = "/api/v1/alert-rules/#{new_resource.org}/#{client.get_cluster_type}/#{new_resource.cluster}"
-          
+
           response = client.do_request(alerts_url, method: 'GET')
           if response.nil?
             raise "Failed to get alert rules: No response from API"
           end
-          
+
           current_rules, error = response
           if error
             Chef::Log.error("Failed to get alert rules: #{error}")
@@ -393,19 +393,19 @@ class Chef
           end
 
           alert_name = new_resource.name.empty? ? new_resource.chart : new_resource.name
-          
+
           current_metricrules = current_rules['metricrules'] if current_rules
           old_alert = nil
           if current_metricrules
             old_alert = AxonOpsUtils.find_by_field(current_metricrules, 'alert', alert_name)
           end
-          
+
           if old_alert
             response = client.do_request("#{alerts_url}/#{old_alert['id']}", method: 'DELETE')
             if response.nil?
               raise "Failed to delete alert rule: No response from API"
             end
-            
+
             result, error = response
             if error
               raise "Failed to delete alert rule: #{error}"

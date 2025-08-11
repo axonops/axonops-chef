@@ -53,6 +53,12 @@ default['axonops']['server']['tls']['cert_file'] = nil
 default['axonops']['server']['tls']['key_file'] = nil
 default['axonops']['server']['tls']['ca_file'] = nil
 
+# Alert Log Configuration
+default['axonops']['server']['alert_log']['enabled'] = false
+default['axonops']['server']['alert_log']['path'] = '/var/log/axonops/axon-server-alert.log'
+default['axonops']['server']['alert_log']['max_size_mb'] = 50
+default['axonops']['server']['alert_log']['max_files'] = 5
+
 # Retention Configuration
 default['axonops']['server']['retention']['events'] = '4w' # weeks
 default['axonops']['server']['retention']['security_events'] = '8w' # weeks

@@ -116,7 +116,7 @@ node.override['axonops']['server']['elastic']['heap_size'] = '2g'
 node.override['axonops']['server']['elastic']['heap_size'] = '4g'
 ```
 
-**Important**: 
+**Important**:
 - Never exceed 50% of available RAM
 - Never exceed 32GB (compressed oops threshold)
 - Heap size should match your data volume and query complexity
@@ -227,7 +227,7 @@ AxonOps creates the following indices:
    ```bash
    # Check service status
    systemctl status axonops-search
-   
+
    # Check logs
    tail -f /var/log/axonops-search/axonops-cluster.log
    ```
@@ -241,7 +241,7 @@ AxonOps creates the following indices:
    ```bash
    # Test connection
    curl -X GET "localhost:9200/_cluster/health?pretty"
-   
+
    # Check if service is running
    systemctl is-active axonops-search
    ```
@@ -250,7 +250,7 @@ AxonOps creates the following indices:
    ```bash
    # Verify vm.max_map_count
    sysctl vm.max_map_count
-   
+
    # If too low, the recipe should have fixed it, but you can manually set:
    sysctl -w vm.max_map_count=262144
    ```

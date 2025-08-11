@@ -81,3 +81,9 @@ retention:
   backups:
     local: <%= @retention['backups']['local'] %>
     remote: <%= @retention['backups']['remote'] %>
+
+alert_log:
+  enabled: <%= node['axonops']['server']['alert_log']['enabled'] %>
+  path: <%= node['axonops']['server']['alert_log']['path'] %>
+  max_size_mb: <%= node['axonops']['server']['alert_log']['max_size_mb'] %>
+  max_files: <%= node['axonops']['server']['alert_log']['max_files'] %>

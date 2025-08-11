@@ -54,7 +54,7 @@ def register_agent():
     """Register a new agent"""
     data = request.get_json()
     agent_id = data.get('agent_id', f"agent-{len(agents) + 1}")
-    
+
     agents[agent_id] = {
         'id': agent_id,
         'name': data.get('name', 'unknown'),
@@ -67,9 +67,9 @@ def register_agent():
         'registered_at': datetime.utcnow().isoformat(),
         'last_heartbeat': datetime.utcnow().isoformat()
     }
-    
+
     logger.info(f"Agent registered: {agent_id} from {agents[agent_id]['host']}")
-    
+
     return jsonify({
         'agent_id': agent_id,
         'status': 'registered',
@@ -82,7 +82,7 @@ def agent_heartbeat(agent_id):
     if agent_id in agents:
         agents[agent_id]['last_heartbeat'] = datetime.utcnow().isoformat()
         agents[agent_id]['status'] = 'connected'
-        
+
         # Process metrics if provided
         data = request.get_json() or {}
         if 'metrics' in data:
@@ -91,7 +91,7 @@ def agent_heartbeat(agent_id):
                 'timestamp': datetime.utcnow().isoformat(),
                 'metrics': data['metrics']
             })
-        
+
         return jsonify({'status': 'ok'})
     else:
         return jsonify({'error': 'Agent not found'}), 404
@@ -133,11 +133,11 @@ def list_clusters():
             }
         cluster_list[cluster_name]['nodes'] += 1
         cluster_list[cluster_name]['datacenters'].add(agent['datacenter'])
-    
+
     # Convert sets to lists for JSON serialization
     for cluster in cluster_list.values():
         cluster['datacenters'] = list(cluster['datacenters'])
-    
+
     return jsonify({
         'clusters': list(cluster_list.values()),
         'total': len(cluster_list),
@@ -193,10 +193,10 @@ def main():
     # Read config from environment or defaults
     host = os.environ.get('AXON_SERVER_HOST', '0.0.0.0')
     port = int(os.environ.get('AXON_SERVER_PORT', '8080'))
-    
+
     logger.info(f"Starting AxonOps Server (mock) on {host}:{port}")
     logger.info("This is a mock implementation for testing purposes")
-    
+
     # Start Flask app
     app.run(host=host, port=port, debug=False)
 

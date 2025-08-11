@@ -100,10 +100,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Changed `org` to `org_name`
   - Changed `tls` to `tls_mode` with proper values ("disabled", "TLS", "mTLS")
   - Kept `api_key` as-is (recipe already handles this correctly)
-  
+
 - Fixed cassandra configuration attributes:
   - Changed `datacenter` to `dc` in all cassandra sections
-  
+
 - Fixed server configuration attributes:
   - Changed `elasticsearch` to `elastic` in server sections
   - Fixed TLS configuration structure from `enabled: true/false` to `mode: "TLS"/"disabled"`

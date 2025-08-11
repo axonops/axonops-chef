@@ -213,7 +213,7 @@ default['axonops']['cassandra']['internode_application_send_queue_reserve_global
 default['axonops']['cassandra']['internode_application_receive_queue_reserve_endpoint_capacity'] = '128MiB'
 default['axonops']['cassandra']['internode_application_receive_queue_reserve_global_capacity'] = '512MiB'
 
-# Streaming Configuration  
+# Streaming Configuration
 default['axonops']['cassandra']['stream_entire_sstables'] = true
 default['axonops']['cassandra']['stream_throughput_outbound'] = '24MiB/s'
 default['axonops']['cassandra']['stream_throughput_inbound'] = nil

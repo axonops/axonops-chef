@@ -17,7 +17,7 @@ class Chef
              equal_to: ['local', 's3', 'sftp', 'azure']
     property :remote_config, String, default: ''
     property :remote_path, String, default: ''
-    
+
     # S3 specific properties
     property :s3_region, String, default: 'us-east-1'
     property :s3_access_key_id, String, default: ''
@@ -27,14 +27,14 @@ class Chef
     property :s3_encryption, String, default: 'AES256'
     property :s3_no_check_bucket, [true, false], default: true
     property :s3_disable_checksum, [true, false], default: false
-    
+
     # SFTP specific properties
     property :sftp_host, String, default: ''
     property :sftp_user, String, default: ''
     property :sftp_pass, String, default: ''
     property :sftp_port, String, default: '22'
     property :sftp_key_file, String, default: ''
-    
+
     # Azure specific properties
     property :azure_account, String, default: ''
     property :azure_key, String, default: ''
@@ -96,12 +96,12 @@ class Chef
           # Get existing backups
           backups_url = "/api/v1/cassandraScheduleSnapshot/#{new_resource.org}/#{client.get_cluster_type}/#{new_resource.cluster}"
           Chef::Log.debug("Fetching backups from: #{backups_url}")
-          
+
           response = client.do_request(backups_url, method: 'GET')
           if response.nil?
             raise "Failed to get backups: No response from API"
           end
-          
+
           current_backups, error = response
           if error
             Chef::Log.error("Failed to get backups: #{error}")
@@ -141,7 +141,7 @@ class Chef
               break if old_backup
             end
           end
-          
+
           Chef::Log.debug("Found existing backup: #{old_backup ? 'YES' : 'NO'}")
           Chef::Log.debug("Existing backup data: #{old_backup}") if old_backup
 
@@ -186,13 +186,13 @@ class Chef
                 if response.nil?
                   raise "Failed to delete existing backup: No response from API"
                 end
-                
+
                 result, error = response
                 if error
                   raise "Failed to delete existing backup: #{error}"
                 end
               end
-              
+
               # Create/Update backup
               # Build remote_config if not explicitly provided
               remote_config_value = new_resource.remote_config
@@ -209,7 +209,7 @@ class Chef
                     'no_check_bucket' => new_resource.s3_no_check_bucket.to_s,
                     'disable_checksum' => new_resource.s3_disable_checksum.to_s
                   }
-                  
+
                   # Handle authentication
                   if !new_resource.s3_access_key_id.empty? && !new_resource.s3_secret_access_key.empty?
                     config['env_auth'] = 'false'
@@ -218,7 +218,7 @@ class Chef
                   else
                     config['env_auth'] = 'true'
                   end
-                  
+
                 when 'sftp'
                   config = {
                     'type' => 'sftp',
@@ -228,13 +228,13 @@ class Chef
                   config['pass'] = new_resource.sftp_pass unless new_resource.sftp_pass.empty?
                   config['port'] = new_resource.sftp_port unless new_resource.sftp_port.empty?
                   config['key_file'] = new_resource.sftp_key_file unless new_resource.sftp_key_file.empty?
-                  
+
                 when 'azure'
                   config = {
                     'type' => 'azureblob',
                     'account' => new_resource.azure_account
                   }
-                  
+
                   if new_resource.azure_use_msi
                     config['use_msi'] = 'true'
                     config['msi_object_id'] = new_resource.azure_msi_object_id unless new_resource.azure_msi_object_id.empty?
@@ -243,15 +243,15 @@ class Chef
                   else
                     config['key'] = new_resource.azure_key unless new_resource.azure_key.empty?
                   end
-                  
+
                 else
                   config = {}
                 end
-                
+
                 # Convert to rclone config format
                 remote_config_value = config.map { |k, v| "#{k} = #{v}" }.join("\n")
               end
-              
+
               backup_payload = {
                 'LocalRetentionDuration' => new_resource.local_retention_duration,
                 'remoteConfig' => remote_config_value,
@@ -280,14 +280,14 @@ class Chef
               }
 
               Chef::Log.debug("Sending backup payload to AxonOps: #{backup_payload}")
-              
+
               # Use POST for create/update with different endpoint
               create_url = "/api/v1/cassandraSnapshot/#{new_resource.org}/#{client.get_cluster_type}/#{new_resource.cluster}"
               response = client.do_request(create_url, method: 'POST', json_data: backup_payload)
               if response.nil?
                 raise "Failed to create/update backup: No response from API"
               end
-              
+
               result, error = response
               if error
                 raise "Failed to create/update backup: #{error}"
@@ -300,12 +300,12 @@ class Chef
                 # Delete the backup using the schedule snapshot endpoint
                 Chef::Log.debug("Deleting backup - old_backup structure: #{old_backup.inspect}")
                 Chef::Log.debug("Deleting backup - old_backup ID: #{old_backup['ID']}")
-                
+
                 # Check if ID exists
                 if old_backup['ID'].nil? || old_backup['ID'].to_s.empty?
                   raise "Backup ID not found in backup structure"
                 end
-                
+
                 delete_payload = [old_backup['ID']]
                 Chef::Log.debug("Delete payload (Ruby): #{delete_payload.inspect}")
                 Chef::Log.debug("Delete payload (JSON): #{delete_payload.to_json}")
@@ -314,7 +314,7 @@ class Chef
                 if response.nil?
                   raise "Failed to delete backup: No response from API"
                 end
-                
+
                 result, error = response
                 if error
                   raise "Failed to delete backup: #{error}"
@@ -347,20 +347,20 @@ class Chef
             cluster_type: new_resource.cluster_type,
             override_saas: new_resource.override_saas
           )
-          
+
           backups_url = "/api/v1/cassandraScheduleSnapshot/#{new_resource.org}/#{client.get_cluster_type}/#{new_resource.cluster}"
-          
+
           response = client.do_request(backups_url, method: 'GET')
           if response.nil?
             raise "Failed to get backups: No response from API"
           end
-          
+
           current_backups, error = response
           if error
             Chef::Log.error("Failed to get backups: #{error}")
             raise error
           end
-          
+
           # Find existing backup by tag
           old_backup = nil
           if current_backups && current_backups['ScheduledSnapshots']
@@ -383,17 +383,17 @@ class Chef
               break if old_backup
             end
           end
-          
+
           if old_backup
             # Delete the backup using the schedule snapshot endpoint
             Chef::Log.debug("Old backup structure: #{old_backup.inspect}")
             Chef::Log.debug("Old backup ID: #{old_backup['ID']}")
-            
+
             # Check if ID exists
             if old_backup['ID'].nil? || old_backup['ID'].to_s.empty?
               raise "Backup ID not found in backup structure"
             end
-            
+
             delete_payload = [old_backup['ID']]
             Chef::Log.info("Delete payload (Ruby): #{delete_payload.inspect}")
             Chef::Log.info("Delete payload (JSON): #{delete_payload.to_json}")
@@ -402,7 +402,7 @@ class Chef
             if response.nil?
               raise "Failed to delete backup: No response from API"
             end
-            
+
             result, error = response
             if error
               raise "Failed to delete backup: #{error}"

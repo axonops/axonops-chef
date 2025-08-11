@@ -39,13 +39,13 @@ DASHBOARD_HTML = """
         <h1>AxonOps Dashboard</h1>
         <p>Mock implementation for testing</p>
     </div>
-    
+
     <div class="status">
         <h2>Server Status</h2>
         <p>API Endpoint: {{ api_endpoint }}</p>
         <p>Status: <span class="healthy">Connected</span></p>
     </div>
-    
+
     <div class="status">
         <h2>Cluster Overview</h2>
         <div class="metric">
@@ -61,7 +61,7 @@ DASHBOARD_HTML = """
             <p>Connected: <span id="agent-count">-</span></p>
         </div>
     </div>
-    
+
     <script>
         // Mock data updates
         function updateStats() {
@@ -69,7 +69,7 @@ DASHBOARD_HTML = """
             document.getElementById('cluster-count').textContent = Math.floor(Math.random() * 3) + 1;
             document.getElementById('agent-count').textContent = Math.floor(Math.random() * 10) + 1;
         }
-        
+
         setInterval(updateStats, 5000);
         updateStats();
     </script>
@@ -97,10 +97,10 @@ def main():
     # Read config from environment or defaults
     host = os.environ.get('AXON_DASH_HOST', '0.0.0.0')
     port = int(os.environ.get('AXON_DASH_PORT', '3000'))
-    
+
     logger.info(f"Starting AxonOps Dashboard (mock) on {host}:{port}")
     logger.info("This is a mock implementation for testing purposes")
-    
+
     # Start Flask app
     app.run(host=host, port=port, debug=False)
 

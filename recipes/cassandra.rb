@@ -7,7 +7,7 @@
 #
 
 # Check for existing Cassandra installation
-if ::File.exist?('/etc/cassandra/cassandra.yaml') || 
+if ::File.exist?('/etc/cassandra/cassandra.yaml') ||
    ::File.exist?('/etc/cassandra/conf/cassandra.yaml') ||
    ::File.exist?('/usr/bin/cassandra') ||
    ::File.exist?('/opt/cassandra/bin/cassandra')

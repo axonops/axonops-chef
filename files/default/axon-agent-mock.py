@@ -27,11 +27,11 @@ class MockAxonAgent:
         self.config = self.load_config()
         self.agent_id = f"agent-{socket.gethostname()}-{os.getpid()}"
         self.registered = False
-        
+
     def load_config(self):
         """Load agent configuration"""
         config_path = '/etc/axonops/axon-agent.yml'
-        
+
         # Default config
         config = {
             'agent': {
@@ -53,7 +53,7 @@ class MockAxonAgent:
                 'interval': 60
             }
         }
-        
+
         # Try to load from file
         if os.path.exists(config_path):
             try:
@@ -74,9 +74,9 @@ class MockAxonAgent:
                         match = re.search(r'hosts:\s*\["([^"]+)"\]', content)
                         if match:
                             config['server']['hosts'] = [match.group(1)]
-        
+
         return config
-    
+
     def register(self):
         """Register with AxonOps server"""
         for server_host in self.config['server']['hosts']:
@@ -91,24 +91,24 @@ class MockAxonAgent:
                     'rack': self.config['agent'].get('tags', {}).get('rack', 'rack1'),
                     'cassandra_version': '5.0.4'
                 }
-                
+
                 req = urllib.request.Request(
                     url,
                     data=json.dumps(data).encode('utf-8'),
                     headers={'Content-Type': 'application/json'}
                 )
-                
+
                 with urllib.request.urlopen(req, timeout=10) as response:
                     result = json.loads(response.read())
                     logger.info(f"Successfully registered with server: {result}")
                     self.registered = True
                     return True
-                    
+
             except Exception as e:
                 logger.error(f"Failed to register with {server_host}: {e}")
-        
+
         return False
-    
+
     def collect_metrics(self):
         """Collect mock metrics"""
         return {
@@ -134,12 +134,12 @@ class MockAxonAgent:
                 'active_connections': random.randint(10, 100)
             }
         }
-    
+
     def send_heartbeat(self):
         """Send heartbeat with metrics to server"""
         if not self.registered:
             return False
-        
+
         for server_host in self.config['server']['hosts']:
             try:
                 url = f"http://{server_host}/api/v1/agents/{self.agent_id}/heartbeat"
@@ -147,23 +147,23 @@ class MockAxonAgent:
                     'timestamp': datetime.utcnow().isoformat(),
                     'metrics': self.collect_metrics()
                 }
-                
+
                 req = urllib.request.Request(
                     url,
                     data=json.dumps(data).encode('utf-8'),
                     headers={'Content-Type': 'application/json'}
                 )
-                
+
                 with urllib.request.urlopen(req, timeout=10) as response:
                     result = json.loads(response.read())
                     logger.debug(f"Heartbeat sent successfully: {result}")
                     return True
-                    
+
             except Exception as e:
                 logger.error(f"Failed to send heartbeat to {server_host}: {e}")
-        
+
         return False
-    
+
     def check_cassandra_connection(self):
         """Check if Cassandra is accessible"""
         for host in self.config['cassandra']['hosts']:
@@ -171,31 +171,31 @@ class MockAxonAgent:
                 host_parts = host.split(':')
                 hostname = host_parts[0]
                 port = int(host_parts[1]) if len(host_parts) > 1 else 9042
-                
+
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.settimeout(5)
                 result = sock.connect_ex((hostname, port))
                 sock.close()
-                
+
                 if result == 0:
                     logger.info(f"Cassandra is accessible at {host}")
                     return True
                 else:
                     logger.warning(f"Cannot connect to Cassandra at {host}")
-                    
+
             except Exception as e:
                 logger.error(f"Error checking Cassandra connection: {e}")
-        
+
         return False
-    
+
     def run(self):
         """Main agent loop"""
         logger.info(f"Starting AxonOps Agent (mock) - ID: {self.agent_id}")
         logger.info(f"Configuration: {json.dumps(self.config, indent=2)}")
-        
+
         # Check Cassandra connection
         self.check_cassandra_connection()
-        
+
         # Register with server
         retry_count = 0
         while not self.registered and retry_count < 5:
@@ -204,33 +204,33 @@ class MockAxonAgent:
                 break
             retry_count += 1
             time.sleep(10)
-        
+
         if not self.registered:
             logger.error("Failed to register with server after 5 attempts")
             return 1
-        
+
         # Main monitoring loop
         interval = self.config['monitoring']['interval']
         logger.info(f"Starting monitoring loop with {interval}s interval")
-        
+
         while True:
             try:
                 # Send heartbeat with metrics
                 self.send_heartbeat()
-                
+
                 # Log status
                 logger.info(f"Agent running - Next heartbeat in {interval}s")
-                
+
                 # Sleep until next interval
                 time.sleep(interval)
-                
+
             except KeyboardInterrupt:
                 logger.info("Shutting down agent...")
                 break
             except Exception as e:
                 logger.error(f"Error in main loop: {e}")
                 time.sleep(10)
-        
+
         return 0
 
 def main():

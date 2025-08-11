@@ -542,7 +542,7 @@ row_cache_save_period: <%= node['axonops']['cassandra']['row_cache_save_period']
 # Default value is empty to make it "auto" (min(2.5% of Heap (in MiB), 50MiB)). Set to 0 to disable counter cache.
 # NOTE: if you perform counter deletes and rely on low gcgs, you should disable the counter cache.
 # Min unit: MiB
-counter_cache_size: 
+counter_cache_size:
 
 # Duration in seconds after which Cassandra should
 # save the counter cache (keys only). Caches are saved to saved_caches_directory as

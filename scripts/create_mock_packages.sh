@@ -10,7 +10,7 @@ echo "Creating architecture-independent mock AxonOps packages..."
 
 # Create temporary directory for package building
 TEMP_DIR=$(mktemp -d)
-trap "rm -rf $TEMP_DIR" EXIT
+trap 'rm -rf $TEMP_DIR' EXIT
 
 # Function to create a mock debian package
 create_mock_deb() {
@@ -18,13 +18,13 @@ create_mock_deb() {
     local version=$2
     local arch=$3
     local description=$4
-    
+
     local pkg_dir="${TEMP_DIR}/${name}_${version}_${arch}"
     mkdir -p "${pkg_dir}/DEBIAN"
     mkdir -p "${pkg_dir}/usr/bin"
     mkdir -p "${pkg_dir}/etc/axonops"
     mkdir -p "${pkg_dir}/lib/systemd/system"
-    
+
     # Create control file
     cat > "${pkg_dir}/DEBIAN/control" <<EOF
 Package: ${name}
@@ -52,7 +52,7 @@ chown -R axonops:axonops /var/log/axonops /var/lib/axonops /etc/axonops
 exit 0
 EOF
     chmod 755 "${pkg_dir}/DEBIAN/postinst"
-    
+
     # Create a mock binary
     cat > "${pkg_dir}/usr/bin/${name}" <<'EOF'
 #!/bin/bash
@@ -61,7 +61,7 @@ echo "This is a mock package for testing purposes"
 exit 0
 EOF
     chmod 755 "${pkg_dir}/usr/bin/${name}"
-    
+
     # Create systemd service
     cat > "${pkg_dir}/lib/systemd/system/${name}.service" <<EOF
 [Unit]
@@ -79,7 +79,7 @@ RestartSec=30
 [Install]
 WantedBy=multi-user.target
 EOF
-    
+
     # Build the package
     dpkg-deb --build "${pkg_dir}" "${PACKAGES_DIR}/${name}_${version}_${arch}.deb"
     echo "Created: ${PACKAGES_DIR}/${name}_${version}_${arch}.deb"

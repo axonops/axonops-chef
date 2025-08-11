@@ -18,17 +18,17 @@ on:
 jobs:
   test-alert-rules:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
-    
+
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: '3.2'
         bundler-cache: false
-    
+
     - name: Install Chef Workstation
       run: |
         wget https://packages.chef.io/files/stable/chef-workstation/23.5.1040/ubuntu/22.04/chef-workstation_23.5.1040-1_amd64.deb
@@ -37,34 +37,34 @@ jobs:
         source ~/.bashrc
         # Accept Chef license
         sudo env CHEF_LICENSE=accept-silent chef -v
-    
+
     - name: Verify Chef installation
       run: |
         export CHEF_LICENSE=accept-silent
         export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
         chef --version
         chef exec ruby --version
-    
+
     - name: Install cookbook dependencies
       run: |
         export CHEF_LICENSE=accept-silent
         export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
         chef exec bundle install || true
         chef exec berks install || true
-    
+
     - name: Run alert_rules unit tests
       run: |
         export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
         export CHEF_LICENSE=accept-silent
         chef exec rspec spec/unit/recipes/alert_rules_spec.rb --format documentation --color
-    
+
     - name: Generate test report
       if: always()
       run: |
         export CHEF_LICENSE=accept-silent
         export PATH=/opt/chef-workstation/bin:/opt/chef-workstation/embedded/bin:$PATH
         chef exec rspec spec/unit/recipes/alert_rules_spec.rb --format html --out rspec_results.html || true
-    
+
     - name: Upload test results
       if: always()
       uses: actions/upload-artifact@v4

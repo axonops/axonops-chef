@@ -67,7 +67,7 @@ if node['axonops']['offline_install']
 else
   # Online installation
   tarball_url = node['axonops']['kafka']['tarball_url'] || "#{node['axonops']['kafka']['apache_mirror']}/kafka/#{kafka_version}/kafka_#{scala_version}-#{kafka_version}.tgz"
-  
+
   remote_file "/tmp/kafka_#{scala_version}-#{kafka_version}.tgz" do
     source tarball_url
     checksum node['axonops']['kafka']['tarball_checksum'] if node['axonops']['kafka']['tarball_checksum']
@@ -240,10 +240,10 @@ ruby_block 'wait-for-kafka' do
   block do
     require 'socket'
     require 'timeout'
-    
+
     retries = 30
     port = node['axonops']['kafka']['port']
-    
+
     retries.times do
       begin
         Timeout::timeout(2) do
