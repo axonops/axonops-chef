@@ -7,7 +7,7 @@ default['axonops']['cassandra']['start_on_boot'] = true
 default['axonops']['cassandra']['base_url'] = 'https://archive.apache.org/dist/cassandra'
 default['axonops']['cassandra']['user'] = 'cassandra'
 default['axonops']['cassandra']['group'] = 'cassandra'
-default['axonops']['cassandra']['version'] = '5.0.4'
+default['axonops']['cassandra']['version'] = '5.0.5'
 default['axonops']['cassandra']['data_root'] = '/var/lib/cassandra'
 default['axonops']['cassandra']['local_jmx'] = 'yes'
 default['axonops']['cassandra']['directories'] = {
@@ -213,7 +213,7 @@ default['axonops']['cassandra']['internode_application_send_queue_reserve_global
 default['axonops']['cassandra']['internode_application_receive_queue_reserve_endpoint_capacity'] = '128MiB'
 default['axonops']['cassandra']['internode_application_receive_queue_reserve_global_capacity'] = '512MiB'
 
-# Streaming Configuration  
+# Streaming Configuration
 default['axonops']['cassandra']['stream_entire_sstables'] = true
 default['axonops']['cassandra']['stream_throughput_outbound'] = '24MiB/s'
 default['axonops']['cassandra']['stream_throughput_inbound'] = nil

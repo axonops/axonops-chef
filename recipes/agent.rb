@@ -12,7 +12,7 @@
 #
 
 # Check for existing Cassandra installation
-if ::File.exist?('/etc/cassandra/cassandra.yaml') || 
+if ::File.exist?('/etc/cassandra/cassandra.yaml') ||
    ::File.exist?('/etc/cassandra/conf/cassandra.yaml') ||
    ::File.exist?('/usr/bin/cassandra') ||
    ::File.exist?('/opt/cassandra/bin/cassandra')
@@ -132,7 +132,7 @@ if node.run_list.include?('recipe[axonops::kafka]') || kafka_detected
   java_agent_env_file = "#{kafka_home}/bin/kafka-server-start.sh"
   service = "kafka"
 elsif node.run_list.include?('recipe[axonops::cassandra]') || cassandra_detected
-  java_agent_package = node['axonops']['java_agent']['package']
+  java_agent_package = node['axonops']['java_agent']['cassandra']
   java_agent_env_file = "#{cassandra_home}/conf/cassandra-env.sh"
   service = "cassandra"
 else
@@ -142,36 +142,36 @@ end
 
 # Install AxonOps agent package
 if node['axonops']['offline_install']
-  # Offline installation from local package
-  if node['axonops']['agent']['package'].nil?
-    raise('Offline installation requested but axonops.packages.agent not specified')
-  end
-
-  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['agent']['package'])
+  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['agent'])
+  java_agent_package = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java_agent'])
 
   unless ::File.exist?(package_path)
     raise("Offline package not found: #{package_path}")
   end
 
+  unless ::File.exist?(java_agent_package)
+    raise("Offline package not found: #{java_agent_package}")
+  end
+
   case node['platform_family']
   when 'debian'
-    dpkg_package java_agent_package do
-      source ::File.join(node['axonops']['offline_packages_path'], java_agent_package)
-      action :install
-    end
     dpkg_package 'axon-agent' do
       source package_path
       action :install
       notifies :restart, 'service[axon-agent]', :delayed
     end
+    dpkg_package java_agent_package do
+      source ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java_agent'])
+      action :install
+    end
   when 'rhel', 'fedora'
-    rpm_package java_agent_package do
-      source ::File.join(node['axonops']['offline_packages_path'], java_agent_package)
+    rpm_package 'axon-agent' do
+      source package_path
       action :install
       notifies :restart, 'service[axon-agent]', :delayed
     end
-    rpm_package 'axon-agent' do
-      source package_path
+    rpm_package java_agent_package do
+      source ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java_agent'])
       action :install
       notifies :restart, 'service[axon-agent]', :delayed
     end

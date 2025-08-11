@@ -19,7 +19,6 @@ default['axonops']['server']['enabled'] = false
 default['axonops']['server']['version'] = 'latest'
 default['axonops']['server']['listen_address'] = '0.0.0.0'
 default['axonops']['server']['listen_port'] = 8080
-default['axonops']['server']['package'] = 'axon-server'
 
 # Server Dependencies
 default['axonops']['server']['elasticsearch']['install'] = true
@@ -61,14 +60,14 @@ default['axonops']['offline_install'] = false
 default['axonops']['offline_packages_path'] = '/opt/axonops/offline'
 
 # Package names
-default['axonops']['packages'] = {
-  'elasticsearch_tarball' => nil,  # Auto-detected based on version
-  'cassandra_tarball' => nil,      # Auto-detected based on version
-  'java_tarball' => nil,           # Auto-detected based on version
-  'agent' => nil,                  # Auto-detected
-  'server' => nil,                 # Auto-detected
-  'dashboard' => nil,              # Auto-detected
-  'java_agent' => nil              # Auto-detected based on Java/Cassandra version
+default['axonops']['offline_packages'] = {
+  'elasticsearch' => 'elasticsearch-7.17.29-linux-x86_64.tar.gz',
+  'cassandra' => 'apache-cassandra-5.0.5-bin.tar.gz',
+  'java' => 'zulu17-ca-jdk-headless-17.0.16-1.x86_64.rpm',
+  'agent' => 'axon-agent-2.0.6-1.x86_64.rpm',
+  'server' => 'axon-server-2.0.5-1.x86_64.rpm',
+  'dashboard' => 'axon-dash-2.0.10-1.x86_64.rpm',
+  'java_agent' => 'axon-cassandra5.0-agent-jdk17-1.0.10-1.noarch.rpm'
 }
 
 # Chef Workstation Configuration
@@ -77,4 +76,3 @@ default['axonops']['chef_workstation']['version'] = 'latest'
 default['axonops']['chef_workstation']['install_chef_workstation'] = true
 default['axonops']['chef_workstation']['install_additional_gems'] = true
 default['axonops']['chef_workstation']['update_cache'] = true
-

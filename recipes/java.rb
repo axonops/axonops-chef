@@ -14,15 +14,13 @@ install_from_tarball = node['java']['install_from_package'] == false || node['ja
 install_zulu = node['java']['zulu'] != false
 
 if node['java']['offline_install'] && node['java']['package']
-  offline_dir = node['axonops']['offline_packages_path'] || '/tmp/offline_packages'
-
   # Install from specified package path
-  package_path = ::File.join(node['axonops']['offline_packages_path'], node['java']['package'])
-  
+  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java'])
+
   if !::File.exist?(package_path)
     raise Chef::Exceptions::FileNotFound, "Java package not found at specified path: #{package_path}"
   end
-  
+
   case node['platform_family']
   when 'debian'
     dpkg_package package_path do
@@ -33,34 +31,34 @@ if node['java']['offline_install'] && node['java']['package']
       action :install
     end
   end
-  
+
   java_home = node['java']['java_home'] || node['java']['zulu_home'] || node['java']['openjdk_home']
 elsif install_from_tarball
   # Install from tarball (offline mode)
   java_home = node['java']['java_home']
-  
+
   # Find Java tarball dynamically if not specified
   if node['java']['tarball_path'] && ::File.exist?(node['java']['tarball_path'])
     tarball_path = node['java']['tarball_path']
   else
     # Look for Zulu Java tarball in offline packages directory
     offline_dir = node['axonops']['offline_packages_path'] || '/tmp/offline_packages'
-    
+
     # Determine architecture
     arch = node['kernel']['machine'] == 'aarch64' ? 'aarch64' : 'x64'
-    
+
     # Find the latest Zulu Java 17 tarball for the architecture
     tarball_pattern = "#{offline_dir}/zulu*jdk*linux_#{arch}.tar.gz"
     tarballs = Dir.glob(tarball_pattern).sort
-    
+
     if tarballs.empty?
       raise Chef::Exceptions::FileNotFound, "No Java tarball found matching pattern: #{tarball_pattern}"
     end
-    
+
     tarball_path = tarballs.last
     Chef::Log.info("Found Java tarball: #{tarball_path}")
   end
-  
+
   # Create Java directory
   directory ::File.dirname(java_home) do
     owner 'root'
@@ -68,27 +66,27 @@ elsif install_from_tarball
     mode '0755'
     recursive true
   end
-  
+
   # Extract Java
   execute 'extract-java' do
     command "tar -xzf #{tarball_path} -C #{::File.dirname(java_home)}"
     creates java_home
     notifies :run, 'ruby_block[create-java-symlink]', :immediately
   end
-  
+
   # Find the extracted directory name and create symlink
   ruby_block 'create-java-symlink' do
     block do
       # Find the extracted directory (e.g., zulu17.54.21-ca-jdk17.0.13-linux_x64)
       parent_dir = ::File.dirname(java_home)
       extracted_dirs = Dir.glob("#{parent_dir}/zulu*").select { |f| File.directory?(f) }
-      
+
       if extracted_dirs.empty?
         raise "No Zulu directory found after extraction"
       end
-      
+
       extracted_dir = extracted_dirs.sort.last # Get the latest if multiple
-      
+
       # Create symlink if it doesn't exist or points to wrong location
       unless ::File.symlink?(java_home) && ::File.readlink(java_home) == extracted_dir
         ::File.unlink(java_home) if ::File.exist?(java_home)
@@ -98,7 +96,7 @@ elsif install_from_tarball
     notifies :run, 'execute[update-java-alternatives]', :immediately
     action :nothing
   end
-  
+
   # Set up alternatives
   execute 'update-java-alternatives' do
     command <<-EOH
@@ -152,23 +150,23 @@ elsif install_zulu && !node['java']['offline_install']
       action :install
       not_if 'rpm -qa | grep -q zulu-repo'
     end
-    
+
     # Install Zulu JDK 17
     package node['java']['zulu_pkg'] do
       action :install
     end
-    
+
     java_home = node['java']['zulu_home']
   end
 
 else
   # Install OpenJDK (when zulu is false or fallback)
   Chef::Log.info("Installing OpenJDK as Zulu is disabled")
-  
+
   package node['java']['openjdk_pkg'] do
     action :install
   end
-  
+
   # Set JAVA_HOME based on platform
   if ::File.exist?(node["java"]["java_home"])
     java_home = node["java"]["java_home"]

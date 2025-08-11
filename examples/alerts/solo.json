@@ -21,7 +21,7 @@
       },
       {
         "name": "Low Disk Space",
-        "dashboard": "System", 
+        "dashboard": "System",
         "chart": "Used Disk Space Per Node",
         "metric": "host_Disk_Percent_Used",
         "operator": ">",
@@ -33,7 +33,7 @@
         "action": "create"
       }
     ],
-    
+
     "log_alert_rules": [
       {
         "name": "Node Down",
@@ -86,7 +86,7 @@
         "action": "create"
       }
     ],
-    
+
     "tcp_checks": [
       {
         "name": "Cassandra CQL Port",
@@ -103,7 +103,7 @@
         "action": "create"
       }
     ],
-    
+
     "shell_checks": [
       {
         "name": "Check Cassandra Process",
@@ -122,7 +122,7 @@
         "action": "create"
       }
     ],
-    
+
     "http_checks": [
       {
         "name": "AxonOps API Health",
@@ -133,7 +133,7 @@
         "action": "create"
       }
     ],
-    
+
     "backups": [
       {
         "name": "Daily Backup",
@@ -145,7 +145,7 @@
         "action": "create"
       }
     ],
-    
+
     "integrations": [
       {
         "name": "Slack Alerts",
@@ -163,7 +163,7 @@
       }
     ]
   },
-  
+
   "run_list": [
     "recipe[axonops::alert_rules]"
   ]

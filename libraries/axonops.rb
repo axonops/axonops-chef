@@ -6,7 +6,7 @@ require 'net/https'
 class AxonOps
   CLOUD_URL = 'https://dash.axonops.cloud'
 
-  attr_reader :org_name, :auth_token, :api_token, :username, :password, 
+  attr_reader :org_name, :auth_token, :api_token, :username, :password,
               :cluster_type, :base_url, :jwt, :integrations_output, :errors
 
   def initialize(org_name: '', auth_token: '', base_url: '', username: '',
@@ -91,7 +91,7 @@ class AxonOps
     @base_url
   end
 
-  def do_request(rel_url, method: 'GET', ok_codes: [200, 201, 204], 
+  def do_request(rel_url, method: 'GET', ok_codes: [200, 201, 204],
                  data: nil, json_data: nil, form_field: '')
     """
     Perform a request to AxonOps and return the response or an error
@@ -209,9 +209,9 @@ class AxonOps
     # Check if the named integration already exists
     if definitions
       definitions.each do |definition|
-        if definition.key?('Type') && definition.key?('Params') && 
+        if definition.key?('Type') && definition.key?('Params') &&
            definition['Params'].key?('name') &&
-           definition['Type'] == integration_type && 
+           definition['Type'] == integration_type &&
            definition['Params']['name'] == name
           return definition, nil
         end

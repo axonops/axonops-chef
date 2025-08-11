@@ -29,7 +29,7 @@ when 'rhel', 'fedora'
   if node['platform_version'].to_i >= 8
     # RHEL 8+ / Rocky / AlmaLinux
     package 'dnf-plugins-core'
-    
+
     # Enable PowerTools/CRB repository
     execute 'enable-powertools' do
       command if node['platform'] == 'rocky'
@@ -39,7 +39,7 @@ when 'rhel', 'fedora'
               end
       not_if 'dnf repolist | grep -i powertools || dnf repolist | grep -i crb'
     end
-    
+
     # Install development tools group
     execute 'install-development-tools' do
       command 'dnf groupinstall -y "Development Tools"'
@@ -52,27 +52,27 @@ when 'rhel', 'fedora'
       not_if 'yum group list installed | grep -i "Development Tools"'
     end
   end
-  
+
   # Install EPEL repository
   package 'epel-release' do
     action :install
     not_if 'rpm -qa | grep -q epel-release'
   end
-  
+
 when 'amazon'
   # Amazon Linux
   execute 'install-development-tools' do
     command 'yum groupinstall -y "Development Tools"'
     not_if 'yum group list installed | grep -i "Development Tools"'
   end
-  
+
   # Enable EPEL for Amazon Linux 2
   execute 'enable-epel' do
     command 'amazon-linux-extras install epel -y'
     only_if { node['platform_version'].to_i == 2 }
     not_if 'rpm -qa | grep -q epel-release'
   end
-  
+
 when 'debian'
   # Ubuntu/Debian
   package %w(build-essential software-properties-common curl) do
@@ -102,7 +102,7 @@ end
 # Install Chef Workstation if enabled
 if node['axonops']['chef_workstation']['install_chef_workstation']
   chef_workstation_version = node['axonops']['chef_workstation']['version']
-  
+
   case node['platform_family']
   when 'rhel', 'fedora', 'amazon'
     if chef_workstation_version == 'latest'
@@ -118,16 +118,16 @@ if node['axonops']['chef_workstation']['install_chef_workstation']
         not_if 'which chef'
       end
     end
-    
+
     package 'chef-workstation' do
       source '/tmp/chef-workstation.rpm'
       action :install
       not_if 'which chef'
     end
-    
+
   when 'debian'
     apt_arch = node['kernel']['machine'] == 'x86_64' ? 'amd64' : 'i386'
-    
+
     if chef_workstation_version == 'latest'
       remote_file '/tmp/chef-workstation.deb' do
         source "https://packages.chef.io/files/stable/chef-workstation/latest/ubuntu/#{node['platform_version']}/chef-workstation_latest-1_#{apt_arch}.deb"
@@ -141,14 +141,14 @@ if node['axonops']['chef_workstation']['install_chef_workstation']
         not_if 'which chef'
       end
     end
-    
+
     dpkg_package 'chef-workstation' do
       source '/tmp/chef-workstation.deb'
       action :install
       not_if 'which chef'
     end
   end
-  
+
   # Add chef shell-init to profile
   file '/etc/profile.d/chef-workstation.sh' do
     content <<-EOH

@@ -96,7 +96,7 @@ elsif node['axonops']['cassandra']['version'].start_with?('4.')
     )
     notifies :restart, 'service[cassandra]', :delayed
   end
-  
+
   template "#{cassandra_home}/conf/jvm11-server.options" do
     source 'cassandra-jvm11-server.options.erb'
     owner cassandra_user
@@ -173,6 +173,19 @@ file node['axonops']['cassandra']['jmx_password_file'] do
   only_if { node['axonops']['cassandra']['jmx_authentication'] }
 end
 
+# Create systemd service
+template '/etc/systemd/system/cassandra.service' do
+  source 'cassandra.service.erb'
+  mode '0644'
+  variables(
+    cassandra_home: cassandra_home,
+    cassandra_user: cassandra_user,
+    cassandra_group: cassandra_group,
+  )
+  notifies :run, 'execute[systemctl-daemon-reload]', :immediately
+  notifies :restart, 'service[cassandra]', :delayed
+end
+
 # Enable and start Cassandra service
 service 'cassandra' do
   supports status: true, restart: true, reload: false
@@ -185,12 +198,12 @@ ruby_block 'wait-for-cassandra' do
   block do
     require 'socket'
     require 'timeout'
-    
+
     host = node['axonops']['cassandra']['listen_address']
     port = node['axonops']['cassandra']['native_transport_port']
-    
+
     Chef::Log.info("Waiting for Cassandra to be ready on #{host}:#{port}...")
-    
+
     begin
       Timeout.timeout(300) do
         loop do

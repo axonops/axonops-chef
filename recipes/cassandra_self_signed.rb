@@ -34,7 +34,7 @@ bash 'generate_cassandra_keystore' do
   code <<-EOH
     # Remove existing keystore if it exists
     rm -f #{keystore_path}
-    
+
     # Generate keypair with self-signed certificate
     #{keytool_cmd} -genkeypair \
       -keyalg RSA \
@@ -46,20 +46,20 @@ bash 'generate_cassandra_keystore' do
       -keypass #{keystore_password} \
       -dname "CN=#{fqdn}, OU=Cassandra, O=AxonOps, L=City, ST=State, C=US" \
       -ext "SAN=dns:#{fqdn},dns:#{hostname},dns:localhost,ip:127.0.0.1"
-    
+
     # Export the certificate
     #{keytool_cmd} -exportcert \
       -alias #{key_alias} \
       -keystore #{keystore_path} \
       -storepass #{keystore_password} \
       -file /tmp/cassandra-cert.der
-    
+
     # Convert DER to PEM format for the certificate
     openssl x509 -inform DER -in /tmp/cassandra-cert.der -out #{node['axonops']['cassandra']['ssl']['cert_file']}
-    
+
     # Export the certificate in PEM format (same as ca.pem since it's self-signed)
     cp #{node['axonops']['cassandra']['ssl']['cert_file']} #{node['axonops']['cassandra']['ssl']['ca_file']}
-    
+
     # Export private key from keystore (requires conversion through PKCS12)
     #{keytool_cmd} -importkeystore \
       -srckeystore #{keystore_path} \
@@ -70,10 +70,10 @@ bash 'generate_cassandra_keystore' do
       -deststoretype PKCS12 \
       -deststorepass #{keystore_password} \
       -destkeypass #{keystore_password}
-    
+
     # Extract private key in PEM format
     openssl pkcs12 -in /tmp/cassandra-key.p12 -nodes -nocerts -out #{node['axonops']['cassandra']['ssl']['key_file']} -passin pass:#{keystore_password}
-    
+
     # Create truststore and import the certificate
     rm -f #{truststore_path}
     #{keytool_cmd} -importcert \
@@ -82,10 +82,10 @@ bash 'generate_cassandra_keystore' do
       -storepass #{truststore_password} \
       -file /tmp/cassandra-cert.der \
       -noprompt
-    
+
     # Clean up temporary files
     rm -f /tmp/cassandra-cert.der /tmp/cassandra-key.p12
-    
+
     # Set proper ownership
     chown #{node['axonops']['cassandra']['user']}:#{node['axonops']['cassandra']['group']} #{keystore_path}
     chown #{node['axonops']['cassandra']['user']}:#{node['axonops']['cassandra']['group']} #{truststore_path}

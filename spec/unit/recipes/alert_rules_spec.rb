@@ -75,7 +75,7 @@ describe 'axonops::alert_rules' do
       allow(ENV).to receive(:[]).and_call_original
       allow(ENV).to receive(:[]).with('AXONOPS_ORG').and_return('env-org')
       allow(ENV).to receive(:[]).with('AXONOPS_CLUSTER').and_return('env-cluster')
-      
+
       chef_run = ChefSpec::ServerRunner.new(platform: 'ubuntu', version: '20.04') do |node|
         node.automatic['axonops']['alert_rules'] = [
           {
@@ -345,7 +345,7 @@ describe 'axonops::alert_rules' do
     let(:chef_run) do
       allow(ENV).to receive(:[]).and_call_original
       allow(ENV).to receive(:[]).with('AXONOPS_ORG').and_return('env-org')
-      
+
       ChefSpec::ServerRunner.new(platform: 'ubuntu', version: '20.04') do |node|
         node.automatic['axonops']['api']['org'] = 'node-org'
         node.automatic['axonops']['api']['cluster'] = 'node-cluster'
@@ -376,31 +376,31 @@ describe 'axonops::alert_rules' do
       ChefSpec::ServerRunner.new(platform: 'ubuntu', version: '20.04') do |node|
         node.automatic['axonops']['api']['org'] = 'test-org'
         node.automatic['axonops']['api']['cluster'] = 'test-cluster'
-        
+
         node.automatic['axonops']['alert_rules'] = [
-          { 'name' => 'CPU Alert', 'dashboard' => 'System', 'chart' => 'CPU', 
-            'operator' => '>', 'warning_value' => 80, 'critical_value' => 90, 
+          { 'name' => 'CPU Alert', 'dashboard' => 'System', 'chart' => 'CPU',
+            'operator' => '>', 'warning_value' => 80, 'critical_value' => 90,
             'duration' => '5m' }
         ]
-        
+
         node.automatic['axonops']['tcp_checks'] = [
           { 'name' => 'Port Check', 'tcp' => 'localhost:9042' }
         ]
-        
+
         node.automatic['axonops']['shell_checks'] = [
           { 'name' => 'Health Check', 'shell' => '/bin/bash', 'script' => 'exit 0' }
         ]
-        
+
         node.automatic['axonops']['http_checks'] = [
           { 'name' => 'API Check', 'url' => 'http://localhost/health' }
         ]
-        
+
         node.automatic['axonops']['backups'] = [
           { 'name' => 'Daily Backup', 'tag' => 'daily', 'keyspaces' => ['test'] }
         ]
-        
+
         node.automatic['axonops']['integrations'] = [
-          { 'name' => 'slack', 'integration_type' => 'slack', 
+          { 'name' => 'slack', 'integration_type' => 'slack',
             'slack_webhook_url' => 'https://slack.com/hook' }
         ]
       end.converge(described_recipe)
@@ -437,7 +437,7 @@ describe 'axonops::alert_rules' do
           }
         ]
       end.converge(described_recipe)
-      
+
       # The recipe should handle the Hash routing properly
       expect(chef_run).to create_axonops_alert_rule('Hash Routing Alert')
     end
@@ -451,7 +451,7 @@ describe 'axonops::alert_rules' do
         node.automatic['axonops']['backups'] = []
         node.automatic['axonops']['integrations'] = []
       end.converge(described_recipe)
-      
+
       expect { chef_run }.not_to raise_error
     end
 
@@ -459,13 +459,13 @@ describe 'axonops::alert_rules' do
       chef_run = ChefSpec::ServerRunner.new(platform: 'ubuntu', version: '20.04') do |node|
         node.automatic['axonops'] = nil
       end
-      
+
       expect { chef_run.converge(described_recipe) }.not_to raise_error
     end
 
     it 'handles missing axonops key' do
       chef_run = ChefSpec::ServerRunner.new(platform: 'ubuntu', version: '20.04')
-      
+
       expect { chef_run.converge(described_recipe) }.not_to raise_error
     end
   end

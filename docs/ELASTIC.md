@@ -116,7 +116,7 @@ node.override['axonops']['server']['elastic']['heap_size'] = '2g'
 node.override['axonops']['server']['elastic']['heap_size'] = '4g'
 ```
 
-**Important**: 
+**Important**:
 - Never exceed 50% of available RAM
 - Never exceed 32GB (compressed oops threshold)
 - Heap size should match your data volume and query complexity
@@ -177,7 +177,13 @@ For air-gapped environments:
 node.override['axonops']['offline_install'] = true
 node.override['axonops']['offline_packages_path'] = '/path/to/packages'
 
-# Ensure elasticsearch-7.17.26-linux-x86_64.tar.gz is in the offline packages directory
+# Package filename is defined in attributes/default.rb under:
+# default['axonops']['offline_packages']['elasticsearch']
+# Example: 'elasticsearch-7.17.29-linux-x86_64.tar.gz'
+#
+# You can override the package filename if needed:
+node.override['axonops']['offline_packages']['elasticsearch'] = 'elasticsearch-7.17.26-linux-x86_64.tar.gz'
+
 include_recipe 'axonops::server'
 ```
 
@@ -227,7 +233,7 @@ AxonOps creates the following indices:
    ```bash
    # Check service status
    systemctl status axonops-search
-   
+
    # Check logs
    tail -f /var/log/axonops-search/axonops-cluster.log
    ```
@@ -241,7 +247,7 @@ AxonOps creates the following indices:
    ```bash
    # Test connection
    curl -X GET "localhost:9200/_cluster/health?pretty"
-   
+
    # Check if service is running
    systemctl is-active axonops-search
    ```
@@ -250,7 +256,7 @@ AxonOps creates the following indices:
    ```bash
    # Verify vm.max_map_count
    sysctl vm.max_map_count
-   
+
    # If too low, the recipe should have fixed it, but you can manually set:
    sysctl -w vm.max_map_count=262144
    ```

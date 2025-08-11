@@ -468,6 +468,17 @@ include_recipe 'axonops::cassandra'
 node.override['axonops']['offline_install'] = true
 node.override['axonops']['offline_packages_path'] = '/path/to/packages'
 
+# Package filenames are defined in attributes/default.rb
+# default['axonops']['offline_packages'] = {
+#   'elasticsearch' => 'elasticsearch-7.17.29-linux-x86_64.tar.gz',
+#   'cassandra' => 'apache-cassandra-5.0.5-bin.tar.gz',
+#   'java' => 'zulu17-ca-jdk-headless-17.0.16-1.x86_64.rpm',
+#   'agent' => 'axon-agent-2.0.6-1.x86_64.rpm',
+#   'server' => 'axon-server-2.0.5-1.x86_64.rpm',
+#   'dashboard' => 'axon-dash-2.0.10-1.x86_64.rpm',
+#   'kafka' => 'kafka_2.13-3.6.1.tgz'
+# }
+
 include_recipe 'axonops::server'
 ```
 

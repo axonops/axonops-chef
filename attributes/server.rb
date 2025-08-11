@@ -5,8 +5,11 @@
 # Attributes for AxonOps Server self-hosted deployment
 #
 
+default['axonops']['server']['version'] = 'latest' # Default to latest version
+default['axonops']['server']['package'] = 'axon-server'
+
 # Internal Elasticsearch for AxonOps Server
-default['axonops']['server']['elastic']['version'] = '7.17.28'
+default['axonops']['server']['elastic']['version'] = '7.17.29'
 default['axonops']['server']['elastic']['heap_size'] = '512m'
 default['axonops']['server']['elastic']['cluster_name'] = 'axonops-cluster'
 default['axonops']['server']['elastic']['install_dir'] = '/opt/axonops-search'
@@ -33,7 +36,7 @@ default['axonops']['server']['search_db']['replicas'] = 0
 default['axonops']['server']['search_db']['shards'] = 1
 
 # Internal Cassandra for AxonOps Metrics Storage
-default['axonops']['server']['cassandra']['version'] = '5.0.4'
+default['axonops']['server']['cassandra']['version'] = '5.0.5'
 default['axonops']['server']['cassandra']['cluster_name'] = nil
 default['axonops']['server']['cassandra']['dc'] = nil
 default['axonops']['server']['cassandra']['rack'] = nil
@@ -53,6 +56,12 @@ default['axonops']['server']['tls']['cert_file'] = nil
 default['axonops']['server']['tls']['key_file'] = nil
 default['axonops']['server']['tls']['ca_file'] = nil
 
+# Alert Log Configuration
+default['axonops']['server']['alert_log']['enabled'] = false
+default['axonops']['server']['alert_log']['path'] = '/var/log/axonops/axon-server-alert.log'
+default['axonops']['server']['alert_log']['max_size_mb'] = 50
+default['axonops']['server']['alert_log']['max_files'] = 5
+
 # Retention Configuration
 default['axonops']['server']['retention']['events'] = '4w' # weeks
 default['axonops']['server']['retention']['security_events'] = '8w' # weeks
@@ -67,12 +76,13 @@ default['axonops']['server']['retention']['backups']['remote'] = '30d' # days
 # Package name is set in attributes/default.rb
 # For offline installation, override with full RPM/DEB filename in node attributes
 
+default['axonops']['dashboard']['package'] = 'axon-dash'
+
 # Dashboard Configuration
 default['axonops']['dashboard']['listen_address'] = node['ipaddress']
 default['axonops']['dashboard']['listen_port'] = 3000
 default['axonops']['dashboard']['server_endpoint'] = 'http://127.0.0.1:8080'
 default['axonops']['dashboard']['context_path'] = ''
-default['axonops']['dashboard']['package'] = 'axon-dash'
 default['axonops']['dashboard']['nginx_proxy'] = false
 
 # Nginx proxy configuration for dashboard

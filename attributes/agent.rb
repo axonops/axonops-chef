@@ -10,6 +10,7 @@ default['axonops']['agent']['enabled'] = true
 default['axonops']['agent']['version'] = 'latest'
 default['axonops']['agent']['user'] = 'axonops'
 default['axonops']['agent']['group'] = 'axonops'
+default['axonops']['agent']['package'] = 'axon-agent'
 
 # Connection Settings
 # For SaaS mode (default)

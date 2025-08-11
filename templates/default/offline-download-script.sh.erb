@@ -39,7 +39,7 @@ fi
 download_package() {
     local url=$1
     local filename=$2
-    
+
     echo "Downloading: $filename"
     if command -v wget > /dev/null; then
         wget -O "$DOWNLOAD_DIR/$filename" "$url"
@@ -58,35 +58,35 @@ case $OS in
         download_package \
             "${REPO_URL}/apt/pool/main/a/axon-agent/axon-agent_<%= @agent_version %>_${ARCH}.deb" \
             "axon-agent_<%= @agent_version %>_${ARCH}.deb"
-        
+
         # Server
         download_package \
             "${REPO_URL}/apt/pool/main/a/axon-server/axon-server_<%= @server_version %>_${ARCH}.deb" \
             "axon-server_<%= @server_version %>_${ARCH}.deb"
-        
+
         # Dashboard
         download_package \
             "${REPO_URL}/apt/pool/main/a/axon-dash/axon-dash_<%= @dashboard_version %>_${ARCH}.deb" \
             "axon-dash_<%= @dashboard_version %>_${ARCH}.deb"
         ;;
-    
+
     centos|rhel|fedora)
         # Agent
         download_package \
             "${REPO_URL}/yum/el${VER%%.*}/${ARCH}/axon-agent-<%= @agent_version %>-1.el${VER%%.*}.${ARCH}.rpm" \
             "axon-agent-<%= @agent_version %>-1.el${VER%%.*}.${ARCH}.rpm"
-        
+
         # Server
         download_package \
             "${REPO_URL}/yum/el${VER%%.*}/${ARCH}/axon-server-<%= @server_version %>-1.el${VER%%.*}.${ARCH}.rpm" \
             "axon-server-<%= @server_version %>-1.el${VER%%.*}.${ARCH}.rpm"
-        
+
         # Dashboard
         download_package \
             "${REPO_URL}/yum/el${VER%%.*}/${ARCH}/axon-dash-<%= @dashboard_version %>-1.el${VER%%.*}.${ARCH}.rpm" \
             "axon-dash-<%= @dashboard_version %>-1.el${VER%%.*}.${ARCH}.rpm"
         ;;
-    
+
     *)
         echo "Unsupported OS: $OS"
         exit 1

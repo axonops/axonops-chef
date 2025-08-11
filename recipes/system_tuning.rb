@@ -161,20 +161,20 @@ ruby_block 'set-io-scheduler' do
   block do
     Dir.glob('/sys/block/*/queue/scheduler').each do |scheduler_file|
       device = scheduler_file.split('/')[3]
-      
+
       # Skip virtual devices
       next if device.start_with?('loop', 'ram', 'dm-')
-      
+
       # Check if device is rotational (HDD) or not (SSD)
       rotational_file = "/sys/block/#{device}/queue/rotational"
       if ::File.exist?(rotational_file)
         is_rotational = ::File.read(rotational_file).strip == '1'
-        
+
         current_scheduler = ::File.read(scheduler_file).strip
-        
+
         # For SSDs use noop/none, for HDDs use deadline
         desired_scheduler = is_rotational ? 'deadline' : 'none'
-        
+
         # Fallback schedulers
         if !current_scheduler.include?(desired_scheduler)
           if desired_scheduler == 'none' && current_scheduler.include?('noop')
@@ -183,7 +183,7 @@ ruby_block 'set-io-scheduler' do
             desired_scheduler = 'mq-deadline'
           end
         end
-        
+
         # Set scheduler if available
         if current_scheduler.include?(desired_scheduler) && !current_scheduler.include?("[#{desired_scheduler}]")
           ::File.write(scheduler_file, desired_scheduler)

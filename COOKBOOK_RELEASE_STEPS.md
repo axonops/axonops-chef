@@ -36,7 +36,7 @@
    ```bash
    # Upload all cookbooks and dependencies
    berks upload
-   
+
    # Or upload to specific environment (excluding production)
    berks upload --except production
    ```
@@ -45,7 +45,7 @@
    ```bash
    # List cookbooks on Chef server
    knife cookbook list | grep axonops
-   
+
    # Show specific cookbook details
    knife cookbook show axonops
    ```

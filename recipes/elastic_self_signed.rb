@@ -3,7 +3,7 @@ if node['axonops']['server']['elastic']['ssl']['enabled'] && node['axonops']['se
   elastic_install_dir = node['axonops']['server']['elastic']['install_dir']
   elastic_user = 'elasticsearch'
   elastic_group = 'elasticsearch'
-  
+
   # Create certificate directory
   directory "#{elastic_install_dir}/config/certs" do
     owner elastic_user
@@ -11,10 +11,10 @@ if node['axonops']['server']['elastic']['ssl']['enabled'] && node['axonops']['se
     mode '0750'
     recursive true
   end
-  
+
   # Get server IP address
   server_ip = node['ipaddress']
-  
+
   # Generate CA certificate
   execute 'generate-ca-certificate' do
     command <<-EOH
@@ -27,7 +27,7 @@ if node['axonops']['server']['elastic']['ssl']['enabled'] && node['axonops']['se
     creates "#{elastic_install_dir}/config/certs/ca-cert.pem"
     notifies :run, 'execute[fix-certificate-permissions]', :immediately
   end
-  
+
   # Create server certificate config file with SAN
   file "#{elastic_install_dir}/config/certs/server.conf" do
     content <<-EOH
@@ -59,7 +59,7 @@ IP.2 = #{server_ip}
     group elastic_group
     mode '0640'
   end
-  
+
   # Generate server key and certificate request
   execute 'generate-server-key-and-csr' do
     command <<-EOH
@@ -71,7 +71,7 @@ IP.2 = #{server_ip}
     creates "#{elastic_install_dir}/config/certs/server-key.pem"
     notifies :run, 'execute[fix-certificate-permissions]', :immediately
   end
-  
+
   # Sign server certificate with CA
   execute 'sign-server-certificate' do
     command <<-EOH
@@ -88,7 +88,7 @@ IP.2 = #{server_ip}
     creates "#{elastic_install_dir}/config/certs/server-cert.pem"
     notifies :run, 'execute[fix-certificate-permissions]', :immediately
   end
-  
+
   # Fix certificate permissions
   execute 'fix-certificate-permissions' do
     command "chown -R #{elastic_user}:#{elastic_group} #{elastic_install_dir}/config/certs && chmod 640 #{elastic_install_dir}/config/certs/*"

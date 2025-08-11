@@ -31,13 +31,13 @@ end
 
 # SSL certificate validation
 if node['axonops']['dashboard']['nginx']['ssl_enabled']
-  unless node['axonops']['dashboard']['nginx']['ssl_certificate'] && 
+  unless node['axonops']['dashboard']['nginx']['ssl_certificate'] &&
          node['axonops']['dashboard']['nginx']['ssl_certificate_key']
-    raise Chef::Exceptions::ConfigurationError, 
+    raise Chef::Exceptions::ConfigurationError,
           'SSL is enabled but certificate paths are not configured. ' \
           'Please set axonops.dashboard.nginx.ssl_certificate and ssl_certificate_key'
   end
-  
+
   # Verify SSL files exist
   [node['axonops']['dashboard']['nginx']['ssl_certificate'],
    node['axonops']['dashboard']['nginx']['ssl_certificate_key']].each do |ssl_file|

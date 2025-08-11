@@ -84,21 +84,46 @@ Monitor system metrics with configurable thresholds:
 ```
 
 ### Log Alert Rules
-Detect patterns in log files:
+Detect patterns in log files with advanced filtering:
 ```json
 {
   "log_alert_rules": [
     {
       "name": "Node Down",
       "content": "is now DOWN",
-      "source": "/var/log/cassandra/system.log",
+      "source": ["/var/log/cassandra/system.log"],
+      "level": ["error"],
       "warning_value": 1,
       "critical_value": 5,
-      "duration": "5m"
+      "duration": "5m",
+      "description": "Cassandra node down detected"
+    },
+    {
+      "name": "Authentication Failures",
+      "content": "Authentication failed",
+      "source": ["/var/log/cassandra/system.log"],
+      "level": ["warning", "error"],
+      "warning_value": 10,
+      "critical_value": 50,
+      "duration": "15m",
+      "description": "Multiple authentication failures"
     }
   ]
 }
 ```
+
+**Supported Properties:**
+- `content`: Text pattern to search for in logs
+- `source`: Array of log file paths to monitor
+- `level`: Array of log levels (debug, info, warning, error)
+- `type`: Array of log types to filter
+- `operator`: Comparison operator (>=, >, <=, <, =, !=)
+- `warning_value`: Threshold for warning alerts
+- `critical_value`: Threshold for critical alerts
+- `duration`: Time window for evaluation
+- `dc`, `rack`, `host_id`: Location-based filtering
+- `routing`: Array of integration names for notifications
+- `present`: Boolean to control alert creation/deletion
 
 ### Health Checks
 
