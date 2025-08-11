@@ -132,7 +132,7 @@ if node.run_list.include?('recipe[axonops::kafka]') || kafka_detected
   java_agent_env_file = "#{kafka_home}/bin/kafka-server-start.sh"
   service = "kafka"
 elsif node.run_list.include?('recipe[axonops::cassandra]') || cassandra_detected
-  java_agent_package = node['axonops']['java_agent']['package']
+  java_agent_package = node['axonops']['java_agent']['cassandra']
   java_agent_env_file = "#{cassandra_home}/conf/cassandra-env.sh"
   service = "cassandra"
 else
@@ -151,7 +151,7 @@ if node['axonops']['offline_install']
   case node['platform_family']
   when 'debian'
     dpkg_package java_agent_package do
-      source ::File.join(node['axonops']['offline_packages_path'], java_agent_package)
+      source ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java_agent'])
       action :install
     end
     dpkg_package 'axon-agent' do
@@ -161,7 +161,7 @@ if node['axonops']['offline_install']
     end
   when 'rhel', 'fedora'
     rpm_package java_agent_package do
-      source ::File.join(node['axonops']['offline_packages_path'], java_agent_package)
+      source ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java_agent'])
       action :install
       notifies :restart, 'service[axon-agent]', :delayed
     end
