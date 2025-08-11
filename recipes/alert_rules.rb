@@ -31,6 +31,44 @@ if node['axonops'] && node['axonops']['alert_rules']
   end
 end
 
+# Log Alert Rules
+if node['axonops'] && node['axonops']['log_alert_rules']
+  node['axonops']['log_alert_rules'].each do |log_alert_rule|
+    axonops_log_alert_rule log_alert_rule['name'] do
+      org             ENV['AXONOPS_ORG']       || log_alert_rule['org']       || node['axonops']['api']['org']
+      cluster         ENV['AXONOPS_CLUSTER']   || log_alert_rule['cluster']   || node['axonops']['api']['cluster']
+      username        ENV['AXONOPS_USERNAME']  || log_alert_rule['username']  || node['axonops']['api']['username'] || ''
+      password        ENV['AXONOPS_PASSWORD']  || log_alert_rule['password']  || node['axonops']['api']['password'] || ''
+      base_url        ENV['AXONOPS_URL']       || log_alert_rule['base_url']  || node['axonops']['api']['base_url'] || ''
+      auth_token      ENV['AXONOPS_TOKEN']     || log_alert_rule['auth_token']|| node['axonops']['api']['auth_token'] || ''
+      operator        log_alert_rule['operator']        || '>='
+      warning_value   log_alert_rule['warning_value']
+      critical_value  log_alert_rule['critical_value']
+      duration        log_alert_rule['duration']
+      content         log_alert_rule['content']          if log_alert_rule['content']
+      level           Array(log_alert_rule['level'])     if log_alert_rule['level']
+      type            Array(log_alert_rule['type'])      if log_alert_rule['type']
+      source          Array(log_alert_rule['source'])    if log_alert_rule['source']
+      dc              Array(log_alert_rule['dc'])        if log_alert_rule['dc']
+      rack            Array(log_alert_rule['rack'])      if log_alert_rule['rack']
+      host_id         Array(log_alert_rule['host_id'])   if log_alert_rule['host_id']
+      description     log_alert_rule['description']
+      present         log_alert_rule['present']          if log_alert_rule.key?('present')
+      # Handle routing as either Array or Hash
+      routing_value = log_alert_rule['routing']
+      if routing_value.is_a?(Hash)
+        # If routing is a Hash with severity levels, flatten all values into a single array
+        routing routing_value.values.flatten.compact.uniq
+      elsif routing_value
+        # If routing is already an Array or can be converted to one
+        routing Array(routing_value).compact
+      end
+      routing_severity log_alert_rule['routing_severity'] if log_alert_rule['routing_severity']
+      action          log_alert_rule['action'] ? log_alert_rule['action'].to_sym : :create
+    end
+  end
+end
+
 # TCP Checks
 if node['axonops'] && node['axonops']['tcp_checks']
   node['axonops']['tcp_checks'].each do |tcp_check|
