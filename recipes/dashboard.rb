@@ -16,11 +16,11 @@ end
 # Install AxonOps dashboard package
 if node['axonops']['offline_install']
   # Offline installation from local package
-  if node['axonops']['packages']['dashboard'].nil?
-    raise('Offline installation requested but axonops.packages.dashboard not specified')
+  if node['axonops']['dashboard']['package'].nil?
+    raise('Offline installation requested but axonops.dashboard.package not specified')
   end
 
-  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['packages']['dashboard'])
+  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['dashboard']['package'])
 
   unless ::File.exist?(package_path)
     raise("Offline package not found: #{package_path}")

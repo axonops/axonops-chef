@@ -6,6 +6,8 @@
 #
 
 default['axonops']['server']['version'] = 'latest' # Default to latest version
+default['axonops']['server']['package'] = 'axon-server-2.0.5-1.x86_64.rpm'
+default['axonops']['dashboard']['package'] = 'axon-dash-2.0.10-1.x86_64.rpm'
 
 # Internal Elasticsearch for AxonOps Server
 default['axonops']['server']['elastic']['version'] = '7.17.29'
