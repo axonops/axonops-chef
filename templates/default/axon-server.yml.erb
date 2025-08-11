@@ -87,3 +87,26 @@ alert_log:
   path: <%= node['axonops']['server']['alert_log']['path'] %>
   max_size_mb: <%= node['axonops']['server']['alert_log']['max_size_mb'] %>
   max_files: <%= node['axonops']['server']['alert_log']['max_files'] %>
+
+<% if node['axonops']['server']['auth']['enabled'] -%>
+# LDAP Authentication Configuration
+auth:
+  enabled: true
+  type: "<%= node['axonops']['server']['auth']['type'] %>"
+  settings:
+    base: <%= node['axonops']['server']['auth']['base'] %>
+    bindDN: <%= node['axonops']['server']['auth']['bind_dn'] %>
+    bindPassword: <%= node['axonops']['server']['auth']['bind_password'] %>
+    host: <%= node['axonops']['server']['auth']['host'] %>
+    port: <%= node['axonops']['server']['auth']['port'] %>
+    rolesAttribute: <%= node['axonops']['server']['auth']['roles_attribute'] %>
+    rolesMapping:
+<% node['axonops']['server']['auth']['roles_mapping'].each do |scope, roles| -%>
+      <%= scope %>:
+<% roles.each do |role_type, role_dn| -%>
+        <%= role_type %>: <%= role_dn %>
+<% end -%>
+<% end -%>
+    useSSL: <%= node['axonops']['server']['auth']['use_ssl'] %>
+    userFilter: <%= node['axonops']['server']['auth']['user_filter'] %>
+<% end -%>
