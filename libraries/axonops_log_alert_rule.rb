@@ -215,7 +215,8 @@ class Chef
                 'expr' => expression,
                 'id' => alert_id,
                 'clusterName' => new_resource.cluster.to_s,
-                'filters' => location_filters
+                'filters' => location_filters,
+                'content' => new_resource.content.to_s
               }
 
               Chef::Log.debug("Sending payload to AxonOps: #{payload}")
