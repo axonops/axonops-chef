@@ -78,6 +78,28 @@ default['axonops']['server']['retention']['backups']['remote'] = '30d' # days
 
 default['axonops']['dashboard']['package'] = 'axon-dash'
 
+# LDAP Authentication Configuration (optional, disabled by default)
+default['axonops']['server']['auth']['enabled'] = false
+default['axonops']['server']['auth']['type'] = 'LDAP'
+default['axonops']['server']['auth']['base'] = 'ou=Users,o=example,dc=example,dc=com'
+default['axonops']['server']['auth']['bind_dn'] = 'uid=ldapbind,ou=Users,o=example,dc=example,dc=com'
+default['axonops']['server']['auth']['bind_password'] = 'changeme'
+default['axonops']['server']['auth']['host'] = 'ldap.example.com'
+default['axonops']['server']['auth']['port'] = 636
+default['axonops']['server']['auth']['use_ssl'] = true
+default['axonops']['server']['auth']['user_filter'] = '(uid=%s)'
+default['axonops']['server']['auth']['roles_attribute'] = 'memberOf'
+
+# LDAP Role Mappings
+default['axonops']['server']['auth']['roles_mapping'] = {
+  '_global_' => {
+    'adminRole' => 'cn=axonops-admin,ou=Groups,o=example,dc=example,dc=com',
+    'backupAdminRole' => 'cn=axonops-backup-admin,ou=Groups,o=example,dc=example,dc=com',
+    'readOnlyRole' => 'cn=axonops-readonly,ou=Groups,o=example,dc=example,dc=com',
+    'superUserRole' => 'cn=axonops-superuser,ou=Groups,o=example,dc=example,dc=com'
+  }
+}
+
 # Dashboard Configuration
 default['axonops']['dashboard']['listen_address'] = node['ipaddress']
 default['axonops']['dashboard']['listen_port'] = 3000

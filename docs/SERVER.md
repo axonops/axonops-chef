@@ -12,6 +12,7 @@ This guide covers the installation and configuration of AxonOps Server for self-
   - [Elasticsearch Configuration](#elasticsearch-configuration)
   - [Cassandra Configuration](#cassandra-configuration)
   - [TLS/SSL Configuration](#tlsssl-configuration)
+  - [Authentication Configuration](#authentication-configuration)
   - [Data Retention](#data-retention)
   - [Dashboard Configuration](#dashboard-configuration)
 - [Installation Examples](#installation-examples)
@@ -176,6 +177,140 @@ Security settings for encrypted communications:
 | `['axonops']['server']['tls']['cert_file']` | `nil` | Path to certificate file |
 | `['axonops']['server']['tls']['key_file']` | `nil` | Path to private key file |
 | `['axonops']['server']['tls']['ca_file']` | `nil` | Path to CA certificate (for mTLS) |
+
+### Authentication Configuration
+
+AxonOps Server supports LDAP authentication for centralized user management. By default, authentication is disabled.
+
+#### Basic Authentication Settings
+
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `['axonops']['server']['auth']['enabled']` | `false` | Enable authentication |
+| `['axonops']['server']['auth']['type']` | `LDAP` | Authentication type (currently only LDAP supported) |
+
+#### LDAP Connection Settings
+
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `['axonops']['server']['auth']['host']` | `ldap.example.com` | LDAP server hostname |
+| `['axonops']['server']['auth']['port']` | `636` | LDAP server port (636 for LDAPS, 389 for LDAP) |
+| `['axonops']['server']['auth']['use_ssl']` | `true` | Use SSL/TLS for LDAP connection |
+| `['axonops']['server']['auth']['base']` | `ou=Users,o=example,dc=example,dc=com` | Base DN for user searches |
+| `['axonops']['server']['auth']['bind_dn']` | `uid=ldapbind,ou=Users,o=example,dc=example,dc=com` | Bind DN for LDAP authentication |
+| `['axonops']['server']['auth']['bind_password']` | `changeme` | Password for bind DN |
+
+#### LDAP User Configuration
+
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `['axonops']['server']['auth']['user_filter']` | `(uid=%s)` | LDAP filter for user authentication |
+| `['axonops']['server']['auth']['roles_attribute']` | `memberOf` | LDAP attribute containing user's groups |
+
+#### LDAP Role Mappings
+
+Map LDAP groups to AxonOps roles:
+
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `['axonops']['server']['auth']['roles_mapping']['_global_']['adminRole']` | `cn=axonops-admin,ou=Groups,o=example,dc=example,dc=com` | Admin role group |
+| `['axonops']['server']['auth']['roles_mapping']['_global_']['backupAdminRole']` | `cn=axonops-backup-admin,ou=Groups,o=example,dc=example,dc=com` | Backup admin role group |
+| `['axonops']['server']['auth']['roles_mapping']['_global_']['readOnlyRole']` | `cn=axonops-readonly,ou=Groups,o=example,dc=example,dc=com` | Read-only role group |
+| `['axonops']['server']['auth']['roles_mapping']['_global_']['superUserRole']` | `cn=axonops-superuser,ou=Groups,o=example,dc=example,dc=com` | Super user role group |
+
+#### Example: Enable LDAP Authentication
+
+```ruby
+# Enable LDAP authentication
+node.override['axonops']['server']['auth']['enabled'] = true
+node.override['axonops']['server']['auth']['type'] = 'LDAP'
+
+# Configure LDAP connection
+node.override['axonops']['server']['auth']['host'] = 'ldap.company.com'
+node.override['axonops']['server']['auth']['port'] = 636
+node.override['axonops']['server']['auth']['use_ssl'] = true
+
+# Configure LDAP bind credentials
+node.override['axonops']['server']['auth']['base'] = 'ou=People,dc=company,dc=com'
+node.override['axonops']['server']['auth']['bind_dn'] = 'cn=axonops-bind,ou=ServiceAccounts,dc=company,dc=com'
+node.override['axonops']['server']['auth']['bind_password'] = 'secure_password'
+
+# Configure user authentication
+node.override['axonops']['server']['auth']['user_filter'] = '(uid=%s)'
+node.override['axonops']['server']['auth']['roles_attribute'] = 'memberOf'
+
+# Map LDAP groups to AxonOps roles
+node.override['axonops']['server']['auth']['roles_mapping'] = {
+  '_global_' => {
+    'adminRole' => 'cn=axonops-admins,ou=Groups,dc=company,dc=com',
+    'backupAdminRole' => 'cn=axonops-backup,ou=Groups,dc=company,dc=com',
+    'readOnlyRole' => 'cn=axonops-viewers,ou=Groups,dc=company,dc=com',
+    'superUserRole' => 'cn=axonops-super,ou=Groups,dc=company,dc=com'
+  }
+}
+
+include_recipe 'axonops::server'
+```
+
+#### Example: Active Directory Integration
+
+```ruby
+# Enable LDAP authentication for Active Directory
+node.override['axonops']['server']['auth']['enabled'] = true
+node.override['axonops']['server']['auth']['type'] = 'LDAP'
+
+# Configure AD connection
+node.override['axonops']['server']['auth']['host'] = 'ad.company.com'
+node.override['axonops']['server']['auth']['port'] = 636
+node.override['axonops']['server']['auth']['use_ssl'] = true
+
+# Configure AD bind credentials
+node.override['axonops']['server']['auth']['base'] = 'ou=Users,dc=company,dc=local'
+node.override['axonops']['server']['auth']['bind_dn'] = 'CN=AxonOps Service,OU=Service Accounts,DC=company,DC=local'
+node.override['axonops']['server']['auth']['bind_password'] = 'secure_password'
+
+# Configure user authentication for AD
+node.override['axonops']['server']['auth']['user_filter'] = '(sAMAccountName=%s)'
+node.override['axonops']['server']['auth']['roles_attribute'] = 'memberOf'
+
+# Map AD groups to AxonOps roles
+node.override['axonops']['server']['auth']['roles_mapping'] = {
+  '_global_' => {
+    'adminRole' => 'CN=AxonOps-Admins,OU=Groups,DC=company,DC=local',
+    'backupAdminRole' => 'CN=AxonOps-Backup-Admins,OU=Groups,DC=company,DC=local',
+    'readOnlyRole' => 'CN=AxonOps-ReadOnly,OU=Groups,DC=company,DC=local',
+    'superUserRole' => 'CN=AxonOps-SuperUsers,OU=Groups,DC=company,DC=local'
+  }
+}
+
+include_recipe 'axonops::server'
+```
+
+#### Authentication Troubleshooting
+
+1. **Test LDAP connectivity**:
+   ```bash
+   # Test LDAP connection
+   ldapsearch -x -H ldaps://ldap.example.com:636 -D "uid=ldapbind,ou=Users,o=example,dc=example,dc=com" -W -b "ou=Users,o=example,dc=example,dc=com"
+   ```
+
+2. **Verify user filter**:
+   ```bash
+   # Test user search
+   ldapsearch -x -H ldaps://ldap.example.com:636 -D "bind_dn" -W -b "base_dn" "(uid=testuser)"
+   ```
+
+3. **Check logs**:
+   ```bash
+   # Check AxonOps server logs for authentication errors
+   tail -f /var/log/axonops/axon-server.log | grep -i auth
+   ```
+
+4. **Common issues**:
+   - **SSL certificate errors**: Set `use_ssl` to `false` for testing or ensure CA certificates are trusted
+   - **Bind failures**: Verify bind DN and password are correct
+   - **User not found**: Check user_filter matches your LDAP schema
+   - **No roles assigned**: Ensure users are members of groups mapped in roles_mapping
 
 ### Data Retention
 
