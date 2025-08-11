@@ -14,10 +14,8 @@ install_from_tarball = node['java']['install_from_package'] == false || node['ja
 install_zulu = node['java']['zulu'] != false
 
 if node['java']['offline_install'] && node['java']['package']
-  offline_dir = node['axonops']['offline_packages_path'] || '/tmp/offline_packages'
-
   # Install from specified package path
-  package_path = ::File.join(node['axonops']['offline_packages_path'], node['java']['package'])
+  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java'])
 
   if !::File.exist?(package_path)
     raise Chef::Exceptions::FileNotFound, "Java package not found at specified path: #{package_path}"

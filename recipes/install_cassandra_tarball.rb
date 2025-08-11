@@ -33,7 +33,7 @@ end
 # Determine tarball source
 if node['axonops']['offline_install']
   # Offline installation
-  tarball_path = ::File.join(node['axonops']['offline_packages_path'], tarball_name)
+  tarball_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['cassandra'])
 
   unless ::File.exist?(tarball_path)
     raise Chef::Exceptions::FileNotFound, "Offline installation requested but tarball not found: #{tarball_path}"

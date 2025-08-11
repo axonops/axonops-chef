@@ -63,10 +63,7 @@ end
 
 # Download or copy Elasticsearch tarball
 if node['axonops']['offline_install']
-  # Offline installation
-  arch = node['kernel']['machine'] == 'aarch64' ? 'aarch64' : 'x86_64'
-  tarball_name = node['axonops']['packages']['elasticsearch_tarball'] || "elasticsearch-#{elastic_version}-linux-#{arch}.tar.gz"
-  tarball_path = ::File.join(node['axonops']['offline_packages_path'], tarball_name)
+  tarball_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['elasticsearch'])
 
   unless ::File.exist?(tarball_path)
     raise("Offline Elasticsearch tarball not found: #{tarball_path}")

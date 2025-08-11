@@ -6,8 +6,7 @@
 #
 
 default['axonops']['server']['version'] = 'latest' # Default to latest version
-default['axonops']['server']['package'] = 'axon-server-2.0.5-1.x86_64.rpm'
-default['axonops']['dashboard']['package'] = 'axon-dash-2.0.10-1.x86_64.rpm'
+default['axonops']['server']['package'] = 'axon-server'
 
 # Internal Elasticsearch for AxonOps Server
 default['axonops']['server']['elastic']['version'] = '7.17.29'
@@ -37,7 +36,7 @@ default['axonops']['server']['search_db']['replicas'] = 0
 default['axonops']['server']['search_db']['shards'] = 1
 
 # Internal Cassandra for AxonOps Metrics Storage
-default['axonops']['server']['cassandra']['version'] = '5.0.4'
+default['axonops']['server']['cassandra']['version'] = '5.0.5'
 default['axonops']['server']['cassandra']['cluster_name'] = nil
 default['axonops']['server']['cassandra']['dc'] = nil
 default['axonops']['server']['cassandra']['rack'] = nil
@@ -77,12 +76,13 @@ default['axonops']['server']['retention']['backups']['remote'] = '30d' # days
 # Package name is set in attributes/default.rb
 # For offline installation, override with full RPM/DEB filename in node attributes
 
+default['axonops']['dashboard']['package'] = 'axon-dash'
+
 # Dashboard Configuration
 default['axonops']['dashboard']['listen_address'] = node['ipaddress']
 default['axonops']['dashboard']['listen_port'] = 3000
 default['axonops']['dashboard']['server_endpoint'] = 'http://127.0.0.1:8080'
 default['axonops']['dashboard']['context_path'] = ''
-default['axonops']['dashboard']['package'] = 'axon-dash'
 default['axonops']['dashboard']['nginx_proxy'] = false
 
 # Nginx proxy configuration for dashboard

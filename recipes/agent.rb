@@ -142,12 +142,7 @@ end
 
 # Install AxonOps agent package
 if node['axonops']['offline_install']
-  # Offline installation from local package
-  if node['axonops']['agent']['package'].nil?
-    raise('Offline installation requested but axonops.packages.agent not specified')
-  end
-
-  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['agent']['package'])
+  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['agent'])
 
   unless ::File.exist?(package_path)
     raise("Offline package not found: #{package_path}")

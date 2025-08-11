@@ -10,8 +10,7 @@ default['axonops']['agent']['enabled'] = true
 default['axonops']['agent']['version'] = 'latest'
 default['axonops']['agent']['user'] = 'axonops'
 default['axonops']['agent']['group'] = 'axonops'
-# Install package from offline directory if offline_install is true
-default['axonops']['agent']['package'] = 'axon-agent-2.0.6-1.x86_64.rpm'
+default['axonops']['agent']['package'] = 'axon-agent'
 
 # Connection Settings
 # For SaaS mode (default)

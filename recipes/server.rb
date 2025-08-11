@@ -33,7 +33,7 @@ if node['axonops']['offline_install']
     raise('Offline installation requested but axonops.packages.server not specified')
   end
 
-  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['server']['package'])
+  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['server'])
 
   unless ::File.exist?(package_path)
     raise("Offline package not found: #{package_path}")
@@ -55,7 +55,7 @@ if node['axonops']['offline_install']
   end
 else
   # Online installation from repository
-  package node['axonops']['server']['package'] do
+  package 'axon-server' do
     version node['axonops']['server']['version'] unless node['axonops']['server']['version'] == 'latest'
     action :install
     notifies :restart, 'service[axon-server]', :delayed
