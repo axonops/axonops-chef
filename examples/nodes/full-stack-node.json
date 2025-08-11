@@ -89,7 +89,77 @@
           "enable_assertions": true,
           "thread_priority_policy": 42
         }
-      }
+      },
+      "api": {
+        "org": "dev-org",
+        "cluster": "DevCluster"
+      },
+      "log_alert_rules": [
+        {
+          "name": "Node Down Detection",
+          "warning_value": 1,
+          "critical_value": 3,
+          "duration": "5m",
+          "content": "is now DOWN",
+          "level": ["error"],
+          "source": ["/var/log/cassandra/system.log"],
+          "description": "Detected node down events in Cassandra logs",
+          "present": true
+        },
+        {
+          "name": "Out of Memory Errors",
+          "warning_value": 1,
+          "critical_value": 1,
+          "duration": "1m",
+          "content": "OutOfMemoryError",
+          "level": ["error"],
+          "source": ["/var/log/cassandra/system.log"],
+          "description": "Critical: Java OutOfMemoryError detected",
+          "present": true
+        },
+        {
+          "name": "High GC Pause",
+          "warning_value": 5,
+          "critical_value": 10,
+          "duration": "10m",
+          "content": "GC pause",
+          "source": ["/var/log/cassandra/gc.log"],
+          "description": "Excessive garbage collection pauses detected",
+          "present": true
+        },
+        {
+          "name": "Authentication Failures",
+          "warning_value": 10,
+          "critical_value": 50,
+          "duration": "15m",
+          "content": "Authentication failed",
+          "level": ["warning", "error"],
+          "source": ["/var/log/cassandra/system.log"],
+          "description": "Multiple authentication failures detected",
+          "present": true
+        },
+        {
+          "name": "Compaction Errors",
+          "warning_value": 1,
+          "critical_value": 5,
+          "duration": "30m",
+          "content": "Compaction failed",
+          "level": ["error"],
+          "source": ["/var/log/cassandra/system.log"],
+          "description": "Compaction failures detected",
+          "present": true
+        },
+        {
+          "name": "AxonOps Agent Errors",
+          "warning_value": 5,
+          "critical_value": 20,
+          "duration": "10m",
+          "level": ["error"],
+          "source": ["/var/log/axonops/axon-agent.log"],
+          "description": "AxonOps agent reporting errors",
+          "present": true
+        }
+      ]
     }
   },
   "run_list": [
