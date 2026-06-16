@@ -1,5 +1,5 @@
 <%-
-  cv = AxonOps::CassandraVersion
+  cv = AxonOpsCassandra
   c  = node['axonops']['cassandra']
   # Resolve cache periods (3.11 expects integer seconds) and cache sizes
   # (integer mebibytes). nil means "auto" in 3.11, rendered as 0/blank.
@@ -18,7 +18,7 @@
 #
 # This file uses the Cassandra 3.11 schema: integer *_in_ms / *_in_mb / *_in_kb
 # keys, Thrift/RPC keys and megabit streaming throughput. Values are derived
-# from the shared cookbook attributes via AxonOps::CassandraVersion conversions.
+# from the shared cookbook attributes via AxonOpsCassandra conversions.
 
 cluster_name: '<%= @cluster_name %>'
 num_tokens: <%= @num_tokens %>

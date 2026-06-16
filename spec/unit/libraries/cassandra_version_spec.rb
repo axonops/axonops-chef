@@ -1,4 +1,4 @@
-# Pure-Ruby unit spec for the AxonOps::CassandraVersion library.
+# Pure-Ruby unit spec for the AxonOpsCassandra library.
 #
 # Deliberately does NOT load ChefSpec/Berkshelf so it can run with a plain
 # `rspec` against the library logic alone:
@@ -7,7 +7,7 @@
 #
 require_relative '../../../libraries/cassandra_version'
 
-RSpec.describe AxonOps::CassandraVersion do
+RSpec.describe AxonOpsCassandra do
   describe '.series' do
     it 'maps full versions to the supported series' do
       expect(described_class.series('3.11.17')).to eq('3.11')

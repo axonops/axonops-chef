@@ -13,11 +13,13 @@
 # drive every supported version.
 #
 
-module AxonOps
-  module CassandraVersion
-    # Supported Cassandra release series, in match order. The series string is
-    # also the name of the template subdirectory under templates/default/.
-    SUPPORTED_SERIES = %w(3.11 4.1 5.0).freeze
+# Top-level module (the cookbook already defines `class AxonOps` in
+# libraries/axonops.rb, so this uses the AxonOpsUtils/AxonOpsMixin convention to
+# avoid a class/module collision at load time).
+module AxonOpsCassandra
+  # Supported Cassandra release series, in match order. The series string is
+  # also the name of the template subdirectory under templates/default/.
+  SUPPORTED_SERIES = %w(3.11 4.1 5.0).freeze
 
     # Java major version required by each Cassandra series.
     JAVA_MAJOR = {
@@ -134,5 +136,4 @@ module AxonOps
                end
       (num * factor).round
     end
-  end
 end

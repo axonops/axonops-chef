@@ -16,7 +16,7 @@ data_root = node['axonops']['cassandra']['data_root']
 # Thrift/RPC keys and megabit streaming throughput, rendered from a dedicated
 # templates/default/3.11/cassandra.yaml.erb. 4.1/5.0 use the modern schema.
 cassandra_version = node['axonops']['cassandra']['version']
-cassandra_legacy_schema = AxonOps::CassandraVersion.legacy_schema?(cassandra_version)
+cassandra_legacy_schema = AxonOpsCassandra.legacy_schema?(cassandra_version)
 cassandra_yaml_source = cassandra_legacy_schema ? '3.11/cassandra.yaml.erb' : 'cassandra.yaml.erb'
 
 # Use server attributes if defined, otherwise use cassandra attributes
@@ -161,7 +161,8 @@ template "#{cassandra_home}/conf/cassandra-env.sh" do
     log_dir: node['axonops']['cassandra']['directories']['logs'],
     jmx_port: node['axonops']['cassandra']['jmx_port'],
     enable_jmx_authentication: node['axonops']['cassandra']['jmx_authentication'],
-    gc_log_dir: node['axonops']['cassandra']['directories']['gc_logs']
+    gc_log_dir: node['axonops']['cassandra']['directories']['gc_logs'],
+    java_major: AxonOpsCassandra.java_major(cassandra_version)
   )
   notifies :restart, 'service[cassandra]', :delayed
 end
