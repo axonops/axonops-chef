@@ -20,6 +20,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Multi-version Cassandra support (epic #19)
+- Added `AxonOps::CassandraVersion` library (`libraries/cassandra_version.rb`)
+  mapping a Cassandra version to its Java major (3.11→8, 4.1→11, 5.0→17),
+  config-template subdirectory, and unit-conversion helpers for the legacy
+  3.11 schema.
+- Added Apache Cassandra **3.11** support: version-aware Java selection and a
+  dedicated legacy `cassandra.yaml` template
+  (`templates/default/3.11/cassandra.yaml.erb`) using the integer
+  `*_in_ms`/`*_in_mb`/`*_in_kb` keys, Thrift/RPC keys and megabit streaming
+  throughput (#20, #22).
+- Added version-aware Java package/JAVA_HOME selection driven by
+  `node['java']['version']`, with per-major Zulu and OpenJDK package maps (#20).
+- Added the missing `cassandra-jvm11-server.options.erb` template, fixing the
+  crash when converging Cassandra 4.x (#21).
+- Added BDD scaffolding (#28): Gherkin feature files under `features/`, InSpec
+  controls under `test/integration/`, and `kitchen.yml` with `cassandra-3-11`
+  and `cassandra-default` (5.0) suites; plus runnable RSpec unit specs for the
+  version library and the 3.11 template render.
+
+**Reason**: The Cassandra recipe only supported tarball installs of 5.x with
+hardcoded Java 17, a single non-version-specific template, and a broken 4.x
+path. This brings it toward parity with the AxonOps Ansible role and adds 3.11.
+
+
 #### Chef Server Deployment Documentation
 - Added comprehensive Chef Server deployment section to README.md
 - Included Berkshelf installation and usage instructions

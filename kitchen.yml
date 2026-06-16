@@ -1,0 +1,60 @@
+---
+# Test Kitchen configuration for the axonops cookbook (Cassandra suites).
+# Uses the dokken driver so systemd-managed services run inside containers.
+#
+#   kitchen converge cassandra-3-11-ubuntu-2204
+#   kitchen verify   cassandra-default-rockylinux-9
+#
+driver:
+  name: dokken
+  privileged: true
+  chef_version: '18'
+
+transport:
+  name: dokken
+
+provisioner:
+  name: dokken
+  # Render the run list deterministically; do not auto-start clusters on first
+  # converge unless the suite asks for it.
+  chef_license: accept-no-persist
+
+verifier:
+  name: inspec
+
+platforms:
+  - name: ubuntu-22.04
+    driver:
+      image: dokken/ubuntu-22.04
+      pid_one_command: /bin/systemd
+  - name: rockylinux-9
+    driver:
+      image: dokken/rockylinux-9
+      pid_one_command: /usr/lib/systemd/systemd
+
+suites:
+  - name: cassandra-3-11
+    run_list:
+      - recipe[axonops::cassandra]
+    verifier:
+      inspec_tests:
+        - test/integration/cassandra-3.11
+    attributes:
+      axonops:
+        cassandra:
+          version: '3.11.17'
+          start_on_boot: true
+          wait_for_start: true
+
+  - name: cassandra-default
+    run_list:
+      - recipe[axonops::cassandra]
+    verifier:
+      inspec_tests:
+        - test/integration/cassandra-default
+    attributes:
+      axonops:
+        cassandra:
+          version: '5.0.5'
+          start_on_boot: true
+          wait_for_start: true

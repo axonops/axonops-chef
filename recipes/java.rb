@@ -9,6 +9,22 @@ if node["java"]["skip_install"]
   return
 end
 
+# Resolve the package names and JAVA_HOME for the requested Java major version
+# (8, 11 or 17). The Cassandra recipe sets node['java']['version'] from the
+# Cassandra version; standalone callers may override it directly. Explicitly
+# set zulu_pkg / zulu_home / openjdk_pkg attributes still win.
+java_major = node['java']['version'].to_i
+if node['java']['zulu_packages'].key?(java_major)
+  node.default['java']['zulu_pkg']  = node['java']['zulu_packages'][java_major]
+  node.default['java']['zulu_home'] = node['java']['zulu_homes'][java_major]
+end
+openjdk_for_family = node['java']['openjdk_packages'][node['platform_family']]
+if openjdk_for_family && openjdk_for_family.key?(java_major)
+  node.default['java']['openjdk_pkg'] = openjdk_for_family[java_major]
+  node.default['java']['java_pkg']    = openjdk_for_family[java_major]
+end
+Chef::Log.info("Java recipe: installing Java #{java_major} (zulu=#{node['java']['zulu']})")
+
 # Determine installation method
 install_from_tarball = node['java']['install_from_package'] == false || node['java']['offline_install']
 install_zulu = node['java']['zulu'] != false

@@ -11,6 +11,14 @@ cassandra_group = node['axonops']['cassandra']['group']
 cassandra_home = "#{node['axonops']['cassandra']['install_dir']}/cassandra"
 data_root = node['axonops']['cassandra']['data_root']
 
+# Determine the Cassandra series and whether it uses the legacy (3.11)
+# cassandra.yaml schema. Cassandra 3.11 uses integer *_in_ms / *_in_mb keys,
+# Thrift/RPC keys and megabit streaming throughput, rendered from a dedicated
+# templates/default/3.11/cassandra.yaml.erb. 4.1/5.0 use the modern schema.
+cassandra_version = node['axonops']['cassandra']['version']
+cassandra_legacy_schema = AxonOps::CassandraVersion.legacy_schema?(cassandra_version)
+cassandra_yaml_source = cassandra_legacy_schema ? '3.11/cassandra.yaml.erb' : 'cassandra.yaml.erb'
+
 # Use server attributes if defined, otherwise use cassandra attributes
 cluster_name = node['axonops']['server']['cassandra']['cluster_name'] || node['axonops']['cassandra']['cluster_name']
 datacenter = node['axonops']['server']['cassandra']['dc'] || node['axonops']['cassandra']['dc']
@@ -29,7 +37,7 @@ end
 
 # Main cassandra.yaml configuration
 template "#{cassandra_home}/conf/cassandra.yaml" do
-  source 'cassandra.yaml.erb'
+  source cassandra_yaml_source
   owner cassandra_user
   group cassandra_group
   mode '0644'

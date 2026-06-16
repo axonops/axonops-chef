@@ -19,8 +19,10 @@ package 'tar' do
   only_if { node['platform_family'] == 'rhel'}
 end
 
-# Install Java if not already installed
+# Install Java if not already installed. Select the Java major version required
+# by the configured Cassandra version (3.11 -> 8, 4.1 -> 11, 5.0 -> 17).
 unless node['axonops']['cassandra']['skip_java_install']
+  node.override['java']['version'] = AxonOps::CassandraVersion.java_major(node['axonops']['cassandra']['version'])
   include_recipe 'axonops::java'
 end
 
