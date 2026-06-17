@@ -18,9 +18,7 @@ class TemplateContext
     vars.each { |k, v| instance_variable_set("@#{k}", v) }
   end
 
-  def node
-    @node
-  end
+  attr_reader :node
 
   def render(path)
     ERB.new(File.read(path), trim_mode: '-').result(binding)

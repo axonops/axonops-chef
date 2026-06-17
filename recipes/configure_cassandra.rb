@@ -103,7 +103,7 @@ if node['axonops']['cassandra']['version'].start_with?('5.')
     group cassandra_group
     mode '0644'
     variables(
-      heap_size: jvm_heap_size,
+      heap_size: jvm_heap_size
     )
     notifies :restart, 'service[cassandra]', :delayed
   end
@@ -122,7 +122,7 @@ elsif node['axonops']['cassandra']['version'].start_with?('4.')
     group cassandra_group
     mode '0644'
     variables(
-      heap_size: jvm_heap_size,
+      heap_size: jvm_heap_size
     )
     notifies :restart, 'service[cassandra]', :delayed
   end
@@ -212,7 +212,7 @@ template '/etc/systemd/system/cassandra.service' do
     cassandra_home: cassandra_home,
     cassandra_user: cassandra_user,
     cassandra_group: cassandra_group,
-    cassandra_log_dir: node['axonops']['cassandra']['log_dir'],
+    cassandra_log_dir: node['axonops']['cassandra']['log_dir']
   )
   notifies :run, 'execute[systemctl-daemon-reload]', :immediately
   notifies :restart, 'service[cassandra]', :delayed
@@ -241,16 +241,16 @@ ruby_block 'wait-for-cassandra' do
         loop do
           begin
             TCPSocket.new(host, port).close
-            Chef::Log.info("Cassandra is ready!")
+            Chef::Log.info('Cassandra is ready!')
             break
           rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH
-            Chef::Log.debug("Cassandra not ready yet, retrying...")
+            Chef::Log.debug('Cassandra not ready yet, retrying...')
             sleep 5
           end
         end
       end
     rescue Timeout::Error
-      Chef::Log.warn("Timeout waiting for Cassandra to start")
+      Chef::Log.warn('Timeout waiting for Cassandra to start')
     end
   end
   action :run

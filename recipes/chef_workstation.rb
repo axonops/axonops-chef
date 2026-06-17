@@ -32,7 +32,7 @@ when 'rhel', 'fedora'
 
     # Enable PowerTools/CRB repository
     execute 'enable-powertools' do
-      command(if node['platform'] == 'rocky'
+      command(if platform?('rocky')
                 'dnf config-manager --set-enabled powertools || dnf config-manager --set-enabled crb'
               else
                 'dnf config-manager --set-enabled powertools'

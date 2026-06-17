@@ -31,7 +31,7 @@ control 'cassandra-5.0-layout' do
   end
 
   describe yaml(conf) do
-    its(['sstable', 'selected_format']) { should cmp 'bti' }
+    its(%w(sstable selected_format)) { should cmp 'bti' }
   end
 end
 

@@ -4,8 +4,8 @@
 #
 # Installs Java - either Azul Zulu Java 17 or OpenJDK based on configuration
 #
-if node["java"]["skip_install"]
-  Chef::Log.info("Skipping Java installation as per configuration")
+if node['java']['skip_install']
+  Chef::Log.info('Skipping Java installation as per configuration')
   return
 end
 
@@ -33,7 +33,7 @@ if node['java']['offline_install'] && node['java']['package']
   # Install from specified package path
   package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java'])
 
-  if !::File.exist?(package_path)
+  unless ::File.exist?(package_path)
     raise Chef::Exceptions::FileNotFound, "Java package not found at specified path: #{package_path}"
   end
 
@@ -98,7 +98,7 @@ elsif install_from_tarball
       extracted_dirs = Dir.glob("#{parent_dir}/zulu*").select { |f| File.directory?(f) }
 
       if extracted_dirs.empty?
-        raise "No Zulu directory found after extraction"
+        raise 'No Zulu directory found after extraction'
       end
 
       extracted_dir = extracted_dirs.sort.last # Get the latest if multiple
@@ -143,7 +143,7 @@ elsif install_zulu && !node['java']['offline_install']
     end
 
     file '/etc/apt/sources.list.d/zulu.list' do
-      content "deb [signed-by=/usr/share/keyrings/azul.gpg] https://repos.azul.com/zulu/deb stable main"
+      content 'deb [signed-by=/usr/share/keyrings/azul.gpg] https://repos.azul.com/zulu/deb stable main'
       mode '0644'
       notifies :run, 'execute[apt-update-azul]', :immediately
     end
@@ -177,20 +177,20 @@ elsif install_zulu && !node['java']['offline_install']
 
 else
   # Install OpenJDK (when zulu is false or fallback)
-  Chef::Log.info("Installing OpenJDK as Zulu is disabled")
+  Chef::Log.info('Installing OpenJDK as Zulu is disabled')
 
   package node['java']['openjdk_pkg'] do
     action :install
   end
 
   # Set JAVA_HOME based on platform
-  if ::File.exist?(node["java"]["java_home"])
-    java_home = node["java"]["java_home"]
-  elsif node['java']['zulu']
-    java_home = node['java']['zulu_home']
-  else
-    java_home = node['java']['openjdk_home']
-  end
+  java_home = if ::File.exist?(node['java']['java_home'])
+                node['java']['java_home']
+              elsif node['java']['zulu']
+                node['java']['zulu_home']
+              else
+                node['java']['openjdk_home']
+              end
 end
 
 # Set JAVA_HOME environment variable
@@ -209,7 +209,7 @@ log 'java-installation-complete' do
     if defined?(java_home) && java_home
       "Java installation complete with JAVA_HOME=#{java_home}"
     else
-      "Java installation complete"
+      'Java installation complete'
     end
   }
   level :info
