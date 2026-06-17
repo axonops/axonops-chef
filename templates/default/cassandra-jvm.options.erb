@@ -55,7 +55,8 @@
 -XX:+AlwaysPreTouch
 -XX:+DisableExplicitGC
 -XX:+HeapDumpOnOutOfMemoryError
--XX:MaxDirectMemorySize=
+# -XX:MaxDirectMemorySize left unset so the JVM picks a sane default;
+# an empty value (-XX:MaxDirectMemorySize=) is rejected by the JVM.
 -XX:+PerfDisableSharedMem
 -XX:+UseCondCardMark
 

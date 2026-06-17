@@ -74,12 +74,18 @@ CASSANDRA_LOG_DIR="<%= @log_dir %>"
 #GC log path has to be defined here because it needs to access CASSANDRA_HOME
 # See description of https://bugs.openjdk.java.net/browse/JDK-8046148 for details about the syntax
 # The following is the equivalent to -XX:+PrintGCDetails -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=10M
+<% if (@java_major || 17).to_i >= 11 -%>
+# -Xlog:gc is the Java 11+ unified logging syntax. On Java 8 (Cassandra 3.11)
+# GC logging is configured via jvm.options instead, so this block is skipped.
 echo "$JVM_OPTS" | grep -qe "-[X]log:gc"
 if [ "$?" = "1" ] ; then # [X] to prevent ccm from replacing this line
     # only add -Xlog:gc if it's not mentioned in jvm-server.options file
     mkdir -p ${CASSANDRA_LOG_DIR}
     JVM_OPTS="$JVM_OPTS -Xlog:gc=info,heap*=trace,age*=debug,safepoint=info,promotion*=trace:file=${CASSANDRA_LOG_DIR}/gc.log:time,uptime,pid,tid,level:filecount=10,filesize=10485760"
 fi
+<% else -%>
+mkdir -p ${CASSANDRA_LOG_DIR}
+<% end -%>
 
 # Check what parameters were defined on jvm-server.options file to avoid conflicts
 echo $JVM_OPTS | grep -q Xmn
@@ -188,8 +194,10 @@ fi
 # provides hints to the JIT compiler
 JVM_OPTS="$JVM_OPTS -XX:CompileCommandFile=$CASSANDRA_CONF/hotspot_compiler"
 
-# add the jamm javaagent
-JVM_OPTS="$JVM_OPTS -javaagent:$CASSANDRA_HOME/lib/jamm-0.4.0.jar"
+# add the jamm javaagent. Resolve the shipped jamm jar dynamically so this works
+# across Cassandra versions (3.11 ships jamm-0.3.0, 4.1/5.0 ship newer).
+JAMM_JAR="$(ls "$CASSANDRA_HOME"/lib/jamm-*.jar 2>/dev/null | sort -V | tail -1)"
+JVM_OPTS="$JVM_OPTS -javaagent:${JAMM_JAR}"
 
 
 if [ "x$CASSANDRA_HEAPDUMP_DIR" = "x" ]; then

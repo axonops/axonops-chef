@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Fast, dependency-free gate: Ruby syntax, ERB template syntax, YAML validity.
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: false
+
+      - name: Ruby syntax (-c) for libraries, recipes, attributes, specs
+        run: |
+          find libraries recipes attributes spec -name '*.rb' -print0 \
+            | xargs -0 -n1 ruby -c
+
+      - name: ERB template syntax
+        run: |
+          rc=0
+          while IFS= read -r -d '' f; do
+            erb -P -x -T - "$f" | ruby -c >/dev/null || { echo "ERB syntax error: $f"; rc=1; }
+          done < <(find templates -name '*.erb' -print0)
+          exit $rc
+
+      - name: YAML validity (kitchen.yml + workflows)
+        run: |
+          ruby -ryaml -e 'YAML.load_file("kitchen.yml")'
+          for f in .github/workflows/*.yml; do ruby -ryaml -e "YAML.load_file('$f')"; done
+
+  # Pure-Ruby unit specs for the version library and 3.11 template render.
+  # No Chef converge required, so this is fast and reliable — the blocking gate
+  # for the Cassandra version/templating logic.
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: false
+
+      - name: Install RSpec
+        run: gem install rspec --no-document
+
+      - name: Unit specs (library + 3.11 template render)
+        run: |
+          rspec --options /dev/null \
+            spec/unit/libraries/cassandra_version_spec.rb \
+            spec/unit/templates/cassandra_3_11_yaml_spec.rb \
+            --format documentation --color
+
+  # ChefSpec recipe specs. Requires a full Chef + cookbook dependency resolve;
+  # informational while the legacy recipe specs are brought up to date.
+  chefspec:
+    runs-on: ubuntu-latest
+    env:
+      CHEF_LICENSE: accept-silent
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Chef Workstation
+        run: curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -P chef-workstation -c stable
+
+      - name: Install cookbook dependencies
+        run: |
+          chef exec bundle install || true
+          chef exec berks install || true
+
+      - name: ChefSpec recipe specs
+        run: chef exec rspec spec/unit/recipes --format documentation --color
+        continue-on-error: true
+
+  # Cookstyle lint — informational while the cookbook clears existing lint debt.
+  cookstyle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: false
+
+      - name: Install Cookstyle
+        run: gem install cookstyle --no-document
+
+      - name: Run Cookstyle
+        run: cookstyle --display-cop-names --extra-details
+        continue-on-error: true
+
+  # Integration: Test Kitchen + dokken. Slow; run manually via "Run workflow".
+  kitchen:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      CHEF_LICENSE: accept-silent
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [ cassandra-3-11, cassandra-default ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Chef Workstation
+        run: curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -P chef-workstation -c stable
+
+      - name: kitchen test ${{ matrix.suite }}
+        run: |
+          export KITCHEN_YAML=kitchen.yml
+          kitchen test "${{ matrix.suite }}" --destroy=always

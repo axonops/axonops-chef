@@ -1,0 +1,193 @@
+<%-
+  cv = AxonOpsCassandra
+  c  = node['axonops']['cassandra']
+  # Resolve cache periods (3.11 expects integer seconds) and cache sizes
+  # (integer mebibytes). nil means "auto" in 3.11, rendered as 0/blank.
+  key_cache_mb       = c['key_cache_size'] ? cv.to_mib(c['key_cache_size']) : nil
+  row_cache_mb       = c['row_cache_size'] ? cv.to_mib(c['row_cache_size']) : 0
+  counter_cache_mb   = c['counter_cache_size'] ? cv.to_mib(c['counter_cache_size']) : nil
+  prepared_cache_mb  = c['prepared_statements_cache_size'] ? cv.to_mib(c['prepared_statements_cache_size']) : nil
+  roles_update_ms    = c['roles_update_interval'] ? cv.to_ms(c['roles_update_interval']) : cv.to_ms(c['roles_validity'])
+  perms_update_ms    = c['permissions_update_interval'] ? cv.to_ms(c['permissions_update_interval']) : cv.to_ms(c['permissions_validity'])
+  creds_update_ms    = c['credentials_update_interval'] ? cv.to_ms(c['credentials_update_interval']) : cv.to_ms(c['credentials_validity'])
+  server_enc         = c['server_encryption_options'] || {}
+  client_enc         = c['client_encryption_options'] || {}
+-%>
+# Cassandra 3.11 storage config YAML
+# Managed by Chef with the axonops cookbook (legacy schema)
+#
+# This file uses the Cassandra 3.11 schema: integer *_in_ms / *_in_mb / *_in_kb
+# keys, Thrift/RPC keys and megabit streaming throughput. Values are derived
+# from the shared cookbook attributes via AxonOpsCassandra conversions.
+
+cluster_name: '<%= @cluster_name %>'
+num_tokens: <%= @num_tokens %>
+<% if c['allocate_tokens_for_keyspace'] -%>
+allocate_tokens_for_keyspace: <%= c['allocate_tokens_for_keyspace'] %>
+<% end -%>
+
+hinted_handoff_enabled: <%= c['hinted_handoff_enabled'] ? 'true' : 'false' %>
+max_hint_window_in_ms: <%= cv.to_ms(c['max_hint_window']) %>
+hinted_handoff_throttle_in_kb: <%= cv.to_kib(c['hinted_handoff_throttle']) %>
+max_hints_delivery_threads: <%= c['max_hints_delivery_threads'] %>
+hints_directory: <%= @hints_directory %>
+hints_flush_period_in_ms: <%= cv.to_ms(c['hints_flush_period']) %>
+max_hints_file_size_in_mb: <%= cv.to_mib(c['max_hints_file_size']) %>
+
+batchlog_replay_throttle_in_kb: <%= cv.to_kib(c['batchlog_replay_throttle']) %>
+
+authenticator: <%= @authenticator %>
+authorizer: <%= @authorizer %>
+role_manager: <%= c['role_manager'] %>
+roles_validity_in_ms: <%= cv.to_ms(c['roles_validity']) %>
+roles_update_interval_in_ms: <%= roles_update_ms %>
+permissions_validity_in_ms: <%= cv.to_ms(c['permissions_validity']) %>
+permissions_update_interval_in_ms: <%= perms_update_ms %>
+credentials_validity_in_ms: <%= cv.to_ms(c['credentials_validity']) %>
+credentials_update_interval_in_ms: <%= creds_update_ms %>
+
+partitioner: org.apache.cassandra.dht.Murmur3Partitioner
+
+data_file_directories:
+<% @data_file_directories.each do |dir| -%>
+    - <%= dir %>
+<% end -%>
+
+commitlog_directory: <%= @commitlog_directory %>
+cdc_enabled: <%= c['cdc_enabled'] ? 'true' : 'false' %>
+cdc_raw_directory: <%= @cdc_raw_directory %>
+
+disk_failure_policy: <%= c['disk_failure_policy'] || 'stop' %>
+commit_failure_policy: <%= c['commit_failure_policy'] || 'stop' %>
+
+<% if prepared_cache_mb -%>
+prepared_statements_cache_size_mb: <%= prepared_cache_mb %>
+<% else -%>
+prepared_statements_cache_size_mb:
+<% end -%>
+<% if key_cache_mb -%>
+key_cache_size_in_mb: <%= key_cache_mb %>
+<% else -%>
+key_cache_size_in_mb:
+<% end -%>
+key_cache_save_period: <%= cv.to_secs(c['key_cache_save_period']) %>
+row_cache_size_in_mb: <%= row_cache_mb %>
+row_cache_save_period: <%= cv.to_secs(c['row_cache_save_period']) %>
+<% if counter_cache_mb -%>
+counter_cache_size_in_mb: <%= counter_cache_mb %>
+<% else -%>
+counter_cache_size_in_mb:
+<% end -%>
+counter_cache_save_period: <%= cv.to_secs(c['counter_cache_save_period']) %>
+
+saved_caches_directory: <%= @saved_caches_directory %>
+
+commitlog_sync: periodic
+commitlog_sync_period_in_ms: <%= cv.to_ms(c['commitlog_sync_period']) %>
+commitlog_segment_size_in_mb: <%= cv.to_mib(c['commitlog_segment_size']) %>
+
+seed_provider:
+    - class_name: org.apache.cassandra.locator.SimpleSeedProvider
+      parameters:
+          - seeds: "<%= @seeds %>"
+
+concurrent_reads: <%= @concurrent_reads %>
+concurrent_writes: <%= @concurrent_writes %>
+concurrent_counter_writes: <%= @concurrent_counter_writes %>
+concurrent_materialized_view_writes: <%= @concurrent_materialized_view_writes %>
+<% if c['concurrent_compactors'] -%>
+concurrent_compactors: <%= c['concurrent_compactors'] %>
+<% end -%>
+
+memtable_allocation_type: <%= @memtable_allocation_type %>
+<% if @memtable_cleanup_threshold -%>
+memtable_cleanup_threshold: <%= @memtable_cleanup_threshold %>
+<% end -%>
+<% if @memtable_flush_writers -%>
+memtable_flush_writers: <%= @memtable_flush_writers %>
+<% end -%>
+
+index_summary_capacity_in_mb:
+index_summary_resize_interval_in_minutes: 60
+
+trickle_fsync: <%= c['trickle_fsync'] ? 'true' : 'false' %>
+trickle_fsync_interval_in_kb: <%= cv.to_kib(c['trickle_fsync_interval']) %>
+
+storage_port: <%= @storage_port %>
+ssl_storage_port: <%= @ssl_storage_port %>
+listen_address: <%= @listen_address %>
+<% if @broadcast_address -%>
+broadcast_address: <%= @broadcast_address %>
+<% end -%>
+listen_on_broadcast_address: <%= c['listen_on_broadcast_address'] ? 'true' : 'false' %>
+
+# Legacy Thrift RPC is disabled by default on 3.11.
+start_native_transport: true
+native_transport_port: <%= @native_transport_port %>
+start_rpc: false
+rpc_address: <%= @rpc_address %>
+<% if @broadcast_rpc_address -%>
+broadcast_rpc_address: <%= @broadcast_rpc_address %>
+<% end -%>
+rpc_port: <%= c['rpc_port'] || 9160 %>
+rpc_keepalive: true
+rpc_server_type: sync
+
+incremental_backups: <%= c['incremental_backups'] ? 'true' : 'false' %>
+snapshot_before_compaction: false
+auto_snapshot: <%= c['auto_snapshot'].nil? ? true : c['auto_snapshot'] %>
+
+column_index_size_in_kb: <%= cv.to_kib(c['column_index_size']) %>
+batch_size_warn_threshold_in_kb: <%= cv.to_kib(c['batch_size_warn_threshold']) %>
+batch_size_fail_threshold_in_kb: <%= cv.to_kib(c['batch_size_fail_threshold']) %>
+
+compaction_throughput_mb_per_sec: <%= c['compaction_throughput_mb_per_sec'] || cv.to_mib(c['compaction_throughput'].to_s.sub(%r{/s\z}, '')) %>
+sstable_preemptive_open_interval_in_mb: <%= cv.to_mib(c['sstable_preemptive_open_interval']) %>
+
+read_request_timeout_in_ms: <%= cv.to_ms(c['read_request_timeout']) %>
+range_request_timeout_in_ms: <%= cv.to_ms(c['range_request_timeout']) %>
+write_request_timeout_in_ms: <%= cv.to_ms(c['write_request_timeout']) %>
+counter_write_request_timeout_in_ms: <%= cv.to_ms(c['counter_write_request_timeout']) %>
+cas_contention_timeout_in_ms: <%= cv.to_ms(c['cas_contention_timeout']) %>
+truncate_request_timeout_in_ms: <%= cv.to_ms(c['truncate_request_timeout']) %>
+request_timeout_in_ms: <%= cv.to_ms(c['request_timeout']) %>
+slow_query_log_timeout_in_ms: <%= cv.to_ms(c['slow_query_log_timeout']) %>
+
+cross_node_timeout: false
+streaming_keep_alive_period_in_secs: <%= cv.to_secs(c['streaming_keep_alive_period']) %>
+stream_throughput_outbound_megabits_per_sec: <%= c['stream_throughput_outbound_megabits_per_sec'] || cv.mib_per_s_to_megabits(c['stream_throughput_outbound']) %>
+inter_dc_stream_throughput_outbound_megabits_per_sec: <%= c['inter_dc_stream_throughput_outbound_megabits_per_sec'] || cv.mib_per_s_to_megabits(c['inter_dc_stream_throughput_outbound']) %>
+
+<% if c['phi_convict_threshold'] -%>
+phi_convict_threshold: <%= c['phi_convict_threshold'] %>
+<% end -%>
+endpoint_snitch: <%= @endpoint_snitch %>
+dynamic_snitch_update_interval_in_ms: <%= cv.to_ms(c['dynamic_snitch_update_interval']) %>
+dynamic_snitch_reset_interval_in_ms: <%= cv.to_ms(c['dynamic_snitch_reset_interval']) %>
+dynamic_snitch_badness_threshold: <%= c['dynamic_snitch_badness_threshold'] %>
+
+server_encryption_options:
+    internode_encryption: <%= server_enc['internode_encryption'] || 'none' %>
+    keystore: <%= server_enc['keystore'] %>
+    keystore_password: <%= server_enc['keystore_password'] %>
+    truststore: <%= server_enc['truststore'] %>
+    truststore_password: <%= server_enc['truststore_password'] %>
+    protocol: <%= server_enc['protocol'] || 'TLS' %>
+    require_client_auth: <%= server_enc['require_client_auth'] ? 'true' : 'false' %>
+
+client_encryption_options:
+    enabled: <%= client_enc['enabled'] ? 'true' : 'false' %>
+    optional: <%= client_enc['optional'] ? 'true' : 'false' %>
+    keystore: <%= client_enc['keystore'] %>
+    keystore_password: <%= client_enc['keystore_password'] %>
+    require_client_auth: <%= client_enc['require_client_auth'] ? 'true' : 'false' %>
+    protocol: <%= client_enc['protocol'] || 'TLS' %>
+
+internode_compression: <%= c['internode_compression'] || 'dc' %>
+inter_dc_tcp_nodelay: false
+
+tombstone_warn_threshold: <%= c['tombstone_warn_threshold'] %>
+tombstone_failure_threshold: <%= c['tombstone_failure_threshold'] %>
+gc_warn_threshold_in_ms: <%= cv.to_ms(c['gc_warn_threshold']) %>
+
+auto_bootstrap: true

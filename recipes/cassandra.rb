@@ -11,16 +11,18 @@ if ::File.exist?('/etc/cassandra/cassandra.yaml') ||
    ::File.exist?('/etc/cassandra/conf/cassandra.yaml') ||
    ::File.exist?('/usr/bin/cassandra') ||
    ::File.exist?('/opt/cassandra/bin/cassandra')
-  cassandra_installed = true
+  true
 end
 
 package 'tar' do
   action :install
-  only_if { node['platform_family'] == 'rhel'}
+  only_if { platform_family?('rhel') }
 end
 
-# Install Java if not already installed
+# Install Java if not already installed. Select the Java major version required
+# by the configured Cassandra version (3.11 -> 8, 4.1 -> 11, 5.0 -> 17).
 unless node['axonops']['cassandra']['skip_java_install']
+  node.override['java']['version'] = AxonOpsCassandra.java_major(node['axonops']['cassandra']['version'])
   include_recipe 'axonops::java'
 end
 
@@ -78,30 +80,30 @@ cassandra_group = node['axonops']['cassandra']['group']
 
 systemd_unit 'cassandra.service' do
   content({
-    'Unit' => {
-      'Description' => 'Apache Cassandra',
-      'After' => 'network.target'
-    },
-    'Service' => {
-      'Type' => 'forking',
-      'ExecStart' => "#{cassandra_current}/bin/cassandra -p /var/run/cassandra/cassandra.pid",
-      'User' => cassandra_user,
-      'Group' => cassandra_group,
-      'LimitNOFILE' => 100000,
-      'LimitMEMLOCK' => 'infinity',
-      'LimitNPROC' => 32768,
-      'LimitAS' => 'infinity',
-      'Environment' => "CASSANDRA_HOME=#{cassandra_current}",
-      'PIDFile' => '/var/run/cassandra/cassandra.pid',
-      'RuntimeDirectory' => 'cassandra',
-      'RuntimeDirectoryMode' => '0755',
-      'Restart' => 'on-failure',
-      'RestartSec' => 10
-    },
-    'Install' => {
-      'WantedBy' => 'multi-user.target'
-    }
-  })
+            'Unit' => {
+              'Description' => 'Apache Cassandra',
+              'After' => 'network.target',
+            },
+            'Service' => {
+              'Type' => 'forking',
+              'ExecStart' => "#{cassandra_current}/bin/cassandra -p /var/run/cassandra/cassandra.pid",
+              'User' => cassandra_user,
+              'Group' => cassandra_group,
+              'LimitNOFILE' => 100000,
+              'LimitMEMLOCK' => 'infinity',
+              'LimitNPROC' => 32768,
+              'LimitAS' => 'infinity',
+              'Environment' => "CASSANDRA_HOME=#{cassandra_current}",
+              'PIDFile' => '/var/run/cassandra/cassandra.pid',
+              'RuntimeDirectory' => 'cassandra',
+              'RuntimeDirectoryMode' => '0755',
+              'Restart' => 'on-failure',
+              'RestartSec' => 10,
+            },
+            'Install' => {
+              'WantedBy' => 'multi-user.target',
+            },
+          })
   action [:create, :enable, :start]
   notifies :run, 'execute[systemctl-daemon-reload]', :immediately
 end

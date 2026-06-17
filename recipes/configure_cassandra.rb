@@ -11,6 +11,14 @@ cassandra_group = node['axonops']['cassandra']['group']
 cassandra_home = "#{node['axonops']['cassandra']['install_dir']}/cassandra"
 data_root = node['axonops']['cassandra']['data_root']
 
+# Determine the Cassandra series and whether it uses the legacy (3.11)
+# cassandra.yaml schema. Cassandra 3.11 uses integer *_in_ms / *_in_mb keys,
+# Thrift/RPC keys and megabit streaming throughput, rendered from a dedicated
+# templates/default/3.11/cassandra.yaml.erb. 4.1/5.0 use the modern schema.
+cassandra_version = node['axonops']['cassandra']['version']
+cassandra_legacy_schema = AxonOpsCassandra.legacy_schema?(cassandra_version)
+cassandra_yaml_source = cassandra_legacy_schema ? '3.11/cassandra.yaml.erb' : 'cassandra.yaml.erb'
+
 # Use server attributes if defined, otherwise use cassandra attributes
 cluster_name = node['axonops']['server']['cassandra']['cluster_name'] || node['axonops']['cassandra']['cluster_name']
 datacenter = node['axonops']['server']['cassandra']['dc'] || node['axonops']['cassandra']['dc']
@@ -29,7 +37,7 @@ end
 
 # Main cassandra.yaml configuration
 template "#{cassandra_home}/conf/cassandra.yaml" do
-  source 'cassandra.yaml.erb'
+  source cassandra_yaml_source
   owner cassandra_user
   group cassandra_group
   mode '0644'
@@ -95,7 +103,7 @@ if node['axonops']['cassandra']['version'].start_with?('5.')
     group cassandra_group
     mode '0644'
     variables(
-      heap_size: jvm_heap_size,
+      heap_size: jvm_heap_size
     )
     notifies :restart, 'service[cassandra]', :delayed
   end
@@ -114,7 +122,7 @@ elsif node['axonops']['cassandra']['version'].start_with?('4.')
     group cassandra_group
     mode '0644'
     variables(
-      heap_size: jvm_heap_size,
+      heap_size: jvm_heap_size
     )
     notifies :restart, 'service[cassandra]', :delayed
   end
@@ -153,7 +161,8 @@ template "#{cassandra_home}/conf/cassandra-env.sh" do
     log_dir: node['axonops']['cassandra']['directories']['logs'],
     jmx_port: node['axonops']['cassandra']['jmx_port'],
     enable_jmx_authentication: node['axonops']['cassandra']['jmx_authentication'],
-    gc_log_dir: node['axonops']['cassandra']['directories']['gc_logs']
+    gc_log_dir: node['axonops']['cassandra']['directories']['gc_logs'],
+    java_major: AxonOpsCassandra.java_major(cassandra_version)
   )
   notifies :restart, 'service[cassandra]', :delayed
 end
@@ -203,7 +212,7 @@ template '/etc/systemd/system/cassandra.service' do
     cassandra_home: cassandra_home,
     cassandra_user: cassandra_user,
     cassandra_group: cassandra_group,
-    cassandra_log_dir: node['axonops']['cassandra']['log_dir'],
+    cassandra_log_dir: node['axonops']['cassandra']['log_dir']
   )
   notifies :run, 'execute[systemctl-daemon-reload]', :immediately
   notifies :restart, 'service[cassandra]', :delayed
@@ -232,16 +241,16 @@ ruby_block 'wait-for-cassandra' do
         loop do
           begin
             TCPSocket.new(host, port).close
-            Chef::Log.info("Cassandra is ready!")
+            Chef::Log.info('Cassandra is ready!')
             break
           rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH
-            Chef::Log.debug("Cassandra not ready yet, retrying...")
+            Chef::Log.debug('Cassandra not ready yet, retrying...')
             sleep 5
           end
         end
       end
     rescue Timeout::Error
-      Chef::Log.warn("Timeout waiting for Cassandra to start")
+      Chef::Log.warn('Timeout waiting for Cassandra to start')
     end
   end
   action :run
