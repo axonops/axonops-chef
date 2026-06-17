@@ -1,12 +1,15 @@
-# Apache Cassandra 5.0.4 Installation Guide
+# Apache Cassandra Installation Guide
 
-This guide covers the installation and configuration of Apache Cassandra 5.0.4 using the AxonOps Chef cookbook.
+This guide covers installation and configuration of Apache Cassandra using the AxonOps Chef cookbook. The cookbook supports **3.11.x, 4.1.x, and 5.0.x** and selects the correct Java version automatically.
 
 ## Table of Contents
-- [Overview](#overview)
+
+- [Version Support Matrix](#version-support-matrix)
+- [Install Method](#install-method)
 - [Requirements](#requirements)
-- [Basic Installation](#basic-installation)
-- [Configuration Options](#configuration-options)
+- [Quick Start](#quick-start)
+- [Version-Specific Examples](#version-specific-examples)
+- [Configuration Reference](#configuration-reference)
   - [Recipe Options](#recipe-options)
   - [Cluster Configuration](#cluster-configuration)
   - [Network Configuration](#network-configuration)
@@ -17,438 +20,443 @@ This guide covers the installation and configuration of Apache Cassandra 5.0.4 u
   - [Logging Configuration](#logging-configuration)
   - [System Tuning](#system-tuning)
 - [Advanced Configurations](#advanced-configurations)
-- [Examples](#examples)
+- [SSL Caveat](#ssl-caveat)
+- [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
+- [Roadmap](#roadmap)
 
-## Overview
+---
 
-The AxonOps Chef cookbook provides a flexible and modular approach to installing Apache Cassandra 5.0.4. This recipe can be used independently to deploy a new Cassandra cluster or as part of a larger AxonOps deployment.
+## Version Support Matrix
 
-Key features:
-- Apache Cassandra 5.0.4 installation
-- Flexible Java management (can skip Java installation)
-- Comprehensive configuration options
-- Production-ready default settings
-- Support for various deployment scenarios
+| Cassandra version | Java major | `cassandra.yaml` schema | JVM option files |
+|-------------------|------------|-------------------------|------------------|
+| 3.11.x | 8 (Zulu/OpenJDK) | Legacy: integer `*_in_ms` / `*_in_mb` / `*_in_kb` keys, Thrift/RPC keys, megabit streaming | `jvm.options` |
+| 4.1.x | 11 (Zulu/OpenJDK) | Modern: string-unit values (`32MiB`, `5000ms`, …) | `jvm-server.options` + `jvm11-server.options` |
+| 5.0.x | 17 (Zulu/OpenJDK) | Modern (same as 4.1) | `jvm-server.options` + `jvm17-server.options` |
+
+The version is selected via the `node['axonops']['cassandra']['version']` attribute (default: `5.0.5`).
+
+### Java version selection
+
+The `axonops::cassandra` recipe reads the `version` attribute at converge time and overrides `node['java']['version']` automatically:
+
+- `3.11.*` → Java 8
+- `4.1.*`  → Java 11
+- `5.*`    → Java 17
+
+This behaviour is implemented in `libraries/cassandra_version.rb` (`AxonOpsCassandra::java_major`). You can override Java selection by setting `node['java']['version']` explicitly, but this is not recommended unless you are providing your own JDK.
+
+---
+
+## Install Method
+
+Cassandra is installed from a **tarball** downloaded from `https://archive.apache.org/dist/cassandra` (or from a local path for air-gapped installs). Package-repository (apt/yum) install is not implemented yet — see [Roadmap](#roadmap).
+
+---
 
 ## Requirements
 
-- **Operating System**: Linux (tested on Ubuntu, CentOS, RHEL)
-- **Memory**: Minimum 4GB RAM, recommended 8GB+
-- **Disk**: SSD recommended for production
-- **Java**: Java 17 (automatically installed unless skipped)
-- **Chef**: Chef Infra Client 15.0+
+| Item | Requirement |
+|------|-------------|
+| Chef Infra Client | 15.0+ |
+| OS | Ubuntu 20.04+, Rocky Linux 8+, RHEL 8+, Amazon Linux 2 |
+| RAM | Minimum 4 GB; 8 GB+ recommended for production |
+| Disk | SSD recommended |
+| Network | Access to `archive.apache.org` (or local mirror for air-gapped) |
 
-## Basic Installation
+---
 
-To install Cassandra with default settings:
+## Quick Start
 
 ```ruby
+# Install Cassandra 5.0.5 (default) with Java 17
 include_recipe 'axonops::cassandra'
 ```
 
-This will:
-- Install Java 17 (unless `skip_java_install` is set to true)
-- Download and install Apache Cassandra 5.0.4
-- Configure Cassandra with production-ready defaults
-- Start the Cassandra service
+This:
+1. Sets `node['java']['version']` to `17` and installs Zulu 17 (or OpenJDK 17).
+2. Downloads and extracts the Cassandra tarball.
+3. Renders `cassandra.yaml` and JVM option files.
+4. Starts the Cassandra service.
 
-## Configuration Options
+---
 
-All configuration options are defined under the `node['axonops']['cassandra']` namespace.
+## Version-Specific Examples
+
+### Install Cassandra 3.11.x
+
+```ruby
+node.override['axonops']['cassandra']['version']      = '3.11.17'
+node.override['axonops']['cassandra']['cluster_name'] = 'Legacy Cluster'
+node.override['axonops']['cassandra']['heap_size']    = '4G'
+node.override['axonops']['cassandra']['gc_type']      = 'G1GC'  # Shenandoah not available in Java 8
+
+# Disable client TLS until a JKS keystore is available (see SSL Caveat)
+node.override['axonops']['cassandra']['client_encryption_options'] = {
+  'enabled' => false
+}
+
+include_recipe 'axonops::cassandra'
+```
+
+What happens:
+- `AxonOpsCassandra.java_major('3.11.17')` → `8` → Zulu 8 / OpenJDK 8 is installed.
+- The legacy `templates/default/3.11/cassandra.yaml.erb` is rendered with integer `*_in_ms`/`*_in_mb`/`*_in_kb` keys and Thrift/RPC keys.
+- `jvm.options` (single file) is rendered.
+
+### Install Cassandra 5.0.x (default)
+
+```ruby
+node.override['axonops']['cassandra']['version']      = '5.0.5'
+node.override['axonops']['cassandra']['cluster_name'] = 'Production Cluster'
+node.override['axonops']['cassandra']['heap_size']    = '8G'
+node.override['axonops']['cassandra']['gc_type']      = 'Shenandoah'
+
+include_recipe 'axonops::cassandra'
+```
+
+What happens:
+- Java 17 (Zulu 17 by default) is installed.
+- The modern `templates/default/cassandra.yaml.erb` is rendered.
+- `jvm-server.options` + `jvm17-server.options` are rendered.
+
+### Install Cassandra 4.1.x
+
+```ruby
+node.override['axonops']['cassandra']['version']      = '4.1.5'
+node.override['axonops']['cassandra']['cluster_name'] = 'Migration Cluster'
+node.override['axonops']['cassandra']['heap_size']    = '8G'
+
+include_recipe 'axonops::cassandra'
+```
+
+What happens:
+- Java 11 (Zulu 11 by default) is installed.
+- The modern `cassandra.yaml` template is rendered.
+- `jvm-server.options` + `jvm11-server.options` are rendered.
+
+---
+
+## Configuration Reference
+
+All attributes live under `node['axonops']['cassandra']`.
 
 ### Recipe Options
 
-| Attribute | Default | Description |
-|-----------|---------|-------------|
-| `skip_java_install` | `false` | Skip Java installation if you have your own Java |
-| `start_on_boot` | `true` | Enable Cassandra service to start on boot |
-| `base_url` | `https://archive.apache.org/dist/cassandra` | Base URL for downloading Cassandra |
-| `user` | `cassandra` | System user for running Cassandra |
-| `group` | `cassandra` | System group for Cassandra |
-| `version` | `5.0.4` | Cassandra version to install |
-| `wait_for_start` | `true` | Wait for Cassandra to start after configuration |
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `version` | String | `'5.0.5'` | Cassandra version to install, e.g. `'3.11.17'`, `'4.1.5'`, `'5.0.5'` |
+| `skip_java_install` | Boolean | `false` | Skip Java installation when you manage Java yourself |
+| `start_on_boot` | Boolean | `true` | Enable the Cassandra service at boot |
+| `wait_for_start` | Boolean | `true` | Block until Cassandra is accepting connections after install |
+| `base_url` | String | `'https://archive.apache.org/dist/cassandra'` | Base URL for the tarball download |
+| `install_dir` | String | `'/opt'` | Parent directory for the Cassandra tarball extraction |
+| `user` | String | `'cassandra'` | OS user that runs Cassandra |
+| `group` | String | `'cassandra'` | OS group for Cassandra |
 
 ### Cluster Configuration
 
-| Attribute | Default | Description |
-|-----------|---------|-------------|
-| `cluster_name` | `Test Cluster` | Name of your Cassandra cluster |
-| `num_tokens` | `16` | Number of tokens per node (vnodes) |
-| `allocate_tokens_for_local_replication_factor` | `3` | RF for token allocation |
-| `initial_token` | `nil` | Initial token (leave nil for vnodes) |
-| `seeds` | `['127.0.0.1']` | List of seed nodes |
-| `endpoint_snitch` | `SimpleSnitch` | Snitch implementation |
-| `datacenter` | `dc1` | Datacenter name (for GossipingPropertyFileSnitch) |
-| `rack` | `rack1` | Rack name (for GossipingPropertyFileSnitch) |
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `cluster_name` | String | `'AxonOps Cluster'` | Name of the Cassandra cluster |
+| `num_tokens` | Integer | `16` | Number of vnodes per node |
+| `allocate_tokens_for_local_replication_factor` | Integer | `3` | RF used for automatic token allocation |
+| `initial_token` | String/nil | `nil` | Manual token; leave `nil` when using vnodes |
+| `seeds` | Array | `['127.0.0.1']` | Seed node addresses |
+| `endpoint_snitch` | String | `'SimpleSnitch'` | Snitch class |
+| `dc` | String | `'dc1'` | Datacenter name (for `GossipingPropertyFileSnitch`) |
+| `rack` | String | `'rack1'` | Rack name (for `GossipingPropertyFileSnitch`) |
 
 ### Network Configuration
 
-| Attribute | Default | Description |
-|-----------|---------|-------------|
-| `listen_address` | `localhost` | Address to bind for internal communication |
-| `rpc_address` | `localhost` | Address to bind for client connections |
-| `broadcast_address` | `nil` | Address to broadcast to other nodes |
-| `broadcast_rpc_address` | `nil` | Address to broadcast for client connections |
-| `storage_port` | `7000` | Port for internal node communication |
-| `ssl_storage_port` | `7001` | SSL port for internal communication |
-| `native_transport_port` | `9042` | CQL native transport port |
-| `jmx_port` | `7199` | JMX monitoring port |
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `listen_address` | String | `'localhost'` | Address bound for internode communication |
+| `rpc_address` | String | `'localhost'` | Address bound for client (CQL) connections |
+| `broadcast_address` | String/nil | `nil` | Address broadcast to other nodes |
+| `broadcast_rpc_address` | String/nil | `nil` | Address broadcast for client connections |
+| `storage_port` | Integer | `7000` | Internode communication port |
+| `ssl_storage_port` | Integer | `7001` | TLS internode port |
+| `native_transport_port` | Integer | `9042` | CQL port |
+| `jmx_port` | Integer | `7199` | JMX port |
 
 ### Performance Tuning
 
-| Attribute | Default | Description |
-|-----------|---------|-------------|
-| `concurrent_reads` | `32` | Concurrent read operations |
-| `concurrent_writes` | `32` | Concurrent write operations |
-| `concurrent_counter_writes` | `32` | Concurrent counter write operations |
-| `compaction_throughput` | `64MiB/s` | Compaction throughput limit |
-| `stream_throughput_outbound` | `24MiB/s` | Outbound streaming throughput |
-| `memtable_allocation_type` | `heap_buffers` | Memtable allocation type |
-| `file_cache_size` | `nil` | File cache size (auto-calculated if nil) |
-| `buffer_pool_use_heap_if_exhausted` | `true` | Use heap if buffer pool exhausted |
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `concurrent_reads` | Integer | `32` | Concurrent read threads |
+| `concurrent_writes` | Integer | `32` | Concurrent write threads |
+| `concurrent_counter_writes` | Integer | `32` | Concurrent counter write threads |
+| `compaction_throughput` | String | `'64MiB/s'` | Compaction throughput limit |
+| `stream_throughput_outbound` | String | `'24MiB/s'` | Outbound streaming throughput |
+| `memtable_allocation_type` | String | `'heap_buffers'` | Memtable allocation strategy |
 
 ### Security Configuration
 
-| Attribute | Default | Description |
-|-----------|---------|-------------|
-| `authenticator` | `PasswordAuthenticator` | Authentication mechanism |
-| `authorizer` | `CassandraAuthorizer` | Authorization mechanism |
-| `role_manager` | `CassandraRoleManager` | Role management implementation |
-| `network_authorizer` | `AllowAllNetworkAuthorizer` | Network authorization |
-| `permissions_validity` | `2000ms` | Permissions cache validity |
-| `roles_validity` | `2000ms` | Roles cache validity |
-| `credentials_validity` | `2000ms` | Credentials cache validity |
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `authenticator` | String | `'PasswordAuthenticator'` | Authentication backend |
+| `authorizer` | String | `'CassandraAuthorizer'` | Authorization backend |
+| `role_manager` | String | `'CassandraRoleManager'` | Role management backend |
+| `network_authorizer` | String | `'AllowAllNetworkAuthorizer'` | Network authorization |
+| `permissions_validity` | String | `'2000ms'` | Permissions cache TTL |
+| `roles_validity` | String | `'2000ms'` | Roles cache TTL |
+| `credentials_validity` | String | `'2000ms'` | Credentials cache TTL |
 
-#### Encryption Options
+#### Server encryption (node-to-node)
 
-Server encryption (node-to-node):
 ```ruby
 node.override['axonops']['cassandra']['server_encryption_options'] = {
-  'internode_encryption' => 'all',  # none, dc, rack, all
-  'keystore' => '/etc/cassandra/cassandra.keystore',
-  'keystore_password' => 'your_keystore_password',
-  'truststore' => '/etc/cassandra/cassandra.truststore',
-  'truststore_password' => 'your_truststore_password',
-  'protocol' => 'TLS',
-  'accepted_protocols' => ['TLSv1.2', 'TLSv1.3'],
-  'cipher_suites' => ['TLS_RSA_WITH_AES_256_GCM_SHA384'],
-  'require_client_auth' => true,
-  'require_endpoint_verification' => true
+  'internode_encryption' => 'all',          # none | dc | rack | all
+  'keystore'             => '/opt/cassandra/conf/keystore.jks',
+  'keystore_password'    => 'your_keystore_password',
+  'truststore'           => '/opt/cassandra/conf/truststore.jks',
+  'truststore_password'  => 'your_truststore_password',
+  'protocol'             => 'TLS',
+  'accepted_protocols'   => ['TLSv1.2', 'TLSv1.3'],
+  'require_client_auth'  => true,
 }
 ```
 
-Client encryption:
+#### Client encryption (CQL/9042)
+
 ```ruby
 node.override['axonops']['cassandra']['client_encryption_options'] = {
-  'enabled' => true,
-  'keystore' => '/etc/cassandra/cassandra.keystore',
-  'keystore_password' => 'your_keystore_password',
+  'enabled'             => true,
+  'keystore'            => '/opt/cassandra/conf/keystore.jks',
+  'keystore_password'   => 'your_keystore_password',
   'require_client_auth' => false,
-  'protocol' => 'TLS',
-  'accepted_protocols' => ['TLSv1.2', 'TLSv1.3']
+  'protocol'            => 'TLS',
+  'accepted_protocols'  => ['TLSv1.2', 'TLSv1.3'],
 }
 ```
+
+> **See [SSL Caveat](#ssl-caveat) before enabling client encryption.**
 
 ### Storage Configuration
 
-| Attribute | Default | Description |
-|-----------|---------|-------------|
-| `data_file_directories` | `['/var/lib/cassandra/data']` | Data file directories |
-| `commitlog_directory` | `/var/lib/cassandra/commitlog` | Commit log directory |
-| `hints_directory` | `/var/lib/cassandra/hints` | Hints directory |
-| `saved_caches_directory` | `/var/lib/cassandra/saved_caches` | Saved caches directory |
-| `disk_optimization_strategy` | `ssd` | Disk optimization (ssd or spinning) |
-| `disk_access_mode` | `mmap` | Disk access mode |
-| `commitlog_sync` | `periodic` | Commit log sync mode |
-| `commitlog_sync_period` | `10000ms` | Commit log sync period |
-| `commitlog_segment_size` | `32MiB` | Commit log segment size |
-
-#### CDC (Change Data Capture)
-```ruby
-node.override['axonops']['cassandra']['cdc_enabled'] = true
-node.override['axonops']['cassandra']['cdc_raw_directory'] = '/var/lib/cassandra/cdc_raw'
-node.override['axonops']['cassandra']['cdc_total_space'] = '4096MiB'
-```
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `data_file_directories` | Array | `['/var/lib/cassandra/data']` | Data directories |
+| `commitlog_directory` | String | `'/var/lib/cassandra/commitlog'` | Commit log directory |
+| `hints_directory` | String | `'/var/lib/cassandra/hints'` | Hints directory |
+| `saved_caches_directory` | String | `'/var/lib/cassandra/saved_caches'` | Saved caches directory |
+| `disk_optimization_strategy` | String | `'ssd'` | `ssd` or `spinning` |
+| `commitlog_sync` | String | `'periodic'` | Commit log sync mode |
+| `commitlog_sync_period` | String | `'10000ms'` | Commit log sync interval |
+| `commitlog_segment_size` | String | `'32MiB'` | Commit log segment size |
 
 ### JVM Configuration
 
-| Attribute | Default | Description |
-|-----------|---------|-------------|
-| `heap_size` | `2G` | JVM heap size |
-| `gc_type` | `G1GC` | Garbage collector type |
-| `gc_g1_heap_region_size` | `16m` | G1GC heap region size |
-| `gc_g1_max_pause_millis` | `300` | G1GC max pause target |
-| `gc_g1_initiating_heap_occupancy_percent` | `70` | G1GC initiating occupancy |
-| `local_jmx` | `yes` | Enable local JMX connections |
-| `jmx_authentication` | `false` | Enable JMX authentication |
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `heap_size` | String | `'2G'` | JVM heap (`-Xms` / `-Xmx`) |
+| `gc_type` | String | `'Shenandoah'` | GC: `'G1GC'` or `'Shenandoah'` (Shenandoah requires Java 11+; use `G1GC` for 3.11) |
+| `gc_g1_heap_region_size` | String | `'16m'` | G1GC region size |
+| `gc_g1_max_pause_millis` | Integer | `300` | G1GC max pause target (ms) |
+| `gc_g1_initiating_heap_occupancy_percent` | Integer | `70` | G1GC initiating occupancy |
+| `gc_shenandoah_heuristics` | String | `'adaptive'` | Shenandoah heuristic mode |
+| `local_jmx` | String | `'yes'` | Restrict JMX to localhost |
+| `jmx_authentication` | Boolean | `false` | Require JMX credentials |
 
 ### Logging Configuration
 
-| Attribute | Default | Description |
-|-----------|---------|-------------|
-| `log_level` | `INFO` | Default log level |
-| `log_dir` | `/var/log/cassandra` | Log directory |
-| `gc_log_enabled` | `true` | Enable GC logging |
-| `gc_log_file_size` | `10M` | GC log file size |
-| `gc_log_files` | `10` | Number of GC log files to keep |
-| `audit_logging_enabled` | `false` | Enable audit logging |
-| `debug_log_enabled` | `true` | Enable debug.log |
-| `system_log_level` | `INFO` | System log level |
-| `cassandra_log_level` | `DEBUG` | Cassandra log level |
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `log_level` | String | `'INFO'` | Root log level |
+| `log_dir` | String | `'/var/log/cassandra'` | Log directory |
+| `gc_log_enabled` | Boolean | `true` | Enable GC logging |
+| `gc_log_file_size` | String | `'10M'` | GC log file size |
+| `gc_log_files` | Integer | `10` | Number of GC log files to keep |
+| `debug_log_enabled` | Boolean | `true` | Write `debug.log` |
+| `system_log_level` | String | `'INFO'` | System keyspace log level |
+| `cassandra_log_level` | String | `'DEBUG'` | Cassandra package log level |
 
 ### System Tuning
 
-Resource limits:
 ```ruby
+# Resource limits (written to /etc/security/limits.d/cassandra.conf)
 node.override['axonops']['cassandra']['limits'] = {
   'memlock' => 'unlimited',
-  'nofile' => 100000,
-  'nproc' => 32768,
-  'as' => 'unlimited'
+  'nofile'  => 100000,
+  'nproc'   => 32768,
+  'as'      => 'unlimited',
+}
+
+# Sysctl settings
+node.override['axonops']['cassandra']['sysctl'] = {
+  'vm.max_map_count'              => 1048575,
+  'net.ipv4.tcp_keepalive_time'   => 60,
+  'net.ipv4.tcp_keepalive_probes' => 3,
+  'net.ipv4.tcp_keepalive_intvl'  => 10,
 }
 ```
 
-Sysctl settings:
-```ruby
-node.override['axonops']['cassandra']['sysctl'] = {
-  'vm.max_map_count' => 1048575,
-  'net.ipv4.tcp_keepalive_time' => 60,
-  'net.ipv4.tcp_keepalive_probes' => 3,
-  'net.ipv4.tcp_keepalive_intvl' => 10
-}
-```
+---
 
 ## Advanced Configurations
 
 ### Hinted Handoff
 
 ```ruby
-node.override['axonops']['cassandra']['hinted_handoff_enabled'] = true
-node.override['axonops']['cassandra']['max_hint_window'] = '3h'
-node.override['axonops']['cassandra']['hinted_handoff_throttle'] = '1024KiB'
-node.override['axonops']['cassandra']['max_hints_delivery_threads'] = 2
+node.override['axonops']['cassandra']['hinted_handoff_enabled']      = true
+node.override['axonops']['cassandra']['max_hint_window']             = '3h'
+node.override['axonops']['cassandra']['hinted_handoff_throttle']     = '1024KiB'
+node.override['axonops']['cassandra']['max_hints_delivery_threads']  = 2
 ```
 
-### Compaction Settings
+### Compaction
 
 ```ruby
-node.override['axonops']['cassandra']['concurrent_compactors'] = 4
-node.override['axonops']['cassandra']['compaction_throughput'] = '128MiB/s'
+node.override['axonops']['cassandra']['concurrent_compactors']     = 4
+node.override['axonops']['cassandra']['compaction_throughput']     = '128MiB/s'
 node.override['axonops']['cassandra']['sstable_preemptive_open_interval'] = '50MiB'
 ```
 
 ### Query Timeouts
 
 ```ruby
-node.override['axonops']['cassandra']['read_request_timeout'] = '5000ms'
+node.override['axonops']['cassandra']['read_request_timeout']  = '5000ms'
 node.override['axonops']['cassandra']['write_request_timeout'] = '2000ms'
 node.override['axonops']['cassandra']['range_request_timeout'] = '10000ms'
-node.override['axonops']['cassandra']['request_timeout'] = '10000ms'
+node.override['axonops']['cassandra']['request_timeout']       = '10000ms'
 ```
 
-### Tombstone Settings
+### Multi-Datacenter
 
 ```ruby
-node.override['axonops']['cassandra']['tombstone_warn_threshold'] = 1000
-node.override['axonops']['cassandra']['tombstone_failure_threshold'] = 100000
-```
-
-### Cache Configuration
-
-```ruby
-# Key cache
-node.override['axonops']['cassandra']['key_cache_size'] = '100MiB'
-node.override['axonops']['cassandra']['key_cache_save_period'] = '14400s'
-
-# Row cache (usually disabled)
-node.override['axonops']['cassandra']['row_cache_size'] = '0MiB'
-
-# Counter cache
-node.override['axonops']['cassandra']['counter_cache_size'] = '50MiB'
-node.override['axonops']['cassandra']['counter_cache_save_period'] = '7200s'
-```
-
-### Storage Attached Index (SAI) Configuration
-
-```ruby
-node.override['axonops']['cassandra']['default_secondary_index'] = 'sai'
-node.override['axonops']['cassandra']['sai_sstable_indexes_per_query_warn_threshold'] = 32
-node.override['axonops']['cassandra']['sai_sstable_indexes_per_query_fail_threshold'] = 64
-```
-
-### Full Query Logging
-
-```ruby
-node.override['axonops']['cassandra']['full_query_logging_options'] = {
-  'log_dir' => '/var/lib/cassandra/fql',
-  'roll_cycle' => 'HOURLY',
-  'block' => true,
-  'max_queue_weight' => 256 * 1024 * 1024,
-  'max_log_size' => 17_179_869_184
-}
-```
-
-### Audit Logging
-
-```ruby
-node.override['axonops']['cassandra']['audit_logging_options'] = {
-  'enabled' => true,
-  'logger' => {
-    'class_name' => 'BinAuditLogger'
-  },
-  'audit_logs_dir' => '/var/lib/cassandra/audit',
-  'roll_cycle' => 'HOURLY',
-  'included_keyspaces' => 'production_ks',
-  'excluded_keyspaces' => 'system,system_schema,system_virtual_schema'
-}
-```
-
-## Examples
-
-### Example 1: Single Node Development Setup
-
-```ruby
-node.override['axonops']['cassandra']['cluster_name'] = 'Development'
-node.override['axonops']['cassandra']['heap_size'] = '1G'
-node.override['axonops']['cassandra']['authenticator'] = 'AllowAllAuthenticator'
-node.override['axonops']['cassandra']['authorizer'] = 'AllowAllAuthorizer'
+node.override['axonops']['cassandra']['cluster_name']     = 'Global'
+node.override['axonops']['cassandra']['endpoint_snitch']  = 'GossipingPropertyFileSnitch'
+node.override['axonops']['cassandra']['dc']               = 'us-east-1'
+node.override['axonops']['cassandra']['rack']             = 'us-east-1a'
+node.override['axonops']['cassandra']['seeds']            = ['10.0.1.10', '10.1.1.10']
 
 include_recipe 'axonops::cassandra'
 ```
 
-### Example 2: Production Cluster Node
+### Change Data Capture
 
 ```ruby
-# Cluster configuration
-node.override['axonops']['cassandra']['cluster_name'] = 'Production'
-node.override['axonops']['cassandra']['seeds'] = ['10.0.1.10', '10.0.1.11', '10.0.1.12']
-node.override['axonops']['cassandra']['listen_address'] = node['ipaddress']
-node.override['axonops']['cassandra']['rpc_address'] = '0.0.0.0'
-node.override['axonops']['cassandra']['broadcast_rpc_address'] = node['ipaddress']
-
-# Use GossipingPropertyFileSnitch for multi-DC
-node.override['axonops']['cassandra']['endpoint_snitch'] = 'GossipingPropertyFileSnitch'
-node.override['axonops']['cassandra']['datacenter'] = 'us-east'
-node.override['axonops']['cassandra']['rack'] = 'rack1'
-
-# Performance tuning
-node.override['axonops']['cassandra']['heap_size'] = '16G'
-node.override['axonops']['cassandra']['concurrent_reads'] = 64
-node.override['axonops']['cassandra']['concurrent_writes'] = 64
-node.override['axonops']['cassandra']['compaction_throughput'] = '128MiB/s'
-
-# Multiple data directories
-node.override['axonops']['cassandra']['data_file_directories'] = [
-  '/data1/cassandra/data',
-  '/data2/cassandra/data',
-  '/data3/cassandra/data'
-]
-
-# Security
-node.override['axonops']['cassandra']['authenticator'] = 'PasswordAuthenticator'
-node.override['axonops']['cassandra']['authorizer'] = 'CassandraAuthorizer'
-
-include_recipe 'axonops::cassandra'
+node.override['axonops']['cassandra']['cdc_enabled']      = true
+node.override['axonops']['cassandra']['cdc_raw_directory'] = '/var/lib/cassandra/cdc_raw'
+node.override['axonops']['cassandra']['cdc_total_space']  = '4096MiB'
 ```
 
-### Example 3: Using Existing Java Installation
+---
 
-```ruby
-# Skip Java installation
-node.override['axonops']['cassandra']['skip_java_install'] = true
+## SSL Caveat
 
-# Configure Cassandra
-node.override['axonops']['cassandra']['cluster_name'] = 'MyCluster'
-node.override['axonops']['cassandra']['heap_size'] = '8G'
+By default `client_encryption_options.enabled` is `true` and references a JKS keystore at `/opt/cassandra/conf/keystore.jks`. The `cassandra_self_signed` helper generates PEM files, not a JKS keystore. As a result, native transport (CQL/9042) will fail to start until one of the following is done:
 
-include_recipe 'axonops::cassandra'
+1. **Disable client encryption** (recommended for development):
+   ```ruby
+   node.override['axonops']['cassandra']['client_encryption_options'] = {
+     'enabled' => false
+   }
+   ```
+
+2. **Provide a JKS keystore** at the path configured by `client_encryption_options.keystore`.
+
+This is tracked in issue #30. PEM-based TLS is on the roadmap (issue #26).
+
+---
+
+## Testing
+
+### Unit tests (RSpec)
+
+Pure-Ruby specs that test the version library and verify the 3.11 template renders correctly:
+
+```bash
+# Run all unit specs
+rspec --options /dev/null spec/unit/libraries/cassandra_version_spec.rb
+rspec --options /dev/null spec/unit/templates/cassandra_3_11_yaml_spec.rb
+
+# Or run the whole suite
+chef exec rspec
 ```
 
-### Example 4: Multi-Datacenter Setup
+### BDD feature files
 
-```ruby
-# DC1 Configuration
-node.override['axonops']['cassandra']['cluster_name'] = 'Global'
-node.override['axonops']['cassandra']['endpoint_snitch'] = 'GossipingPropertyFileSnitch'
-node.override['axonops']['cassandra']['datacenter'] = 'us-east-1'
-node.override['axonops']['cassandra']['rack'] = 'us-east-1a'
-node.override['axonops']['cassandra']['prefer_local'] = 'true'
+Gherkin scenarios under `features/` describe the version-selection and install behaviour. These are read by the RSpec/Turnip harness (or can be executed with a compatible runner):
 
-# Seeds from multiple DCs
-node.override['axonops']['cassandra']['seeds'] = [
-  '10.0.1.10',  # us-east-1
-  '10.0.1.11',  # us-east-1
-  '10.1.1.10',  # us-west-1
-  '10.1.1.11'   # us-west-1
-]
-
-# Enable internode encryption for cross-DC traffic
-node.override['axonops']['cassandra']['server_encryption_options']['internode_encryption'] = 'dc'
-
-include_recipe 'axonops::cassandra'
+```
+features/cassandra_install.feature
+features/cassandra_version_support.feature
 ```
 
-### Example 5: High-Performance SSD Configuration
+### Integration tests (Test Kitchen + InSpec)
 
-```ruby
-# Optimize for SSDs
-node.override['axonops']['cassandra']['disk_optimization_strategy'] = 'ssd'
-node.override['axonops']['cassandra']['concurrent_compactors'] = 8
-node.override['axonops']['cassandra']['compaction_throughput'] = '256MiB/s'
+Two suites are defined in `kitchen.yml`, using the Dokken driver (systemd in Docker):
 
-# Larger memtables for better write performance
-node.override['axonops']['cassandra']['memtable_heap_space'] = '2048MiB'
-node.override['axonops']['cassandra']['memtable_offheap_space'] = '2048MiB'
+| Suite | Cassandra version | Platforms |
+|-------|-------------------|-----------|
+| `cassandra-3-11` | 3.11.17 | ubuntu-22.04, rockylinux-9 |
+| `cassandra-default` | 5.0.5 | ubuntu-22.04, rockylinux-9 |
 
-# Tune for low latency
-node.override['axonops']['cassandra']['read_request_timeout'] = '2000ms'
-node.override['axonops']['cassandra']['write_request_timeout'] = '1000ms'
+```bash
+# Converge and verify Cassandra 3.11 on Ubuntu
+kitchen converge cassandra-3-11-ubuntu-2204
+kitchen verify  cassandra-3-11-ubuntu-2204
 
-include_recipe 'axonops::cassandra'
+# Full cycle for Cassandra 5.0 (default)
+kitchen test cassandra-default-rockylinux-9
+
+# Destroy all test containers
+kitchen destroy
 ```
+
+InSpec controls live under `test/integration/cassandra-3.11/` and `test/integration/cassandra-default/`.
+
+### CI
+
+The GitHub Actions workflow `.github/workflows/ci.yml` runs on every pull request and executes the unit spec suite.
+
+---
 
 ## Troubleshooting
 
-### Common Issues
+### Cassandra fails to start
 
-1. **Cassandra fails to start**
-   - Check logs in `/var/log/cassandra/system.log`
-   - Verify Java 17 is installed: `java -version`
-   - Check disk space and permissions
-   - Verify network configuration (especially `listen_address` and `rpc_address`)
+- Check `/var/log/cassandra/system.log`.
+- Verify Java is installed and correct: `java -version`.
+- Ensure disk space and directory permissions are correct.
+- Confirm `listen_address` and `rpc_address` are reachable.
 
-2. **Cannot connect to Cassandra**
-   - Verify `rpc_address` is not set to `localhost` if connecting remotely
-   - Check `native_transport_port` (default 9042) is not blocked
-   - Ensure `start_native_transport` is true
+### Cannot connect on CQL port 9042
 
-3. **Performance issues**
-   - Review heap size configuration
-   - Check GC logs for excessive garbage collection
-   - Monitor disk I/O and consider increasing `concurrent_reads`/`concurrent_writes`
-   - Review compaction settings
+- Verify `rpc_address` is not `localhost` if connecting remotely.
+- Check `native_transport_port` (default `9042`) is open in the firewall.
+- Ensure `start_native_transport` is `true`.
+- If TLS is enabled, see [SSL Caveat](#ssl-caveat).
 
-4. **Authentication failures**
-   - Default credentials are cassandra/cassandra
-   - Change immediately after installation
-   - Ensure `authenticator` is set to `PasswordAuthenticator`
+### Performance issues
 
-### Log Locations
+- Check heap size — rule of thumb: 8 GB for most workloads, no more than 32 GB.
+- Review GC logs at `/var/log/cassandra/gc.log.*`.
+- Increase `concurrent_reads` / `concurrent_writes` on high-core nodes.
 
-- System log: `/var/log/cassandra/system.log`
-- Debug log: `/var/log/cassandra/debug.log`
-- GC log: `/var/log/cassandra/gc.log.*`
-- Audit log: `/var/lib/cassandra/audit/` (if enabled)
+### Authentication failures
 
-### Useful Commands
+- Default credentials are `cassandra` / `cassandra`.
+- Change them immediately after first boot.
+- Ensure `authenticator` is `PasswordAuthenticator`.
+
+### Log locations
+
+| Log | Path |
+|-----|------|
+| System | `/var/log/cassandra/system.log` |
+| Debug | `/var/log/cassandra/debug.log` |
+| GC | `/var/log/cassandra/gc.log.*` |
+| Audit | `/var/lib/cassandra/audit/` (if enabled) |
+
+### Useful commands
 
 ```bash
 # Check service status
 systemctl status cassandra
-
-# View logs
-tail -f /var/log/cassandra/system.log
 
 # Connect with cqlsh
 cqlsh -u cassandra -p cassandra
@@ -456,15 +464,28 @@ cqlsh -u cassandra -p cassandra
 # Check cluster status
 nodetool status
 
-# Check node info
-nodetool info
-
-# View configuration
-nodetool describeclusters
+# Tail system log
+tail -f /var/log/cassandra/system.log
 ```
+
+---
+
+## Roadmap
+
+The following items are tracked as open GitHub issues and are **not yet implemented**:
+
+| Issue | Feature |
+|-------|---------|
+| #23 | Package-repository (apt/yum) install mode |
+| #24 | Full ~150-attribute `cassandra.yaml` parity for 3.11 |
+| #25 | `system_tuning` recipe (currently disabled) |
+| #26 | PEM-based TLS support (currently only JKS) |
+
+---
 
 ## Additional Resources
 
-- [Apache Cassandra Documentation](https://cassandra.apache.org/doc/5.0/)
-- [AxonOps Documentation](https://docs.axonops.com/)
-- [DataStax Cassandra Best Practices](https://docs.datastax.com/en/landing_page/doc/landing_page/planning/planningBestPractices.html)
+- [Apache Cassandra 3.11 documentation](https://cassandra.apache.org/doc/3.11/)
+- [Apache Cassandra 4.1 documentation](https://cassandra.apache.org/doc/4.1/)
+- [Apache Cassandra 5.0 documentation](https://cassandra.apache.org/doc/5.0/)
+- [AxonOps documentation](https://docs.axonops.com/)

@@ -1,3 +1,13 @@
+<p align="center">
+  <a href="https://axonops.com">
+    <img src="https://axonops.com/wp-content/uploads/2024/02/logo.svg" alt="AxonOps" width="300">
+  </a>
+</p>
+
+<p align="center">
+  <em>Built and maintained by <a href="https://axonops.com">AxonOps</a></em>
+</p>
+
 # AxonOps Chef Cookbook
 
 A comprehensive Chef cookbook for deploying and managing AxonOps - the advanced operations platform for Apache Cassandra.
@@ -81,7 +91,19 @@ include_recipe 'axonops::dashboard'
 ### Install Apache Cassandra
 
 ```ruby
-# Fresh Cassandra installation
+# Fresh Cassandra 5.0.5 installation (default)
+include_recipe 'axonops::cassandra'
+```
+
+Select the version via the `version` attribute — Java is chosen automatically:
+
+```ruby
+# Cassandra 3.11 → Java 8
+node.override['axonops']['cassandra']['version'] = '3.11.17'
+include_recipe 'axonops::cassandra'
+
+# Cassandra 5.0 → Java 17 (default)
+node.override['axonops']['cassandra']['version'] = '5.0.5'
 include_recipe 'axonops::cassandra'
 ```
 
@@ -323,6 +345,53 @@ knife node delete NODE_NAME -y && knife client delete NODE_NAME -y
 # Then re-bootstrap the node
 ```
 
+## Cassandra Version Support
+
+The cookbook supports Apache Cassandra **3.11.x, 4.1.x, and 5.0.x**. Set the version with `node['axonops']['cassandra']['version']` (default: `5.0.5`).
+
+### Version matrix
+
+| Cassandra | Java | `cassandra.yaml` schema | JVM option files |
+|-----------|------|-------------------------|------------------|
+| 3.11.x | 8 | Legacy — integer `*_in_ms` / `*_in_mb` / `*_in_kb`, Thrift/RPC keys, megabit streaming | `jvm.options` |
+| 4.1.x | 11 | Modern — string-unit values (`32MiB`, `5000ms`, …) | `jvm-server.options` + `jvm11-server.options` |
+| 5.0.x | 17 | Modern (same as 4.1) | `jvm-server.options` + `jvm17-server.options` |
+
+Java is selected automatically by `AxonOpsCassandra.java_major(version)` in `libraries/cassandra_version.rb`. You can override with `node['java']['version']` if you manage Java yourself (also set `node['axonops']['cassandra']['skip_java_install'] = true`).
+
+### Cassandra 3.11 example
+
+```ruby
+node.override['axonops']['cassandra']['version']      = '3.11.17'
+node.override['axonops']['cassandra']['cluster_name'] = 'Legacy Cluster'
+node.override['axonops']['cassandra']['heap_size']    = '4G'
+node.override['axonops']['cassandra']['gc_type']      = 'G1GC'  # Shenandoah needs Java 11+
+
+# Disable client TLS until a JKS keystore is provided (see docs/CASSANDRA.md#ssl-caveat)
+node.override['axonops']['cassandra']['client_encryption_options'] = { 'enabled' => false }
+
+include_recipe 'axonops::cassandra'
+```
+
+### Cassandra 5.0 example
+
+```ruby
+node.override['axonops']['cassandra']['version']      = '5.0.5'
+node.override['axonops']['cassandra']['cluster_name'] = 'Production Cluster'
+node.override['axonops']['cassandra']['heap_size']    = '8G'
+node.override['axonops']['cassandra']['gc_type']      = 'Shenandoah'
+
+include_recipe 'axonops::cassandra'
+```
+
+### SSL caveat
+
+By default `client_encryption_options.enabled` is `true` and expects a JKS keystore at `/opt/cassandra/conf/keystore.jks`. The self-signed cert helper produces PEM files, not JKS, so native transport (CQL/9042) will fail to start until you either:
+- Disable client encryption: `node.override['axonops']['cassandra']['client_encryption_options'] = { 'enabled' => false }`
+- Provide a JKS keystore at the configured path
+
+See [docs/CASSANDRA.md](docs/CASSANDRA.md#ssl-caveat) for details. PEM-based TLS is tracked in issue #26.
+
 ## Documentation
 
 Detailed documentation for each component:
@@ -541,11 +610,14 @@ default['axonops']['server']['listen_address'] = '0.0.0.0'
 default['axonops']['server']['listen_port'] = 8080
 
 # Cassandra settings
-default['axonops']['cassandra']['cluster_name'] = 'Test Cluster'
-default['axonops']['cassandra']['heap_size'] = '2G'
+default['axonops']['cassandra']['version']      = '5.0.5'  # 3.11.x / 4.1.x / 5.0.x
+default['axonops']['cassandra']['cluster_name'] = 'AxonOps Cluster'
+default['axonops']['cassandra']['heap_size']    = '2G'
+default['axonops']['cassandra']['gc_type']      = 'Shenandoah'  # or 'G1GC' (required for 3.11)
 
-# Java options
-default['axonops']['java']['version'] = '17'
+# Java options — overridden automatically by axonops::cassandra based on Cassandra version
+# (3.11 -> 8, 4.1 -> 11, 5.0 -> 17). Override only when skip_java_install is true.
+default['java']['version'] = 17
 
 # Chef Workstation options
 default['axonops']['chef_workstation']['install_chef_workstation'] = true
@@ -570,39 +642,62 @@ See individual documentation files for complete attribute references.
 
 ## Testing
 
-Run the test suite:
+### Unit tests (RSpec)
 
 ```bash
-# Unit tests
+# Run the full spec suite
 chef exec rspec
 
-# Integration tests
-kitchen test
+# Run a single spec file directly
+rspec --options /dev/null spec/unit/libraries/cassandra_version_spec.rb
+rspec --options /dev/null spec/unit/templates/cassandra_3_11_yaml_spec.rb
 ```
 
-## Support
+### BDD feature files
 
-- 📖 [AxonOps Documentation](https://docs.axonops.com/)
-- 💬 [Community Forum](https://community.axonops.com/)
-- 🐛 [Issue Tracker](https://github.com/axonops/axonops-chef/issues)
-- 📧 [Support Email](mailto:support@axonops.com)
+Gherkin scenarios describing version selection and install behaviour live under `features/`:
+
+```
+features/cassandra_install.feature
+features/cassandra_version_support.feature
+```
+
+### Integration tests (Test Kitchen)
+
+Two suites run on Ubuntu 22.04 and Rocky Linux 9 via the Dokken driver:
+
+| Suite | Cassandra version |
+|-------|-------------------|
+| `cassandra-3-11` | 3.11.17 |
+| `cassandra-default` | 5.0.5 |
+
+```bash
+# Converge and verify Cassandra 3.11 on Ubuntu
+kitchen converge cassandra-3-11-ubuntu-2204
+kitchen verify   cassandra-3-11-ubuntu-2204
+
+# Full cycle for 5.0 default on Rocky Linux
+kitchen test cassandra-default-rockylinux-9
+
+# Destroy all containers
+kitchen destroy
+```
+
+InSpec controls are under `test/integration/`. CI runs the unit suite on every pull request via `.github/workflows/ci.yml`.
 
 ## License
 
 This cookbook is licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
 
-## About AxonOps
+## Contact
 
-AxonOps is a comprehensive monitoring and management platform designed specifically for Apache Cassandra. It provides:
+This project is maintained by [AxonOps](https://axonops.com). For support, visit [axonops.com/contact](https://axonops.com/contact).
 
-- Real-time metrics and alerting
-- Automated backups and repairs
-- Performance optimization
-- Security compliance
-- Multi-cluster management
+Additional resources:
 
-Learn more at [axonops.com](https://axonops.com/)
+- [AxonOps Documentation](https://docs.axonops.com/)
+- [Issue Tracker](https://github.com/axonops/axonops-chef/issues)
 
-***
+---
 
-*This project may contain trademarks or logos for projects, products, or services. Any use of third-party trademarks or logos are subject to those third-party's policies. AxonOps is a registered trademark of AxonOps Limited. Apache, Apache Cassandra, Cassandra, Apache Spark, Spark, Apache TinkerPop, TinkerPop, Apache Kafka and Kafka are either registered trademarks or trademarks of the Apache Software Foundation or its subsidiaries in Canada, the United States and/or other countries. Elasticsearch is a trademark of Elasticsearch B.V., registered in the U.S. and in other countries. Docker is a trademark or registered trademark of Docker, Inc. in the United States and/or other countries.*
+*AxonOps is a registered trademark of AxonOps Limited. Apache, Apache Cassandra, Cassandra, Apache Kafka and Kafka are either registered trademarks or trademarks of the Apache Software Foundation or its subsidiaries in Canada, the United States and/or other countries. Elasticsearch is a trademark of Elasticsearch B.V. Docker is a trademark or registered trademark of Docker, Inc.*
