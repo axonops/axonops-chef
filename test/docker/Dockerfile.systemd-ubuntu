@@ -14,4 +14,12 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# kitchen's verify step installs Chef Workstation fresh inside the container
+# over SSH, which needs CHEF_LICENSE accepted there too — CHEF_LICENSE set
+# on the CI runner only covers commands the runner itself executes, not
+# what it does over SSH inside this container. /etc/environment is what
+# PAM feeds into every session (SSH included), so it's visible regardless
+# of exactly how kitchen's transport invokes commands here.
+RUN echo 'CHEF_LICENSE=accept-no-persist' >> /etc/environment
+
 STOPSIGNAL SIGRTMIN+3
