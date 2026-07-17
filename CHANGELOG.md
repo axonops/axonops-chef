@@ -79,6 +79,30 @@ path. This brings it toward parity with the AxonOps Ansible role and adds 3.11.
 and the DSE metrics template branch already existed, but neither was actually
 wired up or tested — this closes that doc-vs-implementation gap.
 
+#### Airgapped/offline install parity
+- Fixed `recipes/java.rb` never respecting `node['axonops']['offline_install']`
+  (only its own separate `node['java']['offline_install']`), which silently
+  left Java installs reaching out to the Azul Zulu repo/GPG key during an
+  otherwise "offline" Cassandra/Kafka/Elasticsearch/Server install. The
+  top-level flag now propagates automatically.
+- Removed a duplicate, conflicting definition of
+  `node['axonops']['offline_install']`/`offline_packages_path` in
+  `attributes/default.rb` (two different path defaults were defined; the
+  second silently won).
+- Documented `axonops::chef_workstation` as an explicit, intentional exception
+  to airgapped support (it installs workstation/operator tooling, not part of
+  the target-node install path).
+- Added a `cassandra-offline` Kitchen suite exercising `offline_install: true`
+  end-to-end, wired into a real GitHub Actions job (`kitchen-offline`) that
+  stages the real Apache Cassandra and Zulu JDK 17 tarballs before converging
+  — no proprietary AxonOps packages required, no hardcoded/stale filenames
+  (Java's is resolved dynamically via Azul's metadata API).
+
+**Reason**: CLAUDE.md's design principles claim full offline installation
+capability, but the Java dependency shared by every install recipe silently
+ignored the documented flag — airgapped deployments of Cassandra/Kafka/
+Elasticsearch/Server were broken despite following the README's instructions.
+
 #### Chef Server Deployment Documentation
 - Added comprehensive Chef Server deployment section to README.md
 - Included Berkshelf installation and usage instructions

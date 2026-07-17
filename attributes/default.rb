@@ -37,10 +37,6 @@ default['axonops']['repository']['enabled'] = true
 default['axonops']['repository']['url'] = 'https://packages.axonops.com'
 default['axonops']['repository']['beta'] = false
 
-# Offline Installation Support
-default['axonops']['offline_install'] = false
-default['axonops']['offline_packages_path'] = '/opt/axonops-packages'
-
 # Alert Configuration (via API)
 default['axonops']['alerts']['endpoints'] = {}
 default['axonops']['alerts']['rules'] = {}
