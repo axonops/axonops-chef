@@ -45,6 +45,16 @@ suites:
         - test/integration/cassandra
     attributes:
       axonops:
+        # axon-cassandra3.11-agent-1.0.4-1 (RPM) conflicts with axon-agent on
+        # /var/lib/axonops' directory mode at install time — an AxonOps
+        # package build defect (verified directly: `dnf install` fails with
+        # "file /var/lib/axonops conflicts between attempted installs of
+        # axon-cassandra3.11-agent... and axon-agent..."), not something
+        # fixable from this cookbook. This suite exists to validate the
+        # Cassandra 3.11 install/config path, not agent packaging, so
+        # disabling the agent here avoids an unrelated external blocker.
+        agent:
+          enabled: false
         cassandra:
           version: '3.11.17'
           install_format: 'tar'
