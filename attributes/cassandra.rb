@@ -8,6 +8,8 @@ default['axonops']['cassandra']['base_url'] = 'https://archive.apache.org/dist/c
 default['axonops']['cassandra']['user'] = 'cassandra'
 default['axonops']['cassandra']['group'] = 'cassandra'
 default['axonops']['cassandra']['version'] = '5.0.5'
+default['axonops']['cassandra']['install_format'] = 'tar'
+default['axonops']['cassandra']['conf_dir'] = nil
 # 'apache' (installed/managed by this cookbook) or 'dse' (DataStax Enterprise,
 # monitored only — see recipes/agent.rb detection and docs/DSE.md). Normally
 # auto-detected; override only to force a specific edition.

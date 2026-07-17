@@ -40,8 +40,7 @@ unless node['axonops']['cassandra']['skip_java_install']
 end
 
 # System tuning for Cassandra
-# TODO: Fix system_tuning recipe
-# include_recipe 'axonops::system_tuning'
+include_recipe 'axonops::system_tuning' unless node['axonops']['cassandra']['skip_system_tuning']
 
 include_recipe 'axonops::users'
 
@@ -74,8 +73,13 @@ node['axonops']['cassandra']['data_file_directories'].each do |dir|
   end
 end
 
-# Install Cassandra - we only support tarball installation
-include_recipe 'axonops::install_cassandra_tarball'
+if node['axonops']['cassandra']['install_format'] == 'tar'
+  include_recipe 'axonops::install_cassandra_tarball'
+elsif node['axonops']['cassandra']['install_format'] == 'pkg'
+  include_recipe 'axonops::install_cassandra_pkg'
+else
+  raise "Unsupported install_format: #{node['axonops']['cassandra']['install_format']}"
+end
 
 # If AxonOps agent is enabled, ensure it monitors this Cassandra
 if node['axonops']['agent']['enabled']
@@ -102,7 +106,7 @@ systemd_unit 'cassandra.service' do
               'ExecStart' => "#{cassandra_current}/bin/cassandra -p /var/run/cassandra/cassandra.pid",
               'User' => cassandra_user,
               'Group' => cassandra_group,
-              'LimitNOFILE' => 100000,
+              'LimitNOFILE' => node['axonops']['cassandra']['limits']['nofile'],
               'LimitMEMLOCK' => 'infinity',
               'LimitNPROC' => 32768,
               'LimitAS' => 'infinity',

@@ -1,7 +1,14 @@
 # Limits configuration for <%= @user %>
+<% if @limits %>
 <%= @user %> soft nofile <%= @limits['nofile'] %>
 <%= @user %> hard nofile <%= @limits['nofile'] %>
 <%= @user %> soft nproc <%= @limits['nproc'] %>
 <%= @user %> hard nproc <%= @limits['nproc'] %>
 <%= @user %> soft memlock <%= @limits['memlock'] %>
 <%= @user %> hard memlock <%= @limits['memlock'] %>
+<% else %>
+<%= @user %> - memlock <%= @memlock_limit %>
+<%= @user %> - nofile <%= @nofile %>
+<%= @user %> - as <%= @as_limit %>
+<%= @user %> - nproc <%= @nproc_limit %>
+<% end %>
