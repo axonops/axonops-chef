@@ -14,6 +14,19 @@ if ::File.exist?('/etc/cassandra/cassandra.yaml') ||
   true
 end
 
+# Auto-detect DataStax Enterprise (DSE) 5.1 if not already explicitly
+# configured. This cookbook only monitors DSE via axonops::agent — it never
+# installs or manages it. See docs/DSE.md.
+if node['axonops']['cassandra']['edition'] == 'apache' && AxonOpsCassandra.dse_installed?
+  node.override['axonops']['cassandra']['edition'] = 'dse'
+end
+
+if node['axonops']['cassandra']['edition'] == 'dse'
+  Chef::Log.info('DataStax Enterprise (DSE) detected — axonops::cassandra only monitors it via axonops::agent, it does not install or manage it.')
+  include_recipe 'axonops::agent' if node['axonops']['agent']['enabled']
+  return
+end
+
 package 'tar' do
   action :install
   only_if { platform_family?('rhel') }

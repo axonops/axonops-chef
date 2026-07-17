@@ -80,6 +80,9 @@ Supported platforms:
 include_recipe 'axonops::agent'
 ```
 
+Also monitors an existing **DataStax Enterprise (DSE) 5.1** install — auto-detected, never
+installed or reinstalled. See [docs/DSE.md](docs/DSE.md).
+
 ### Deploy Self-Hosted AxonOps Server
 
 ```ruby

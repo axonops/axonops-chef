@@ -127,12 +127,27 @@ ruby_block 'detect-kafka' do
   end
 end
 
+# Auto-detect DataStax Enterprise (DSE) 5.1 if not already explicitly
+# configured, so the java-agent package and monitoring template branch below
+# select the DSE variant instead of Apache Cassandra. See docs/DSE.md — this
+# cookbook only monitors DSE, it never installs or manages it.
+if node['axonops']['cassandra']['edition'] == 'apache' && AxonOpsCassandra.dse_installed?
+  node.override['axonops']['cassandra']['edition'] = 'dse'
+end
+
 if node.run_list.include?('recipe[axonops::kafka]') || kafka_detected
   java_agent_package = node['axonops']['java_agent']['kafka']
   java_agent_env_file = "#{kafka_home}/bin/kafka-server-start.sh"
   service = "kafka"
 elsif node.run_list.include?('recipe[axonops::cassandra]') || cassandra_detected
-  java_agent_package = node['axonops']['java_agent']['cassandra']
+  # BUG FIX: this previously read node['axonops']['java_agent']['cassandra'],
+  # an attribute that is never defined anywhere, so java_agent_package always
+  # resolved to nil for online (non-offline) Cassandra-monitoring installs.
+  java_agent_package = if node['axonops']['cassandra']['edition'] == 'dse'
+                          node['axonops']['java_agent']['dse']
+                        else
+                          node['axonops']['java_agent']['package']
+                        end
   java_agent_env_file = "#{cassandra_home}/conf/cassandra-env.sh"
   service = "cassandra"
 else
@@ -164,7 +179,7 @@ if node['axonops']['offline_install']
       source ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java_agent'])
       action :install
     end
-  when 'rhel', 'fedora'
+  when 'rhel', 'fedora', 'amazon'
     rpm_package 'axon-agent' do
       source package_path
       action :install

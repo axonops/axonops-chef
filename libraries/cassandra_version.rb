@@ -19,13 +19,16 @@
 module AxonOpsCassandra
   # Supported Cassandra release series, in match order. The series string is
   # also the name of the template subdirectory under templates/default/.
-  SUPPORTED_SERIES = %w(3.11 4.1 5.0).freeze
+  # '5.1' is DataStax Enterprise (DSE) 5.1, monitored (not installed) by this
+  # cookbook — see recipes/agent.rb and docs/DSE.md.
+  SUPPORTED_SERIES = %w(3.11 4.1 5.0 5.1).freeze
 
   # Java major version required by each Cassandra series.
   JAVA_MAJOR = {
     '3.11' => 8,
     '4.1' => 11,
     '5.0' => 17,
+    '5.1' => 8, # DSE 5.1 runs on Java 8, same as Apache Cassandra 3.11.
   }.freeze
 
   # Duration unit -> milliseconds.
@@ -54,6 +57,10 @@ module AxonOpsCassandra
     v = version.to_s
     return '3.11' if v.start_with?('3.11')
     return '4.1'  if v.start_with?('4.1')
+    # DSE 5.1 must be checked before the '5.' (Apache Cassandra 5.0) match
+    # below, otherwise a DSE version string like '5.1.17' is misclassified as
+    # Apache Cassandra 5.0.
+    return '5.1'  if v.start_with?('5.1')
     return '5.0'  if v.start_with?('5.')
 
     raise ArgumentError,
@@ -109,6 +116,14 @@ module AxonOpsCassandra
   def mib_per_s_to_megabits(value)
     num, = split_unit(value.to_s.sub(%r{/s\z}, ''))
     (num * 8).round
+  end
+
+  # True when a DataStax Enterprise (DSE) install is present on this node.
+  # Used by recipes/agent.rb and recipes/cassandra.rb to auto-detect DSE 5.1
+  # so the cookbook monitors it (via the agent) instead of trying to install
+  # or manage it as Apache Cassandra.
+  def dse_installed?
+    ::File.exist?('/etc/dse/cassandra/cassandra.yaml') || ::Dir.glob('/opt/dse').any?
   end
 
   # --- internal helpers -------------------------------------------------
