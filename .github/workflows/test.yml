@@ -29,6 +29,7 @@ jobs:
       # was never passing before this branch either.
       - run: bundle exec rspec spec/
         continue-on-error: true
+        timeout-minutes: 10
 
   kitchen-tar:
     runs-on: ubuntu-latest
