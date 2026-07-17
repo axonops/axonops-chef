@@ -6,8 +6,9 @@ FROM rockylinux:9
 RUN dnf install -y systemd \
     && dnf clean all
 
-# See Dockerfile.systemd-ubuntu — kitchen's verify step needs CHEF_LICENSE
-# accepted inside the container itself, not just on the CI runner.
-RUN echo 'CHEF_LICENSE=accept-no-persist' >> /etc/environment
+# See Dockerfile.systemd-ubuntu — kitchen-docker's transport uses native
+# docker exec, so this needs to be a real container-level ENV, not
+# /etc/environment (PAM/login-shell only, docker exec never reads it).
+ENV CHEF_LICENSE=accept-no-persist
 
 STOPSIGNAL SIGRTMIN+3

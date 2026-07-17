@@ -14,12 +14,14 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# kitchen's verify step installs Chef Workstation fresh inside the container
-# over SSH, which needs CHEF_LICENSE accepted there too — CHEF_LICENSE set
-# on the CI runner only covers commands the runner itself executes, not
-# what it does over SSH inside this container. /etc/environment is what
-# PAM feeds into every session (SSH included), so it's visible regardless
-# of exactly how kitchen's transport invokes commands here.
-RUN echo 'CHEF_LICENSE=accept-no-persist' >> /etc/environment
+# kitchen's verify step installs Chef Workstation fresh inside the
+# container, which needs CHEF_LICENSE accepted there too — CHEF_LICENSE set
+# on the CI runner only covers commands the runner itself executes.
+# kitchen-docker's transport uses native `docker exec` (confirmed directly
+# in its source, lib/kitchen/docker/container/linux.rb), not SSH — so this
+# has to be a real container-level ENV, which docker exec inherits from
+# PID 1. /etc/environment (a PAM/login-shell mechanism) looked right in an
+# SSH test but isn't what kitchen-docker actually uses to run commands.
+ENV CHEF_LICENSE=accept-no-persist
 
 STOPSIGNAL SIGRTMIN+3
