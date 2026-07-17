@@ -56,6 +56,53 @@ hardcoded Java 17, a single non-version-specific template, and a broken 4.x
 path. This brings it toward parity with the AxonOps Ansible role and adds 3.11.
 
 
+#### DataStax Enterprise (DSE) 5.1 monitoring and Amazon Linux install support
+- Added DSE 5.1 as a Cassandra `edition` (`libraries/cassandra_version.rb`,
+  `attributes/cassandra.rb`), auto-detected from `/opt/dse` /
+  `/etc/dse/cassandra/cassandra.yaml`. `axonops::agent` now installs the
+  `axon-dse-agent` java agent and renders the existing (previously dead) DSE
+  metrics branch in `axon-agent.yml.erb`; `axonops::cassandra` detects DSE and
+  delegates to the agent instead of attempting to install/reinstall it. See
+  `docs/DSE.md`.
+- Fixed `recipes/agent.rb` reading the undefined
+  `node['axonops']['java_agent']['cassandra']` attribute (always `nil`),
+  which broke the java-agent package install for any online, non-DSE
+  Cassandra-monitoring install. Now correctly reads
+  `node['axonops']['java_agent']['package']`.
+- Added `'amazon'` to the `platform_family` case in `recipes/repo.rb` (online
+  repo setup) and `recipes/agent.rb` (offline install), and added
+  `amazonlinux-2`/`amazonlinux-2023` to the Kitchen test matrix — Amazon
+  Linux was declared supported in `metadata.rb` but had no working install
+  path or CI coverage.
+
+**Reason**: `metadata.rb` and the README already claimed Amazon Linux support,
+and the DSE metrics template branch already existed, but neither was actually
+wired up or tested — this closes that doc-vs-implementation gap.
+
+#### Airgapped/offline install parity
+- Fixed `recipes/java.rb` never respecting `node['axonops']['offline_install']`
+  (only its own separate `node['java']['offline_install']`), which silently
+  left Java installs reaching out to the Azul Zulu repo/GPG key during an
+  otherwise "offline" Cassandra/Kafka/Elasticsearch/Server install. The
+  top-level flag now propagates automatically.
+- Removed a duplicate, conflicting definition of
+  `node['axonops']['offline_install']`/`offline_packages_path` in
+  `attributes/default.rb` (two different path defaults were defined; the
+  second silently won).
+- Documented `axonops::chef_workstation` as an explicit, intentional exception
+  to airgapped support (it installs workstation/operator tooling, not part of
+  the target-node install path).
+- Added a `cassandra-offline` Kitchen suite exercising `offline_install: true`
+  end-to-end, wired into a real GitHub Actions job (`kitchen-offline`) that
+  stages the real Apache Cassandra and Zulu JDK 17 tarballs before converging
+  — no proprietary AxonOps packages required, no hardcoded/stale filenames
+  (Java's is resolved dynamically via Azul's metadata API).
+
+**Reason**: CLAUDE.md's design principles claim full offline installation
+capability, but the Java dependency shared by every install recipe silently
+ignored the documented flag — airgapped deployments of Cassandra/Kafka/
+Elasticsearch/Server were broken despite following the README's instructions.
+
 #### Chef Server Deployment Documentation
 - Added comprehensive Chef Server deployment section to README.md
 - Included Berkshelf installation and usage instructions

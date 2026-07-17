@@ -31,6 +31,14 @@ platforms:
     driver:
       image: dokken/rockylinux-9
       pid_one_command: /usr/lib/systemd/systemd
+  - name: amazonlinux-2
+    driver:
+      image: dokken/amazonlinux-2
+      pid_one_command: /usr/lib/systemd/systemd
+  - name: amazonlinux-2023
+    driver:
+      image: dokken/amazonlinux-2023
+      pid_one_command: /usr/lib/systemd/systemd
 
 suites:
   - name: cassandra-3-11
@@ -54,6 +62,43 @@ suites:
         - test/integration/cassandra-default
     attributes:
       axonops:
+        cassandra:
+          version: '5.0.5'
+          start_on_boot: true
+          wait_for_start: true
+
+  # Airgapped install path: axonops.offline_install=true must be sufficient on
+  # its own (including for the java.rb -> java.offline_install propagation) to
+  # install Cassandra with zero network egress during convergence. The CI
+  # staging step (.github/workflows/ci.yml, kitchen-offline job) downloads the
+  # real Apache Cassandra tarball and a Zulu JDK 17 tarball into
+  # /opt/axonops/offline *before* `kitchen converge` runs — both are freely
+  # downloadable with no AxonOps credentials required.
+  #
+  # The agent is deliberately disabled for this suite: axon-agent/java-agent
+  # are AxonOps-distributed packages that aren't safely fetchable here without
+  # pinning to a specific version that will go stale, so the agent's offline
+  # install path is covered by ChefSpec (spec/unit/recipes/java_offline_spec.rb)
+  # instead — see features/airgapped_install.feature for the full mapping.
+  - name: cassandra-offline
+    # Bind-mount the host staging directory into the container so packages
+    # downloaded by the CI staging step (outside the container) are visible
+    # at converge time — dokken containers do not share the runner's
+    # filesystem by default.
+    driver:
+      volumes:
+        - "/opt/axonops/offline:/opt/axonops/offline"
+    run_list:
+      - recipe[axonops::cassandra]
+    verifier:
+      inspec_tests:
+        - test/integration/cassandra-default
+    attributes:
+      axonops:
+        offline_install: true
+        offline_packages_path: '/opt/axonops/offline'
+        agent:
+          enabled: false
         cassandra:
           version: '5.0.5'
           start_on_boot: true

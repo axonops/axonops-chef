@@ -33,7 +33,7 @@ when 'debian'
     action :run
   end
 
-when 'rhel', 'fedora'
+when 'rhel', 'fedora', 'amazon'
   # Add AxonOps YUM repository
   yum_repository 'axonops' do
     description 'AxonOps Repository'

@@ -16,6 +16,11 @@ RSpec.describe AxonOpsCassandra do
       expect(described_class.series('5.0.8')).to eq('5.0')
     end
 
+    it 'maps DSE 5.1 versions to the 5.1 series, not Apache 5.0' do
+      expect(described_class.series('5.1.17')).to eq('5.1')
+      expect(described_class.series('5.1.0')).to eq('5.1')
+    end
+
     it 'raises on an unsupported version' do
       expect { described_class.series('2.2.0') }.to raise_error(ArgumentError)
       expect { described_class.series('6.0.0') }.to raise_error(ArgumentError)
@@ -27,6 +32,28 @@ RSpec.describe AxonOpsCassandra do
       expect(described_class.java_major('3.11.17')).to eq(8)
       expect(described_class.java_major('4.1.5')).to eq(11)
       expect(described_class.java_major('5.0.5')).to eq(17)
+      expect(described_class.java_major('5.1.17')).to eq(8)
+    end
+  end
+
+  describe '.dse_installed?' do
+    it 'is true when /etc/dse/cassandra/cassandra.yaml exists' do
+      allow(::File).to receive(:exist?).and_return(false)
+      allow(::File).to receive(:exist?).with('/etc/dse/cassandra/cassandra.yaml').and_return(true)
+      allow(::Dir).to receive(:glob).with('/opt/dse').and_return([])
+      expect(described_class.dse_installed?).to be(true)
+    end
+
+    it 'is true when /opt/dse exists' do
+      allow(::File).to receive(:exist?).and_return(false)
+      allow(::Dir).to receive(:glob).with('/opt/dse').and_return(['/opt/dse'])
+      expect(described_class.dse_installed?).to be(true)
+    end
+
+    it 'is false when neither path exists' do
+      allow(::File).to receive(:exist?).and_return(false)
+      allow(::Dir).to receive(:glob).with('/opt/dse').and_return([])
+      expect(described_class.dse_installed?).to be(false)
     end
   end
 
