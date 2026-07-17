@@ -177,9 +177,14 @@ elsif install_zulu && !node['java']['offline_install']
       not_if 'rpm -qa | grep -q zulu-repo'
     end
 
-    # Install Zulu JDK 17
+    # Install Zulu JDK. dnf/yum's package metadata cache doesn't pick up a
+    # repo registered earlier in this same converge (rpm_package[zulu-repo]
+    # above) automatically — without flushing it first this fails with "No
+    # candidate version available" on a fresh box that never had a dnf cache
+    # populated before the repo existed.
     package node['java']['zulu_pkg'] do
       action :install
+      flush_cache [:before]
     end
 
     java_home = node['java']['zulu_home']
