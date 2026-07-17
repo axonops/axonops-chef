@@ -1,22 +1,9 @@
 ---
-# Test Kitchen configuration for the axonops cookbook (Cassandra suites).
-# Uses the dokken driver so systemd-managed services run inside containers.
-#
-#   kitchen converge cassandra-3-11-ubuntu-2204
-#   kitchen verify   cassandra-default-rockylinux-9
-#
 driver:
-  name: dokken
-  privileged: true
-  chef_version: '18'
-
-transport:
-  name: dokken
+  name: <%= ENV.fetch('KITCHEN_DRIVER', 'vagrant') %>
 
 provisioner:
-  name: dokken
-  # Render the run list deterministically; do not auto-start clusters on first
-  # converge unless the suite asks for it.
+  name: chef_zero
   chef_license: accept-no-persist
 
 verifier:
@@ -24,82 +11,143 @@ verifier:
 
 platforms:
   - name: ubuntu-22.04
-    driver:
-      image: dokken/ubuntu-22.04
-      pid_one_command: /bin/systemd
   - name: rockylinux-9
-    driver:
-      image: dokken/rockylinux-9
-      pid_one_command: /usr/lib/systemd/systemd
-  - name: amazonlinux-2
-    driver:
-      image: dokken/amazonlinux-2
-      pid_one_command: /usr/lib/systemd/systemd
-  - name: amazonlinux-2023
-    driver:
-      image: dokken/amazonlinux-2023
-      pid_one_command: /usr/lib/systemd/systemd
 
 suites:
-  - name: cassandra-3-11
+  - name: cassandra-311-tar
     run_list:
       - recipe[axonops::cassandra]
     verifier:
       inspec_tests:
-        - test/integration/cassandra-3.11
+        - test/integration/cassandra
     attributes:
       axonops:
         cassandra:
           version: '3.11.17'
-          start_on_boot: true
-          wait_for_start: true
+          install_format: 'tar'
+          start_on_install: false
+          wait_for_start: false
 
-  - name: cassandra-default
+  - name: cassandra-311-tar-rhel
     run_list:
       - recipe[axonops::cassandra]
     verifier:
       inspec_tests:
-        - test/integration/cassandra-default
+        - test/integration/cassandra
+    includes:
+      - rockylinux-9
     attributes:
       axonops:
         cassandra:
-          version: '5.0.5'
-          start_on_boot: true
-          wait_for_start: true
+          version: '3.11.17'
+          install_format: 'tar'
+          start_on_install: false
+          wait_for_start: false
 
-  # Airgapped install path: axonops.offline_install=true must be sufficient on
-  # its own (including for the java.rb -> java.offline_install propagation) to
-  # install Cassandra with zero network egress during convergence. The CI
-  # staging step (.github/workflows/ci.yml, kitchen-offline job) downloads the
-  # real Apache Cassandra tarball and a Zulu JDK 17 tarball into
-  # /opt/axonops/offline *before* `kitchen converge` runs — both are freely
-  # downloadable with no AxonOps credentials required.
-  #
-  # The agent is deliberately disabled for this suite: axon-agent/java-agent
-  # are AxonOps-distributed packages that aren't safely fetchable here without
-  # pinning to a specific version that will go stale, so the agent's offline
-  # install path is covered by ChefSpec (spec/unit/recipes/java_offline_spec.rb)
-  # instead — see features/airgapped_install.feature for the full mapping.
-  - name: cassandra-offline
-    # Bind-mount the host staging directory into the container so packages
-    # downloaded by the CI staging step (outside the container) are visible
-    # at converge time — dokken containers do not share the runner's
-    # filesystem by default.
-    driver:
-      volumes:
-        - "/opt/axonops/offline:/opt/axonops/offline"
+  - name: cassandra-41-tar
     run_list:
       - recipe[axonops::cassandra]
     verifier:
       inspec_tests:
-        - test/integration/cassandra-default
+        - test/integration/cassandra
     attributes:
       axonops:
-        offline_install: true
-        offline_packages_path: '/opt/axonops/offline'
-        agent:
-          enabled: false
+        cassandra:
+          version: '4.1.7'
+          install_format: 'tar'
+          start_on_install: false
+          wait_for_start: false
+
+  - name: cassandra-50-default
+    run_list:
+      - recipe[axonops::cassandra]
+    verifier:
+      inspec_tests:
+        - test/integration/cassandra
+    attributes:
+      axonops:
         cassandra:
           version: '5.0.5'
-          start_on_boot: true
-          wait_for_start: true
+          install_format: 'tar'
+          start_on_install: false
+          wait_for_start: false
+
+  - name: cassandra-50-pkg-debian
+    run_list:
+      - recipe[axonops::cassandra]
+    verifier:
+      inspec_tests:
+        - test/integration/cassandra
+    includes:
+      - ubuntu-22.04
+    attributes:
+      axonops:
+        cassandra:
+          version: '5.0.5'
+          install_format: 'pkg'
+          start_on_install: false
+          wait_for_start: false
+
+  - name: cassandra-50-g1gc
+    run_list:
+      - recipe[axonops::cassandra]
+    verifier:
+      inspec_tests:
+        - test/integration/cassandra
+    attributes:
+      axonops:
+        cassandra:
+          version: '5.0.5'
+          install_format: 'tar'
+          gc_type: 'G1GC'
+          start_on_install: false
+          wait_for_start: false
+
+  - name: cassandra-50-shenandoah
+    run_list:
+      - recipe[axonops::cassandra]
+    verifier:
+      inspec_tests:
+        - test/integration/cassandra
+    attributes:
+      axonops:
+        cassandra:
+          version: '5.0.5'
+          install_format: 'tar'
+          gc_type: 'Shenandoah'
+          start_on_install: false
+          wait_for_start: false
+
+  - name: cassandra-41-pem-tls
+    run_list:
+      - recipe[axonops::cassandra]
+    verifier:
+      inspec_tests:
+        - test/integration/cassandra
+    attributes:
+      axonops:
+        cassandra:
+          version: '4.1.7'
+          install_format: 'tar'
+          tls:
+            internode_encryption: 'all'
+            type: 'pem'
+          start_on_install: false
+          wait_for_start: false
+
+  - name: cassandra-50-jks-tls
+    run_list:
+      - recipe[axonops::cassandra]
+    verifier:
+      inspec_tests:
+        - test/integration/cassandra
+    attributes:
+      axonops:
+        cassandra:
+          version: '5.0.5'
+          install_format: 'tar'
+          tls:
+            internode_encryption: 'all'
+            type: 'jks'
+          start_on_install: false
+          wait_for_start: false

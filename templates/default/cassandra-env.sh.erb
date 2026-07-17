@@ -320,3 +320,13 @@ JVM_OPTS="$JVM_OPTS $JVM_EXTRA_OPTS"
 <% if ::File.exist?('/usr/share/axonops/axonops-jvm.options') -%>
 . /usr/share/axonops/axonops-jvm.options
 <% end -%>
+
+<% if @jemalloc_path %>
+# Configure jemalloc
+if [ -z "$LD_PRELOAD" ]; then
+    LD_PRELOAD="<%= @jemalloc_path %>"
+else
+    LD_PRELOAD="<%= @jemalloc_path %>:$LD_PRELOAD"
+fi
+export LD_PRELOAD
+<% end %>

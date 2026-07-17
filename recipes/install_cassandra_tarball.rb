@@ -72,13 +72,13 @@ link cassandra_current do
 end
 
 # Create Cassandra directories
-%w[
+%w(
   data
   commitlog
   saved_caches
   hints
   cdc_raw
-].each do |dir|
+).each do |dir|
   directory "#{data_root}/#{dir}" do
     owner cassandra_user
     group cassandra_group
@@ -129,18 +129,6 @@ directory '/var/run/cassandra' do
   owner cassandra_user
   group cassandra_group
   mode '0755'
-end
-
-# Set system limits
-file '/etc/security/limits.d/cassandra.conf' do
-  content <<-EOH
-#{cassandra_user} - memlock unlimited
-#{cassandra_user} - nofile 100000
-#{cassandra_user} - nproc 32768
-#{cassandra_user} - as unlimited
-EOH
-  mode '0644'
-  only_if { node['axonops']['skip_system_tuning'] && !node['axonops']['skip_system_tuning'] }
 end
 
 # Log installation info
