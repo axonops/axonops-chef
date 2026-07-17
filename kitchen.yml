@@ -21,20 +21,20 @@ platforms:
   # docker driver — vagrant (a real VM) already has a normal init system.
   - name: ubuntu-22.04
     driver:
-      <%- if ENV.fetch('KITCHEN_DRIVER', 'vagrant') == 'docker' -%>
+      <% if ENV.fetch('KITCHEN_DRIVER', 'vagrant') == 'docker' %>
       image: axonops-systemd-ubuntu-2204
       run_command: /sbin/init
       privileged: true
       run_options: --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup:rw --tmpfs /run --tmpfs /run/lock
-      <%- end -%>
+      <% end %>
   - name: rockylinux-9
     driver:
-      <%- if ENV.fetch('KITCHEN_DRIVER', 'vagrant') == 'docker' -%>
+      <% if ENV.fetch('KITCHEN_DRIVER', 'vagrant') == 'docker' %>
       image: axonops-systemd-rockylinux-9
       run_command: /sbin/init
       privileged: true
       run_options: --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup:rw --tmpfs /run --tmpfs /run/lock
-      <%- end -%>
+      <% end %>
 
 suites:
   - name: cassandra-311-tar
