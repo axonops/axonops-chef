@@ -54,4 +54,9 @@ end
 execute 'sysctl-reload' do
   command 'sysctl -p /etc/sysctl.d/99-axonops.conf'
   action :nothing
+  # sysctl ships with procps, present on any real target but not always on
+  # minimal container base images — don't hard-fail the whole converge over
+  # a reload command that couldn't possibly matter if the kernel-tunable
+  # apply mechanism itself isn't even installed.
+  only_if { ::File.exist?('/usr/sbin/sysctl') || ::File.exist?('/sbin/sysctl') }
 end
