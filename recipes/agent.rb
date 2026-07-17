@@ -210,7 +210,18 @@ else
   # names installs them together, exactly like `dnf install
   # axon-cassandra3.11-agent` does on its own (pulls axon-agent in as a
   # dependency, single transaction, no conflict).
-  package [java_agent_package, 'axon-agent'] do
+  #
+  # axon-cassandra3.11-agent specifically also ships stale legacy
+  # digitalis.io-branded x86_64 builds (last published at 1.0.4) alongside
+  # newer axonops.com noarch builds (1.0.14+) under the same package name.
+  # dnf prefers an exact-arch match over a higher-version noarch one, so on
+  # x86_64 it silently picks the older, broken x86_64 build — which is
+  # exactly the one with the /var/lib/axonops conflict; the newer noarch
+  # build doesn't have it. Every other axon-cassandra*-agent package is
+  # noarch-only already, so forcing the .noarch arch selector is a no-op
+  # for them and only changes behavior for the one package that needs it.
+  agent_package_name = platform_family?('rhel', 'fedora', 'amazon') ? "#{java_agent_package}.noarch" : java_agent_package
+  package [agent_package_name, 'axon-agent'] do
     action :install
     notifies :restart, 'service[axon-agent]', :delayed
   end
