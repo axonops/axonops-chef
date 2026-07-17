@@ -112,10 +112,10 @@ jobs:
       CHEF_LICENSE: accept-silent
     strategy:
       fail-fast: false
+      # cassandra-offline is deliberately not in this matrix: it needs
+      # packages pre-staged under /opt/axonops/offline before it can
+      # converge — see the kitchen-offline job below.
       matrix:
-        # cassandra-offline requires real Cassandra/Java/agent packages
-        # pre-staged under /opt/axonops/offline on the runner/image before it
-        # can converge — add it here once that staging step exists.
         suite: [ cassandra-3-11, cassandra-default ]
     steps:
       - uses: actions/checkout@v4
@@ -127,3 +127,42 @@ jobs:
         run: |
           export KITCHEN_YAML=kitchen.yml
           kitchen test "${{ matrix.suite }}" --destroy=always
+
+  # Airgapped install integration test. Stages the real Apache Cassandra
+  # tarball and a Zulu JDK 17 tarball into /opt/axonops/offline with network
+  # access, then converges the cassandra-offline suite (agent disabled — see
+  # kitchen.yml) to prove axonops.offline_install=true alone is enough,
+  # including the java.rb offline-flag propagation fix. Slow; run manually.
+  kitchen-offline:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      CHEF_LICENSE: accept-silent
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Chef Workstation
+        run: curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -P chef-workstation -c stable
+
+      - name: Stage offline packages (Cassandra + Java tarballs only — no AxonOps credentials needed)
+        run: |
+          set -euo pipefail
+          STAGE_DIR=/opt/axonops/offline
+          sudo mkdir -p "$STAGE_DIR"
+
+          # Apache Cassandra tarball — same URL axonops::cassandra builds online.
+          sudo curl -fL "https://archive.apache.org/dist/cassandra/5.0.5/apache-cassandra-5.0.5-bin.tar.gz" \
+            -o "$STAGE_DIR/apache-cassandra-5.0.5-bin.tar.gz"
+
+          # Latest standard (non-CRaC) Zulu JDK 17 tarball, resolved via Azul's
+          # metadata API so we never hardcode a filename/version that goes
+          # stale. java.rb's offline path globs `zulu*jdk*linux_x64.tar.gz`,
+          # so any matching standard build works.
+          JAVA_URL=$(curl -fsSL "https://api.azul.com/metadata/v1/zulu/packages/?java_version=17&os=linux&arch=x86&archive_type=tar.gz&java_package_type=jdk&javafx_bundled=false&latest=true&page_size=5" \
+            | ruby -rjson -e 'pkgs = JSON.parse(STDIN.read); puts pkgs.reject { |p| p["download_url"].include?("crac") }.first["download_url"]')
+          sudo curl -fL "$JAVA_URL" -o "$STAGE_DIR/$(basename "$JAVA_URL")"
+
+      - name: kitchen test cassandra-offline
+        run: |
+          export KITCHEN_YAML=kitchen.yml
+          kitchen test cassandra-offline --destroy=always

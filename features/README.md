@@ -34,3 +34,22 @@ kitchen test cassandra-default
 
 Scenarios tagged `@wip` are specified but not yet implemented — they track the
 remaining epic #19 sub-issues (package-repo install #23, PEM TLS #26).
+
+## Airgapped / offline install (epic AD-37)
+
+`features/airgapped_install.feature` covers this epic.
+
+| Feature scenario | Verified by |
+|------------------|-------------|
+| Top-level flag propagates into java.offline_install | `spec/unit/recipes/java_offline_spec.rb` |
+| Real end-to-end offline Cassandra install, zero egress | `kitchen.yml`'s `cassandra-offline` suite, `.github/workflows/ci.yml`'s `kitchen-offline` job (stages real Cassandra + Java tarballs; agent packages not covered here — see the ChefSpec above) |
+| Standalone `java.offline_install` override still works | `spec/unit/recipes/java_offline_spec.rb` |
+| `chef_workstation` is a documented exception | manual — see README.md's airgapped section |
+
+```bash
+# Unit (no Docker required):
+chef exec rspec spec/unit/recipes/java_offline_spec.rb   # requires Chef Workstation; broken under plain `rspec` locally without Berkshelf
+
+# Integration (Docker + network access to stage packages first):
+kitchen test cassandra-offline
+```
