@@ -10,8 +10,20 @@ verifier:
   name: inspec
 
 platforms:
+  # chef-solo/chef-zero's embedded ruby needs to build native gem
+  # extensions (json, faraday's deps) the first time it resolves cookbook
+  # gem dependencies, and the stock kitchen-docker base images don't ship a
+  # C compiler — without one this fails with "Failed to build gem native
+  # extension" before any recipe code even runs. Same fix as installing
+  # build tools on a real target host (see docs/AGENT.md troubleshooting).
   - name: ubuntu-22.04
+    driver:
+      intermediate_instructions:
+        - RUN apt-get update && apt-get install -y build-essential
   - name: rockylinux-9
+    driver:
+      intermediate_instructions:
+        - RUN dnf install -y gcc gcc-c++ make redhat-rpm-config
 
 suites:
   - name: cassandra-311-tar
