@@ -36,10 +36,6 @@ supports 'amazon', '>= 2.0'
 source_url 'https://github.com/axonops/axonops-chef'
 issues_url 'https://github.com/axonops/axonops-chef/issues'
 
-# Gems required
-gem 'faraday'
-gem 'faraday-multipart'
-
 # Recipes
 recipe 'axonops::default', 'Default recipe - includes common setup'
 recipe 'axonops::agent', 'Installs and configures AxonOps agent on Cassandra nodes'
