@@ -193,15 +193,30 @@ elsif install_zulu && !node['java']['offline_install']
   # "most recently installed". Force it explicitly so java_major above is
   # actually what runs.
   alternatives_cmd = platform_family?('debian') ? 'update-alternatives' : 'alternatives'
-  # alternatives --set matches on the exact path a package registered, not
-  # its realpath — Zulu 8's own bin/java is a symlink to ../jre/bin/java,
-  # and it's the jre/bin/java form that got registered. Resolve to the real
-  # file so --set always names what's actually on file.
-  resolved_java_bin = ::File.exist?("#{java_home}/bin/java") ? ::File.realpath("#{java_home}/bin/java") : "#{java_home}/bin/java"
+  # alternatives --set matches on the exact path a package registered, which
+  # is NOT reliably "<zulu_home>/bin/java" or its realpath — that varies by
+  # distro/package (Amazon Linux's Zulu 8 build registers .../jre/bin/java,
+  # a symlink target different from its own bin/java; Ubuntu's Zulu 17 deb
+  # registers .../zulu17/bin/java directly, whose realpath differs again).
+  # Ask alternatives what it actually has instead of guessing a path shape.
+  registered_java_bins = begin
+    Mixlib::ShellOut.new("#{alternatives_cmd} --list java").tap(&:run_command).stdout.lines.map(&:strip)
+  rescue Errno::ENOENT
+    []
+  end
+  # Match by realpath, not the literal registered string — whichever symlink
+  # route a package's postinst used to register itself, it and our own
+  # "<zulu_home>/bin/java" both resolve to the same physical binary when
+  # they're the same JDK.
+  desired_java_bin = "#{java_home}/bin/java"
+  desired_java_realpath = ::File.exist?(desired_java_bin) ? ::File.realpath(desired_java_bin) : nil
+  target_java_bin = registered_java_bins.find do |path|
+    desired_java_realpath && ::File.exist?(path) && ::File.realpath(path) == desired_java_realpath
+  end
+
   execute 'select-java-alternative' do
-    command "#{alternatives_cmd} --set java #{resolved_java_bin}"
-    not_if { ::File.exist?('/usr/bin/java') && ::File.realpath('/usr/bin/java') == resolved_java_bin }
-    only_if { ::File.exist?(resolved_java_bin) }
+    command "#{alternatives_cmd} --set java #{target_java_bin}"
+    not_if { target_java_bin.nil? || (::File.exist?('/usr/bin/java') && ::File.realpath('/usr/bin/java') == desired_java_realpath) }
   end
 
 else
