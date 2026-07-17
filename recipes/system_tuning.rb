@@ -5,10 +5,10 @@
 # Applies system-level tuning optimized for Apache Cassandra
 #
 
-def running_in_container
-  ::File.exist?('/.dockerenv') ||
-    (::File.exist?('/proc/1/cgroup') && ::File.read('/proc/1/cgroup').match?(/docker|lxc|kubepods/))
-end
+# not_if blocks run with self rebound to the resource, so a def'd method
+# isn't reachable there — compute once and close over the local var instead.
+running_in_container = ::File.exist?('/.dockerenv') ||
+  (::File.exist?('/proc/1/cgroup') && ::File.read('/proc/1/cgroup').match?(/docker|lxc|kubepods/))
 
 sysctl_content = <<~SYSCTL
   vm.swappiness=1

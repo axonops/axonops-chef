@@ -54,7 +54,7 @@ template "#{cassandra_conf_dir}/cassandra.yaml" do
   template_vars['cassandra_version'] = cassandra_version
   
   variables(template_vars)
-  notifies :restart, 'service[cassandra]', :delayed
+  notifies(node['axonops']['cassandra']['start_on_install'] ? :restart : :nothing, 'service[cassandra]', :delayed)
 end
 
 # JVM options configuration
@@ -85,14 +85,14 @@ if node['axonops']['cassandra']['version'].start_with?('5.')
     variables(
       heap_size: jvm_heap_size
     )
-    notifies :restart, 'service[cassandra]', :delayed
+    notifies(node['axonops']['cassandra']['start_on_install'] ? :restart : :nothing, 'service[cassandra]', :delayed)
   end
   template "#{cassandra_conf_dir}/jvm17-server.options" do
     source 'cassandra-jvm17-server.options.erb'
     owner cassandra_user
     group cassandra_group
     mode '0644'
-    notifies :restart, 'service[cassandra]', :delayed
+    notifies(node['axonops']['cassandra']['start_on_install'] ? :restart : :nothing, 'service[cassandra]', :delayed)
   end
 elsif node['axonops']['cassandra']['version'].start_with?('4.')
   # Cassandra 4.x uses jvm-server.options and jvm11-server.options
@@ -104,7 +104,7 @@ elsif node['axonops']['cassandra']['version'].start_with?('4.')
     variables(
       heap_size: jvm_heap_size
     )
-    notifies :restart, 'service[cassandra]', :delayed
+    notifies(node['axonops']['cassandra']['start_on_install'] ? :restart : :nothing, 'service[cassandra]', :delayed)
   end
 
   template "#{cassandra_conf_dir}/jvm11-server.options" do
@@ -112,7 +112,7 @@ elsif node['axonops']['cassandra']['version'].start_with?('4.')
     owner cassandra_user
     group cassandra_group
     mode '0644'
-    notifies :restart, 'service[cassandra]', :delayed
+    notifies(node['axonops']['cassandra']['start_on_install'] ? :restart : :nothing, 'service[cassandra]', :delayed)
   end
 else
   # Cassandra 3.x uses jvm.options
@@ -125,7 +125,7 @@ else
       heap_size: jvm_heap_size,
       version: node['axonops']['cassandra']['version']
     )
-    notifies :restart, 'service[cassandra]', :delayed
+    notifies(node['axonops']['cassandra']['start_on_install'] ? :restart : :nothing, 'service[cassandra]', :delayed)
   end
 end
 
@@ -145,7 +145,7 @@ template "#{cassandra_conf_dir}/cassandra-env.sh" do
     java_major: AxonOpsCassandra.java_major(cassandra_version),
     jemalloc_path: node.run_state['cassandra_jemalloc_path']
   )
-  notifies :restart, 'service[cassandra]', :delayed
+  notifies(node['axonops']['cassandra']['start_on_install'] ? :restart : :nothing, 'service[cassandra]', :delayed)
 end
 
 # Configure logback.xml
@@ -158,7 +158,7 @@ template "#{cassandra_conf_dir}/logback.xml" do
     log_dir: node['axonops']['cassandra']['directories']['logs'],
     log_level: node['axonops']['cassandra']['log_level']
   )
-  notifies :restart, 'service[cassandra]', :delayed
+  notifies(node['axonops']['cassandra']['start_on_install'] ? :restart : :nothing, 'service[cassandra]', :delayed)
 end
 
 # Create rack properties file if using property file snitch
@@ -172,7 +172,7 @@ if node['axonops']['cassandra']['endpoint_snitch'].include?('PropertyFileSnitch'
       datacenter: datacenter,
       rack: rack
     )
-    notifies :restart, 'service[cassandra]', :delayed
+    notifies(node['axonops']['cassandra']['start_on_install'] ? :restart : :nothing, 'service[cassandra]', :delayed)
   end
 end
 
@@ -196,14 +196,14 @@ template '/etc/systemd/system/cassandra.service' do
     cassandra_log_dir: node['axonops']['cassandra']['log_dir']
   )
   notifies :run, 'execute[systemctl-daemon-reload]', :immediately
-  notifies :restart, 'service[cassandra]', :delayed
+  notifies(node['axonops']['cassandra']['start_on_install'] ? :restart : :nothing, 'service[cassandra]', :delayed)
 end
 
-# Enable and start Cassandra service
+# Enable and, unless start_on_install is disabled, start Cassandra service
 service 'cassandra' do
   supports status: true, restart: true, reload: false
   action :enable if node['axonops']['cassandra']['start_on_boot']
-  action :start
+  action :start if node['axonops']['cassandra']['start_on_install']
 end
 
 # Wait for Cassandra to be ready
@@ -235,5 +235,8 @@ ruby_block 'wait-for-cassandra' do
     end
   end
   action :run
-  only_if { node['axonops']['cassandra']['wait_for_start'] }
+  only_if do
+    node['axonops']['cassandra']['wait_for_start'] &&
+      node['axonops']['cassandra']['start_on_install']
+  end
 end

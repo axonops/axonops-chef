@@ -1,0 +1,15 @@
+{
+  "name": "cassandra-311-pkg-test",
+  "normal": {
+    "axonops": {
+      "cassandra": {
+        "version": "3.11.17",
+        "install_format": "pkg",
+        "start_on_install": true
+      }
+    }
+  },
+  "run_list": [
+    "recipe[axonops::cassandra]"
+  ]
+}

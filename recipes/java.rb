@@ -12,8 +12,12 @@ end
 # Let the top-level axonops.offline_install flag drive Java's own offline
 # switch too, so a single flag airgaps the whole stack (agent/server/cassandra
 # -> java). Standalone callers can still set node['java']['offline_install']
-# directly.
-node.override['java']['offline_install'] ||= node['axonops']['offline_install']
+# directly. Reading node.override['java']['offline_install'] here (e.g. via
+# ||=) would auto-vivify an empty, truthy Mash on first access and get stuck
+# — only write to it, never read-then-write through the override chain.
+if node['axonops']['offline_install'] && !node['java']['offline_install']
+  node.override['java']['offline_install'] = true
+end
 
 # Resolve the package names and JAVA_HOME for the requested Java major version
 # (8, 11 or 17). The Cassandra recipe sets node['java']['version'] from the
@@ -48,7 +52,7 @@ if node['java']['offline_install'] && node['java']['package']
     dpkg_package package_path do
       action :install
     end
-  when 'rhel', 'fedora'
+  when 'rhel', 'fedora', 'amazon'
     rpm_package package_path do
       action :install
     end
@@ -165,7 +169,7 @@ elsif install_zulu && !node['java']['offline_install']
 
     java_home = node['java']['zulu_home']
 
-  when 'rhel', 'fedora'
+  when 'rhel', 'fedora', 'amazon'
     # Add Zulu repository
     rpm_package 'zulu-repo' do
       source node['java']['zulu_pkg_rpm']

@@ -29,7 +29,7 @@ end
 
 package 'tar' do
   action :install
-  only_if { platform_family?('rhel') }
+  only_if { platform_family?('rhel', 'fedora', 'amazon') }
 end
 
 # Install Java if not already installed. Select the Java major version required
@@ -121,7 +121,7 @@ systemd_unit 'cassandra.service' do
               'WantedBy' => 'multi-user.target',
             },
           })
-  action [:create, :enable, :start]
+  action(node['axonops']['cassandra']['start_on_install'] ? [:create, :enable, :start] : [:create, :enable])
   notifies :run, 'execute[systemctl-daemon-reload]', :immediately
 end
 

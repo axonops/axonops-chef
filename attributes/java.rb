@@ -40,6 +40,11 @@ default['java']['openjdk_packages'] = {
     11 => 'java-11-openjdk-headless',
     17 => 'java-17-openjdk-headless',
   },
+  'amazon' => {
+    8 => 'java-1.8.0-openjdk-headless',
+    11 => 'java-11-openjdk-headless',
+    17 => 'java-17-openjdk-headless',
+  },
 }
 
 # Default paths for different Java installations. These are resolved from the
