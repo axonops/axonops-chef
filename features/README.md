@@ -34,3 +34,32 @@ kitchen test cassandra-default
 
 Scenarios tagged `@wip` are specified but not yet implemented — they track the
 remaining epic #19 sub-issues (package-repo install #23, PEM TLS #26).
+
+## DSE 5.1 monitoring and Amazon Linux install support (epic AD-29)
+
+`features/dse_monitoring.feature` and `features/amazon_linux_install.feature`
+cover this epic.
+
+| Feature scenario | Verified by |
+|------------------|-------------|
+| DSE auto-detection (`/opt/dse`, `/etc/dse/cassandra`) | `spec/unit/recipes/dse_detection_spec.rb` |
+| DSE selects `axon-dse-agent` / DSE template branch | `spec/unit/recipes/dse_detection_spec.rb` |
+| `axonops::cassandra` never installs/reinstalls DSE | `spec/unit/recipes/dse_detection_spec.rb` |
+| Apache Cassandra java-agent package regression check | `spec/unit/recipes/dse_detection_spec.rb` |
+| DSE/Apache series → Java major | `spec/unit/libraries/cassandra_version_spec.rb` |
+| Amazon Linux yum repository configured | `spec/unit/recipes/dse_detection_spec.rb` (repo.rb not yet covered — see gap below), `test/integration/*` via `kitchen.yml`'s `amazonlinux-2`/`amazonlinux-2023` platforms |
+| Amazon Linux offline agent install uses rpm | ChefSpec gap — not yet covered; tracked for a follow-up ticket |
+| Fresh Cassandra install on Amazon Linux | `test/integration/cassandra-default` (reused automatically for the new platforms) |
+
+**No DSE Kitchen/InSpec coverage**: DataStax does not distribute a
+redistributable DSE Docker image suitable for public CI, so DSE support is
+unit-tested only (ChefSpec + the pure-Ruby version library spec).
+
+```bash
+# Unit (no Docker required):
+rspec --options /dev/null spec/unit/libraries/cassandra_version_spec.rb
+chef exec rspec spec/unit/recipes/dse_detection_spec.rb   # requires Chef Workstation; ChefSpec is broken under plain `rspec` locally without Berkshelf
+
+# Integration (Docker required) — exercises amazonlinux-2/amazonlinux-2023 automatically:
+kitchen test cassandra-default
+```
