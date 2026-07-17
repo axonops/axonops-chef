@@ -1,0 +1,17 @@
+# Base image for kitchen-docker Ubuntu platforms that actually boots systemd
+# as PID 1. Stock ubuntu:22.04 has no systemd at all — kitchen-docker runs
+# `sshd -D` as PID 1 by default, which never gives package postinst scripts
+# a real init system/dbus to talk to. AxonOps packages call systemctl in
+# their postinst, and fail hard without one. kitchen-docker's own generated
+# Dockerfile (sudo/openssh-server/user setup) still layers on top of this
+# unmodified — only the base changes, and kitchen.yml overrides run_command
+# to boot systemd instead of sshd directly.
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y systemd systemd-sysv \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+STOPSIGNAL SIGRTMIN+3

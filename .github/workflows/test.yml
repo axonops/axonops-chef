@@ -27,6 +27,14 @@ jobs:
         with:
           ruby-version: '3.1'
           bundler-cache: true
+      # AxonOps packages call systemctl in their postinst; kitchen-docker's
+      # stock base images have no init system at all (PID 1 is `sshd -D`),
+      # so those calls fail hard. These images add systemd on top — see
+      # test/docker/Dockerfile.systemd-* and kitchen.yml for the full story.
+      - name: Build systemd-enabled kitchen-docker base images
+        run: |
+          docker build -t axonops-systemd-ubuntu-2204 -f test/docker/Dockerfile.systemd-ubuntu .
+          docker build -t axonops-systemd-rockylinux-9 -f test/docker/Dockerfile.systemd-rockylinux .
       - run: KITCHEN_DRIVER=docker bundle exec kitchen test cassandra-50-default
 
   kitchen-311:
@@ -37,4 +45,8 @@ jobs:
         with:
           ruby-version: '3.1'
           bundler-cache: true
+      - name: Build systemd-enabled kitchen-docker base images
+        run: |
+          docker build -t axonops-systemd-ubuntu-2204 -f test/docker/Dockerfile.systemd-ubuntu .
+          docker build -t axonops-systemd-rockylinux-9 -f test/docker/Dockerfile.systemd-rockylinux .
       - run: KITCHEN_DRIVER=docker bundle exec kitchen test cassandra-311-tar

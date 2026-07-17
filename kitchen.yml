@@ -10,8 +10,31 @@ verifier:
   name: inspec
 
 platforms:
+  # AxonOps packages call systemctl in their postinst scripts. kitchen-docker
+  # runs `sshd -D` as PID 1 by default (no real init system at all), so those
+  # calls fail hard: "Failed to connect to bus: Host is down". The
+  # axonops-systemd-* images (built by test.yml before `kitchen test`, from
+  # test/docker/Dockerfile.systemd-*) add systemd on top of the stock
+  # ubuntu/rockylinux base; overriding run_command to /sbin/init boots real
+  # systemd as PID 1 instead, with privileged mode + the cgroup/tmpfs mounts
+  # systemd needs to run inside a container at all. Only meaningful for the
+  # docker driver — vagrant (a real VM) already has a normal init system.
   - name: ubuntu-22.04
+    driver:
+      <%- if ENV.fetch('KITCHEN_DRIVER', 'vagrant') == 'docker' -%>
+      image: axonops-systemd-ubuntu-2204
+      run_command: /sbin/init
+      privileged: true
+      run_options: --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup:rw --tmpfs /run --tmpfs /run/lock
+      <%- end -%>
   - name: rockylinux-9
+    driver:
+      <%- if ENV.fetch('KITCHEN_DRIVER', 'vagrant') == 'docker' -%>
+      image: axonops-systemd-rockylinux-9
+      run_command: /sbin/init
+      privileged: true
+      run_options: --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup:rw --tmpfs /run --tmpfs /run/lock
+      <%- end -%>
 
 suites:
   - name: cassandra-311-tar
