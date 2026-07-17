@@ -16,9 +16,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated cookbook version from 0.1.0 to 0.2.0 in metadata.rb
 - Updated cookbook_version field in all example JSON files to match new version
 
-## [Unreleased] - 2025-07-27
+## [Unreleased]
 
 ### Added
+
+#### Amazon Linux + package-install correctness, verified end to end on Cassandra 3.11
+- Full test harness: ChefSpec unit specs, InSpec controls, Test Kitchen
+  configuration with suites for 3.11/4.1/5.0 tarball, package install, GC
+  variants, and TLS modes.
+- New `axonops.cassandra.start_on_install` attribute (default `false`) —
+  Chef no longer starts/restarts Cassandra during converge unless asked;
+  needed for controlled multi-node bootstraps.
+- New `axonops.cassandra.redhat_repository_url_311x` attribute: 3.11 has no
+  official apt channel but does have an RPM mirror (JFrog), matching the
+  Ansible role.
+- `chefignore`: Chef was treating this repo's dev/test `Gemfile` (chefspec,
+  berkshelf, cookstyle...) as part of the cookbook and bundle-installing it
+  on every converge — fixed the actual root cause (a stray `gem 'faraday'`
+  declaration in `metadata.rb`, unused anywhere in the codebase) and added
+  `chefignore` as defense in depth.
+- `test/docker/Dockerfile.systemd-ubuntu`, `Dockerfile.systemd-rockylinux`:
+  systemd-enabled base images for kitchen-docker CI — AxonOps packages call
+  `systemctl` in their postinst scripts, which needs a real init system
+  kitchen-docker's stock containers don't have.
+
+### Fixed
+
+#### Amazon Linux + package-install correctness (continued)
+- `offline_install` auto-vivify bug: `node.override['java']['offline_install']
+  ||= …` read-then-wrote through the override chain, auto-vivifying an
+  empty (truthy) Mash that permanently stuck offline mode on regardless of
+  the real flag.
+- Amazon Linux `platform_family` gaps in Java install, `tar` package
+  install, and `yum_package` → `package` (dnf) resolution — all previously
+  only handled `'debian'`/`'rhel','fedora'`.
+- `not_if { running_in_container }` in `system_tuning.rb` referenced a
+  `def`d method from inside a resource guard block, where `self` is
+  rebound to the resource — `NoMethodError`.
+- `cassandra-env.sh.erb` unconditionally sourced
+  `/usr/share/axonops/axonops-jvm.options` — wrong for every non-5.0
+  version and compile-time-guarded (fragile across separate converges).
+  Now version-gated to match the Ansible role: 3.11/4.1 get a direct
+  `-javaagent:` flag, only 5.0.x sources the override file.
+- Java-agent package name was a single hardcoded default
+  (`axon-cassandra5.0-agent-jdk17`) despite promising version-based
+  auto-selection — every non-5.0 install got the wrong agent build.
+- Duplicate, unconditional `/etc/systemd/system/cassandra.service` creation
+  hardcoded to the tar layout — shadowed pkg installs' own init integration
+  with the wrong `ExecStart`.
+- 3.11 `cassandra.yaml` template rendered `legacy_ssl_storage_port_enabled`
+  and `accepted_protocols`, keys that don't exist in the 3.11 schema —
+  Cassandra refused to start.
+- Java version selection: the online Zulu-repo install branch never ran
+  `alternatives --set java`, so a box with multiple Zulu majors installed
+  could silently run the wrong JDK.
+- All 7 shipped `examples/nodes/*.json` wrapped attributes in a `"normal":
+  {...}` key — that's node-object JSON format, not chef-solo's flat `-j`
+  attribute-file format. None of these examples ever actually applied any
+  attribute they set.
+- `axon-cassandra*-agent` install: two separate `package` resources for it
+  and `axon-agent` ran as two separate transactions, so rpm/dpkg couldn't
+  reconcile the `/var/lib/axonops` directory they both ship — combined into
+  one resource. `axon-cassandra3.11-agent` also publishes stale legacy
+  x86_64 builds alongside newer noarch ones under the same name; dnf
+  silently preferred the older, broken x86_64 build — forced the `.noarch`
+  arch selector.
+- `/etc/sysctl.d` and the `sysctl` binary itself aren't guaranteed present
+  on minimal container images — guarded/created defensively.
+- `AxonOpsCassandra.series` unsupported-version check now consistently
+  raises `ArgumentError` (kept Chef-independent — CI validates this library
+  standalone without Chef loaded).
+
+**Reason**: Manually testing `recipe[axonops::cassandra]` end to end (both
+tarball and RPM/`install_format: pkg`, on Amazon Linux 2023) surfaced a long
+chain of real, previously-undetected bugs. Verified with `nodetool status`
+showing the node `UN` and CQL bound on 9042.
 
 #### Multi-version Cassandra support (epic #19)
 - Added `AxonOps::CassandraVersion` library (`libraries/cassandra_version.rb`)
@@ -227,7 +299,3 @@ For existing users:
 
 ### Contributors
 - Brian Stark - Initial Chef Server deployment documentation and implementation
-
-## [Unreleased]
-### Added
-- Full test harness: ChefSpec unit specs, InSpec controls, Test Kitchen configuration with suites for 3.11/4.1/5.0 tarball, package install, GC variants, and TLS modes.

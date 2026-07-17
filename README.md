@@ -446,6 +446,18 @@ knife node from file examples/nodes/cassandra-node.json
 knife node run_list set cassandra-node-01 'recipe[axonops::java],recipe[axonops::cassandra],recipe[axonops::agent]'
 ```
 
+### [cassandra-311-pkg-node.json](examples/nodes/cassandra-311-pkg-node.json)
+Apache Cassandra 3.11 installed from the RPM package repository (rather than
+tarball), with AxonOps agent monitoring. Includes:
+- `install_format: 'pkg'` — installs from `packages.axonops.com`/the 3.11
+  JFrog mirror instead of downloading a tarball
+- `start_on_install: true` — starts Cassandra immediately after converge
+
+```bash
+# Upload and apply configuration
+knife node from file examples/nodes/cassandra-311-pkg-node.json
+```
+
 ### [server-node.json](examples/nodes/server-node.json)
 Self-hosted AxonOps server with dashboard and Elasticsearch. Features:
 - Full AxonOps server stack
@@ -630,10 +642,13 @@ default['axonops']['server']['listen_address'] = '0.0.0.0'
 default['axonops']['server']['listen_port'] = 8080
 
 # Cassandra settings
-default['axonops']['cassandra']['version']      = '5.0.5'  # 3.11.x / 4.1.x / 5.0.x
-default['axonops']['cassandra']['cluster_name'] = 'AxonOps Cluster'
-default['axonops']['cassandra']['heap_size']    = '2G'
-default['axonops']['cassandra']['gc_type']      = 'Shenandoah'  # or 'G1GC' (required for 3.11)
+default['axonops']['cassandra']['version']         = '5.0.5'  # 3.11.x / 4.1.x / 5.0.x
+default['axonops']['cassandra']['cluster_name']    = 'AxonOps Cluster'
+default['axonops']['cassandra']['heap_size']       = '2G'
+default['axonops']['cassandra']['gc_type']         = 'Shenandoah'  # or 'G1GC' (required for 3.11)
+default['axonops']['cassandra']['install_format']  = 'tar'  # or 'pkg' (apt/yum; not available for 3.11 on Debian)
+default['axonops']['cassandra']['start_on_install'] = false  # Chef only starts Cassandra if true — leave false for controlled multi-node bootstraps
+default['axonops']['cassandra']['redhat_repository_url_311x'] = 'https://apache.jfrog.io/artifactory/cassandra-rpm/311x/'  # 3.11 RPM mirror (Apache dropped it from the official repo)
 
 # Java options — overridden automatically by axonops::cassandra based on Cassandra version
 # (3.11 -> 8, 4.1 -> 11, 5.0 -> 17). Override only when skip_java_install is true.
@@ -743,3 +758,12 @@ By default, Kitchen uses Vagrant. You can select Docker with:
 ```bash
 KITCHEN_DRIVER=docker bundle exec kitchen test
 ```
+
+Docker-driven Kitchen runs boot real systemd inside the container (see
+`test/docker/Dockerfile.systemd-ubuntu`/`Dockerfile.systemd-rockylinux`) —
+AxonOps packages call `systemctl` in their postinst scripts, which needs an
+actual init system kitchen-docker's stock containers don't provide.
+
+`chefignore` keeps this repo's own dev/test tooling (`Gemfile`, `spec/`,
+`test/`, `kitchen.yml`, etc.) out of what Chef treats as "the cookbook" —
+without it, Chef auto-bundle-installs the dev `Gemfile` on every converge.
