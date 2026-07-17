@@ -6,6 +6,12 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+        # kitchen.yml is an ERB template (driver name, per-platform docker
+        # overrides), not standalone YAML — raw parsing breaks on ERB
+        # control-flow blocks that only become valid YAML once rendered.
+        # ci.yml's own syntax gate validates it correctly (ERB-rendered
+        # first, under both the default and KITCHEN_DRIVER=docker branches).
+        exclude: ^kitchen\.yml$
       - id: check-added-large-files
       - id: check-merge-conflict
       - id: mixed-line-ending

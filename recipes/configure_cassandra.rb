@@ -40,7 +40,7 @@ template "#{cassandra_conf_dir}/cassandra.yaml" do
   owner cassandra_user
   group cassandra_group
   mode '0644'
-  
+
   template_vars = node['axonops']['cassandra'].to_h.dup
   template_vars['cluster_name'] = cluster_name
   template_vars['dc'] = datacenter
@@ -52,7 +52,7 @@ template "#{cassandra_conf_dir}/cassandra.yaml" do
   template_vars['cdc_raw_directory'] = "#{data_root}/cdc_raw"
   template_vars['seeds'] = node['axonops']['cassandra']['seeds'].join(',')
   template_vars['cassandra_version'] = cassandra_version
-  
+
   variables(template_vars)
   notifies(node['axonops']['cassandra']['start_on_install'] ? :restart : :nothing, 'service[cassandra]', :delayed)
 end
