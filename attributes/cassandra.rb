@@ -509,3 +509,13 @@ default['axonops']['cassandra']['gc_conc_threads'] = nil
 default['axonops']['cassandra']['gc_log_enabled'] = false
 default['axonops']['cassandra']['gc_log_files'] = 10
 default['axonops']['cassandra']['gc_log_file_size'] = '10M'
+
+# System tuning
+default['axonops']['cassandra']['skip_system_tuning'] = false
+default['axonops']['cassandra']['jemalloc_enabled'] = true
+default['axonops']['cassandra']['disable_irqbalance'] = true
+
+default['axonops']['cassandra']['limits']['nofile'] = 1000000
+default['axonops']['cassandra']['limits']['memlock'] = 'unlimited'
+default['axonops']['cassandra']['limits']['as'] = 'unlimited'
+default['axonops']['cassandra']['limits']['nproc'] = 32768
