@@ -551,6 +551,15 @@ node.override['axonops']['offline_packages_path'] = '/path/to/packages'
 include_recipe 'axonops::server'
 ```
 
+Covered by `offline_install`: `axonops::agent`, `axonops::server`, `axonops::cassandra`,
+`axonops::kafka`, `axonops::elasticsearch`, and their shared `axonops::java` dependency —
+setting the single flag above is enough for all of them.
+
+**Not covered:** `axonops::chef_workstation` always downloads Chef Workstation from
+`packages.chef.io`. It installs developer/operator tooling (knife, chef-workstation,
+berkshelf) on a workstation or bastion host used to *drive* Chef runs — it is not part of
+the target-node install path, so it is intentionally excluded from airgapped support.
+
 ### 5. Setting Up Chef Workstation on Nodes
 
 ```ruby

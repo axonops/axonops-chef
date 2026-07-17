@@ -9,6 +9,12 @@ if node['java']['skip_install']
   return
 end
 
+# Let the top-level axonops.offline_install flag drive Java's own offline
+# switch too, so a single flag airgaps the whole stack (agent/server/cassandra
+# -> java). Standalone callers can still set node['java']['offline_install']
+# directly.
+node.override['java']['offline_install'] ||= node['axonops']['offline_install']
+
 # Resolve the package names and JAVA_HOME for the requested Java major version
 # (8, 11 or 17). The Cassandra recipe sets node['java']['version'] from the
 # Cassandra version; standalone callers may override it directly. Explicitly

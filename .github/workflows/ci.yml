@@ -113,6 +113,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # cassandra-offline requires real Cassandra/Java/agent packages
+        # pre-staged under /opt/axonops/offline on the runner/image before it
+        # can converge — add it here once that staging step exists.
         suite: [ cassandra-3-11, cassandra-default ]
     steps:
       - uses: actions/checkout@v4

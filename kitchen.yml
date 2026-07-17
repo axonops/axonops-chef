@@ -58,3 +58,26 @@ suites:
           version: '5.0.5'
           start_on_boot: true
           wait_for_start: true
+
+  # Airgapped install path: axonops.offline_install=true must be sufficient on
+  # its own (including for the java.rb -> java.offline_install propagation) to
+  # install Cassandra + the agent with zero network egress. This suite
+  # requires the real Cassandra tarball, Java (Zulu) package, agent package,
+  # and java-agent package to be pre-staged under /opt/axonops/offline on the
+  # target image/container before `kitchen converge` runs (e.g. baked into a
+  # custom dokken image, or copied in via a CI step) — kitchen itself does not
+  # fetch or provide these binaries.
+  - name: cassandra-offline
+    run_list:
+      - recipe[axonops::cassandra]
+    verifier:
+      inspec_tests:
+        - test/integration/cassandra-default
+    attributes:
+      axonops:
+        offline_install: true
+        offline_packages_path: '/opt/axonops/offline'
+        cassandra:
+          version: '5.0.5'
+          start_on_boot: true
+          wait_for_start: true
