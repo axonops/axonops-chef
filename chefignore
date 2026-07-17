@@ -1,0 +1,42 @@
+# Chef ignores everything NOT listed here when it loads this cookbook, so
+# anything left out gets shipped as part of the cookbook and synced to every
+# node/converge target. Gemfile/Gemfile.lock in particular: Chef auto-detects
+# a Gemfile at cookbook root and runs `bundle install` for it as part of
+# every converge ("Installing cookbook gem dependencies") — since this repo's
+# root Gemfile is dev/test tooling (chefspec, berkshelf, cookstyle,
+# kitchen-docker...), that meant every real converge (and every kitchen-docker
+# run) tried to build native extensions for gems no recipe actually needs,
+# and failed hard on any target without a C compiler.
+
+# Version control / CI
+.git/
+.github/
+.gitignore
+.pre-commit-config.yaml
+
+# Local dev/test tooling — not needed at converge time
+Gemfile
+Gemfile.lock
+Berksfile
+Berksfile.lock
+Rakefile
+Makefile
+Dockerfile.test
+docker-compose.yml
+.rspec
+.claude/
+.kitchen/
+cookbooks/
+spec/
+test/
+features/
+kitchen.yml
+
+# Docs / repo metadata
+*.md
+LICENSE
+docs/
+examples/
+scripts/
+bin/
+issues.json
