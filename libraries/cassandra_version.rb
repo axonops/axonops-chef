@@ -72,8 +72,8 @@ module AxonOpsCassandra
     return '5.1'  if v.start_with?('5.1')
     return '5.0'  if v.start_with?('5.')
 
-    raise ArgumentError,
-          "Unsupported Cassandra version '#{version}'. Supported series: #{SUPPORTED_SERIES.join(', ')}."
+    raise Chef::Exceptions::UnsupportedAction,
+          "cassandra: unsupported version '#{version}' — supported prefixes: #{SUPPORTED_SERIES.join(', ')}."
   end
 
   # True when the version uses the legacy 3.11 cassandra.yaml schema
