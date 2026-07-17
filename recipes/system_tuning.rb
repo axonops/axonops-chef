@@ -24,6 +24,13 @@ sysctl_content = <<~SYSCTL
   net.ipv4.tcp_wmem=4096 65536 16777216
 SYSCTL
 
+# /etc/sysctl.d normally ships with procps/systemd, but minimal container
+# base images can lack it, and this recipe can run before axonops::common
+# (which also writes here) in the include order.
+directory '/etc/sysctl.d' do
+  recursive true
+end
+
 file '/etc/sysctl.d/99-cassandra.conf' do
   content sysctl_content
   mode '0644'

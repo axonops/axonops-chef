@@ -33,7 +33,12 @@ template '/etc/security/limits.d/axonops.conf' do
   action :create
 end
 
-# Ensure sysctl settings for network and memory
+# Ensure sysctl settings for network and memory. /etc/sysctl.d normally
+# ships with procps/systemd, but minimal container base images can lack it.
+directory '/etc/sysctl.d' do
+  recursive true
+end
+
 file '/etc/sysctl.d/99-axonops.conf' do
   sysctl_content = ["# AxonOps recommended settings"]
   sysctl_content << "vm.max_map_count=1048575" unless node['axonops']['skip_vm_max_map_count']
