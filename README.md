@@ -400,10 +400,12 @@ See [docs/CASSANDRA.md](docs/CASSANDRA.md#ssl-caveat) for details. PEM-based TLS
 Detailed documentation for each component:
 
 - 📘 **[AxonOps Server Guide](docs/SERVER.md)** - Deploy and configure the AxonOps server
-- 📗 **[AxonOps Agent Guide](docs/AGENT.md)** - Install agents on Cassandra nodes
+- 📗 **[AxonOps Agent Guide](docs/AGENT.md)** - Install agents on Cassandra, DSE, or Kafka nodes
 - 📙 **[Cassandra Installation](docs/CASSANDRA.md)** - Apache Cassandra deployment options
+- 🗄️ **[DataStax Enterprise Monitoring](docs/DSE.md)** - Monitor an existing DSE 5.1 cluster
+- 📨 **[Kafka Installation](docs/KAFKA.md)** - Apache Kafka deployment options
 - 📕 **[Elasticsearch Setup](docs/ELASTIC.md)** - Configure Elasticsearch for AxonOps
-- 📓 **[Java Management](docs/JAVA.md)** - Java installation and configuration
+- 🔔 **[Alert Rules & Service Checks](docs/ALERTS.md)** - Configure alerts, checks, and notifications via API
 
 ## Cookbook Structure
 
@@ -497,12 +499,16 @@ knife node from file examples/nodes/container-node.json
 ### 1. Monitor Existing Cassandra Cluster
 
 ```ruby
-# Configure agent to connect to AxonOps SaaS
-node.override['axonops']['agent']['endpoint'] = 'agents.axonops.cloud'
-node.override['axonops']['agent']['api_key'] = 'your-api-key'
+# Configure agent to connect to AxonOps SaaS (default hosts/port need no override)
+node.override['axonops']['agent']['org_key']  = 'your-org-key'
+node.override['axonops']['agent']['org_name'] = 'your-org-name'
 
 include_recipe 'axonops::agent'
 ```
+
+Also monitors an existing DataStax Enterprise (DSE) 5.1 install automatically —
+see [docs/AGENT.md](docs/AGENT.md) and [docs/DSE.md](docs/DSE.md) for more
+examples (self-hosted mode, TLS/mTLS, Kafka monitoring, offline install).
 
 ### 2. Self-Hosted AxonOps with External Services
 
@@ -614,8 +620,10 @@ Key attributes for customization:
 
 ```ruby
 # Agent configuration
-default['axonops']['agent']['endpoint'] = 'agents.axonops.cloud'
-default['axonops']['agent']['api_key'] = nil
+default['axonops']['agent']['hosts']   = 'agents.axonops.cloud'
+default['axonops']['agent']['port']    = 443
+default['axonops']['agent']['org_key']  = nil
+default['axonops']['agent']['org_name'] = nil
 
 # Server configuration
 default['axonops']['server']['listen_address'] = '0.0.0.0'
@@ -676,12 +684,14 @@ features/cassandra_version_support.feature
 
 ### Integration tests (Test Kitchen)
 
-Two suites run on Ubuntu 22.04 and Rocky Linux 9 via the Dokken driver:
+Suites run via the Dokken driver against Ubuntu 22.04, Rocky Linux 9, Amazon
+Linux 2, and Amazon Linux 2023:
 
-| Suite | Cassandra version |
-|-------|-------------------|
-| `cassandra-3-11` | 3.11.17 |
-| `cassandra-default` | 5.0.5 |
+| Suite | Cassandra version | Notes |
+|-------|-------------------|-------|
+| `cassandra-3-11` | 3.11.17 | |
+| `cassandra-default` | 5.0.5 | |
+| `cassandra-offline` | 5.0.5 | `offline_install: true`, agent disabled — see [docs/CASSANDRA.md](docs/CASSANDRA.md) |
 
 ```bash
 # Converge and verify Cassandra 3.11 on Ubuntu
@@ -690,6 +700,9 @@ kitchen verify   cassandra-3-11-ubuntu-2204
 
 # Full cycle for 5.0 default on Rocky Linux
 kitchen test cassandra-default-rockylinux-9
+
+# Full cycle for 5.0 default on Amazon Linux 2023
+kitchen test cassandra-default-amazonlinux-2023
 
 # Destroy all containers
 kitchen destroy
