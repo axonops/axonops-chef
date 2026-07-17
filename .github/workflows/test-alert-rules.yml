@@ -29,13 +29,17 @@ jobs:
         ruby-version: '3.2'
         bundler-cache: false
 
+    # The old approach (wget'ing a pinned chef-workstation .deb URL directly
+    # from packages.chef.io) started returning "402 License validation
+    # failed" — Chef tightened direct package-download licensing at some
+    # point after this pin was added. omnitruck's install script is what
+    # ci.yml/test.yml already use successfully throughout this repo's CI;
+    # switched to it here for the same reason.
     - name: Install Chef Workstation
       run: |
-        wget https://packages.chef.io/files/stable/chef-workstation/23.5.1040/ubuntu/22.04/chef-workstation_23.5.1040-1_amd64.deb
-        sudo dpkg -i chef-workstation_23.5.1040-1_amd64.deb
+        curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -P chef-workstation -c stable
         echo 'eval "$(chef shell-init bash)"' >> ~/.bashrc
         source ~/.bashrc
-        # Accept Chef license
         sudo env CHEF_LICENSE=accept-silent chef -v
 
     - name: Verify Chef installation
