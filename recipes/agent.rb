@@ -200,10 +200,17 @@ if node['axonops']['offline_install']
     end
   end
 else
-  package java_agent_package do
-    action :install
-  end
-  package 'axon-agent' do
+  # axon-cassandra*-agent packages depend on axon-agent, but two separate
+  # `package` resources run as two separate dnf/apt transactions — and
+  # rpm/dpkg can only reconcile a directory shared between two packages
+  # (both ship /var/lib/axonops) when they're installed together in the
+  # SAME transaction. Installed separately, the second install fails:
+  # "file /var/lib/axonops conflicts between attempted installs of
+  # axon-cassandra3.11-agent... and axon-agent...". One resource with both
+  # names installs them together, exactly like `dnf install
+  # axon-cassandra3.11-agent` does on its own (pulls axon-agent in as a
+  # dependency, single transaction, no conflict).
+  package [java_agent_package, 'axon-agent'] do
     action :install
     notifies :restart, 'service[axon-agent]', :delayed
   end
