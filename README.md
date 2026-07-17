@@ -726,3 +726,20 @@ Additional resources:
 ---
 
 *AxonOps is a registered trademark of AxonOps Limited. Apache, Apache Cassandra, Cassandra, Apache Kafka and Kafka are either registered trademarks or trademarks of the Apache Software Foundation or its subsidiaries in Canada, the United States and/or other countries. Elasticsearch is a trademark of Elasticsearch B.V. Docker is a trademark or registered trademark of Docker, Inc.*
+
+## Testing
+
+To run unit tests:
+```bash
+bundle exec rspec spec/
+```
+
+To run Kitchen tests:
+```bash
+bundle exec kitchen test
+```
+
+By default, Kitchen uses Vagrant. You can select Docker with:
+```bash
+KITCHEN_DRIVER=docker bundle exec kitchen test
+```

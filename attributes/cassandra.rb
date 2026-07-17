@@ -1,7 +1,7 @@
 # Cassandra 5.0.4 configuration attributes
 # Based on cassandra_latest.yaml for optimal performance and features
 
-# Recipe options
+# Recipe:: options
 default['axonops']['cassandra']['skip_java_install'] = false
 default['axonops']['cassandra']['start_on_boot'] = true
 default['axonops']['cassandra']['base_url'] = 'https://archive.apache.org/dist/cassandra'
@@ -16,7 +16,7 @@ default['axonops']['cassandra']['data_root'] = '/var/lib/cassandra'
 default['axonops']['cassandra']['local_jmx'] = 'yes'
 default['axonops']['cassandra']['directories'] = {
   'logs' => '/var/log/cassandra',
-  'gc_logs' => '/var/log/cassandra'
+  'gc_logs' => '/var/log/cassandra',
 }
 
 # Cluster Configuration
@@ -54,10 +54,10 @@ default['axonops']['cassandra']['commitlog_sync'] = 'periodic'
 default['axonops']['cassandra']['commitlog_sync_period'] = '10000ms'
 default['axonops']['cassandra']['commitlog_segment_size'] = '32MiB'
 default['axonops']['cassandra']['commitlog_compression'] = {
-  'class_name' => 'LZ4Compressor'
+  'class_name' => 'LZ4Compressor',
 }
 default['axonops']['cassandra']['commitlog_total_space'] = nil
-default['axonops']['cassandra']['memtable_flush_writers'] = nil  # Will be calculated based on disks
+default['axonops']['cassandra']['memtable_flush_writers'] = nil # Will be calculated based on disks
 
 # Network Configuration
 default['axonops']['cassandra']['listen_address'] = 'localhost'
@@ -95,10 +95,10 @@ default['axonops']['cassandra']['seed_provider'] = [
     'class_name' => 'org.apache.cassandra.locator.SimpleSeedProvider',
     'parameters' => [
       {
-        'seeds' => '127.0.0.1:7000'
-      }
-    ]
-  }
+        'seeds' => '127.0.0.1:7000',
+      },
+    ],
+  },
 ]
 
 # Disk Optimization
@@ -134,7 +134,7 @@ default['axonops']['cassandra']['endpoint_snitch'] = 'SimpleSnitch'
 default['axonops']['cassandra']['dynamic_snitch_update_interval'] = '100ms'
 default['axonops']['cassandra']['dynamic_snitch_reset_interval'] = '600000ms'
 default['axonops']['cassandra']['dynamic_snitch_badness_threshold'] = 0.1
-default['axonops']['cassandra']['prefer_local'] = nil  # For GossipingPropertyFileSnitch
+default['axonops']['cassandra']['prefer_local'] = nil # For GossipingPropertyFileSnitch
 
 # Security Configuration
 default['axonops']['cassandra']['authenticator'] = 'PasswordAuthenticator'
@@ -176,9 +176,9 @@ default['axonops']['cassandra']['server_encryption_options'] = {
   'accepted_protocols' => ['TLSv1.2', 'TLSv1.3'],
   'algorithm' => 'SunX509',
   'store_type' => 'JKS',
-  'cipher_suites' => ['TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384', 'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA', 'TLS_RSA_WITH_AES_256_CBC_SHA'],
+  'cipher_suites' => %w(TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA TLS_RSA_WITH_AES_256_CBC_SHA),
   'require_client_auth' => false,
-  'require_endpoint_verification' => false
+  'require_endpoint_verification' => false,
 }
 
 default['axonops']['cassandra']['client_encryption_options'] = {
@@ -192,7 +192,7 @@ default['axonops']['cassandra']['client_encryption_options'] = {
   'accepted_protocols' => ['TLSv1.2', 'TLSv1.3'],
   'algorithm' => 'SunX509',
   'store_type' => 'JKS',
-  'cipher_suites' => ['TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384', 'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA', 'TLS_RSA_WITH_AES_256_CBC_SHA'],
+  'cipher_suites' => %w(TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA TLS_RSA_WITH_AES_256_CBC_SHA),
 }
 
 # Timeouts
@@ -236,7 +236,7 @@ default['axonops']['cassandra']['tombstone_warn_threshold'] = 1000
 default['axonops']['cassandra']['tombstone_failure_threshold'] = 100000
 default['axonops']['cassandra']['replica_filtering_protection'] = {
   'cached_rows_warn_threshold' => 2000,
-  'cached_rows_fail_threshold' => 32000
+  'cached_rows_fail_threshold' => 32000,
 }
 
 # Index Summary Configuration
@@ -244,7 +244,7 @@ default['axonops']['cassandra']['index_summary_capacity'] = nil
 default['axonops']['cassandra']['index_summary_resize_interval'] = '60m'
 
 # GC Grace
-default['axonops']['cassandra']['gc_grace_seconds'] = 864000  # 10 days
+default['axonops']['cassandra']['gc_grace_seconds'] = 864000 # 10 days
 
 # Phi Convict Threshold
 default['axonops']['cassandra']['phi_convict_threshold'] = nil
@@ -283,7 +283,7 @@ default['axonops']['cassandra']['continuous_paging'] = {
   'max_page_size_mb' => 8,
   'max_local_query_time_ms' => 5000,
   'client_timeout_sec' => 600,
-  'cancel_timeout_sec' => 5
+  'cancel_timeout_sec' => 5,
 }
 
 # Slow Query Configuration
@@ -324,14 +324,14 @@ default['axonops']['cassandra']['full_query_logging_options'] = {
   'max_queue_weight' => 256 * 1024 * 1024,
   'max_log_size' => 17_179_869_184,
   'archive_command' => nil,
-  'max_archive_retries' => 10
+  'max_archive_retries' => 10,
 }
 
 # Audit Logging Configuration
 default['axonops']['cassandra']['audit_logging_options'] = {
   'enabled' => false,
   'logger' => {
-    'class_name' => 'BinAuditLogger'
+    'class_name' => 'BinAuditLogger',
   },
   'audit_logs_dir' => '/var/lib/cassandra/audit',
   'archive_command' => nil,
@@ -345,7 +345,7 @@ default['axonops']['cassandra']['audit_logging_options'] = {
   'included_categories' => nil,
   'excluded_categories' => nil,
   'included_users' => nil,
-  'excluded_users' => nil
+  'excluded_users' => nil,
 }
 
 # Diagnostic Events Configuration
@@ -357,24 +357,29 @@ default['axonops']['cassandra']['repair_session_space'] = nil
 default['axonops']['cassandra']['ideal_consistency_level'] = nil
 
 # JVM Options Configuration
-default['axonops']['cassandra']['heap_size'] = "2G"
+default['axonops']['cassandra']['heap_size'] = '2G'
 
 # JVM GC Configuration (for Java 17)
-default['axonops']['cassandra']['gc_type'] = 'Shenandoah'  # Options: 'G1GC' or 'Shenandoah'
+default['axonops']['cassandra']['gc_type'] = 'Shenandoah' # Options: 'G1GC' or 'Shenandoah'
 
 # G1GC specific settings
 default['axonops']['cassandra']['gc_g1_heap_region_size'] = '16m'
 default['axonops']['cassandra']['gc_g1_max_pause_millis'] = 300
 default['axonops']['cassandra']['gc_g1_initiating_heap_occupancy_percent'] = 70
-default['axonops']['cassandra']['gc_parallel_threads'] = nil  # Will use number of cores
-default['axonops']['cassandra']['gc_conc_threads'] = nil  # Will use number of cores
+default['axonops']['cassandra']['gc_parallel_threads'] = nil # Will use number of cores
+default['axonops']['cassandra']['gc_conc_threads'] = nil # Will use number of cores
+
+# System tuning
+default['axonops']['cassandra']['jemalloc_enabled'] = true
+default['axonops']['cassandra']['disable_irqbalance'] = true
+default['axonops']['cassandra']['skip_system_tuning'] = false
 
 # Shenandoah GC specific settings
-default['axonops']['cassandra']['gc_shenandoah_heuristics'] = 'adaptive'  # Options: adaptive, static, compact, aggressive
-default['axonops']['cassandra']['gc_shenandoah_parallel_gc_threads'] = nil  # Will use number of cores
-default['axonops']['cassandra']['gc_shenandoah_conc_gc_threads'] = nil  # Will use number of cores
-default['axonops']['cassandra']['gc_use_numa'] = true  # NUMA support for Shenandoah
-default['axonops']['cassandra']['gc_use_transparent_huge_pages'] = true  # THP support for Shenandoah
+default['axonops']['cassandra']['gc_shenandoah_heuristics'] = 'adaptive' # Options: adaptive, static, compact, aggressive
+default['axonops']['cassandra']['gc_shenandoah_parallel_gc_threads'] = nil # Will use number of cores
+default['axonops']['cassandra']['gc_shenandoah_conc_gc_threads'] = nil # Will use number of cores
+default['axonops']['cassandra']['gc_use_numa'] = true # NUMA support for Shenandoah
+default['axonops']['cassandra']['gc_use_transparent_huge_pages'] = true # THP support for Shenandoah
 
 # Logging Configuration
 default['axonops']['cassandra']['log_level'] = 'INFO'
@@ -386,7 +391,7 @@ default['axonops']['cassandra']['gc_log_files'] = 10
 
 # System Resource Limits
 default['axonops']['cassandra']['limits']['memlock'] = 'unlimited'
-default['axonops']['cassandra']['limits']['nofile'] = 100000
+default['axonops']['cassandra']['limits']['nofile'] = 1000000
 default['axonops']['cassandra']['limits']['nproc'] = 32768
 default['axonops']['cassandra']['limits']['as'] = 'unlimited'
 
@@ -440,8 +445,8 @@ default['axonops']['cassandra']['seeds'] = ['127.0.0.1']
 
 # JVM Configuration
 default['axonops']['cassandra']['jvm'] = {
-  'heap_size' => nil,  # Will auto-calculate if not set
-  'new_size' => nil    # Only for CMS GC
+  'heap_size' => nil, # Will auto-calculate if not set
+  'new_size' => nil, # Only for CMS GC
 }
 default['axonops']['cassandra']['new_heap_size'] = nil
 default['axonops']['cassandra']['jmx_port'] = 7199
@@ -451,9 +456,6 @@ default['axonops']['cassandra']['jmx_access_file'] = '/etc/jmxremote.access'
 default['axonops']['cassandra']['jmx_password_file'] = '/etc/jmxremote.password'
 
 # Additional missing attributes from configure_cassandra.rb
-default['axonops']['cassandra']['compaction_throughput_mb_per_sec'] = 64
-default['axonops']['cassandra']['stream_throughput_outbound_megabits_per_sec'] = 200
-default['axonops']['cassandra']['inter_dc_stream_throughput_outbound_megabits_per_sec'] = 200
 default['axonops']['cassandra']['wait_for_start'] = true
 
 # Compaction
@@ -466,7 +468,7 @@ default['axonops']['cassandra']['compaction_strategy_options']['SizeTieredCompac
 
 default['axonops']['cassandra']['compaction_strategy_options']['UnifiedCompactionStrategy'] = {
   'max_sstables_to_compact' => 64,
-  'scaling_parameters' => "T4",
+  'scaling_parameters' => 'T4',
   'target_sstable_size' => '1GiB',
   'sstable_growth' => 0.3333333333333333,
   'min_sstable_size' => '100MiB',
@@ -507,34 +509,3 @@ default['axonops']['cassandra']['gc_conc_threads'] = nil
 default['axonops']['cassandra']['gc_log_enabled'] = false
 default['axonops']['cassandra']['gc_log_files'] = 10
 default['axonops']['cassandra']['gc_log_file_size'] = '10M'
-
-# System tuning parameters for Cassandra
-default['cassandra']['user'] = 'cassandra'
-default['cassandra']['system']['max_map_count'] = 1048575  # Recommended for Cassandra
-default['cassandra']['system']['file_descriptor_limit'] = 100000  # High FD limit for SSTable files
-default['cassandra']['system']['memlock_limit'] = 'unlimited'  # For JNA memory locking
-default['cassandra']['system']['as_limit'] = 'unlimited'  # Address space limit
-default['cassandra']['system']['nproc_limit'] = 32768  # Process limit for Cassandra user
-
-# Additional sysctl settings for Cassandra
-default['cassandra']['system']['net_core_rmem_max'] = 134217728  # 128MB
-default['cassandra']['system']['net_core_wmem_max'] = 134217728  # 128MB
-default['cassandra']['system']['net_core_rmem_default'] = 16777216  # 16MB
-default['cassandra']['system']['net_core_wmem_default'] = 16777216  # 16MB
-default['cassandra']['system']['net_core_optmem_max'] = 40960
-default['cassandra']['system']['net_ipv4_tcp_rmem'] = '4096 87380 134217728'
-default['cassandra']['system']['net_ipv4_tcp_wmem'] = '4096 65536 134217728'
-default['cassandra']['system']['net_ipv4_tcp_keepalive_time'] = 60
-default['cassandra']['system']['net_ipv4_tcp_keepalive_probes'] = 3
-default['cassandra']['system']['net_ipv4_tcp_keepalive_intvl'] = 10
-default['cassandra']['system']['net_ipv4_tcp_fin_timeout'] = 15
-default['cassandra']['system']['net_ipv4_tcp_tw_reuse'] = 1
-default['cassandra']['system']['net_ipv4_tcp_moderate_rcvbuf'] = 1
-default['cassandra']['system']['net_ipv4_tcp_congestion'] = 'cubic'
-default['cassandra']['system']['net_ipv4_tcp_syncookies'] = 1
-default['cassandra']['system']['net_ipv4_tcp_max_syn_backlog'] = 8192
-default['cassandra']['system']['net_core_somaxconn'] = 65535
-default['cassandra']['system']['vm_swappiness'] = 1  # Minimize swapping
-default['cassandra']['system']['vm_dirty_ratio'] = 10  # Reduced for database workloads
-default['cassandra']['system']['vm_dirty_background_ratio'] = 5  # Reduced for database workloads
-default['cassandra']['system']['vm_zone_reclaim_mode'] = 0  # Disable zone reclaim for NUMA systems

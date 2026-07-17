@@ -167,21 +167,10 @@ dynamic_snitch_reset_interval_in_ms: <%= cv.to_ms(c['dynamic_snitch_reset_interv
 dynamic_snitch_badness_threshold: <%= c['dynamic_snitch_badness_threshold'] %>
 
 server_encryption_options:
-    internode_encryption: <%= server_enc['internode_encryption'] || 'none' %>
-    keystore: <%= server_enc['keystore'] %>
-    keystore_password: <%= server_enc['keystore_password'] %>
-    truststore: <%= server_enc['truststore'] %>
-    truststore_password: <%= server_enc['truststore_password'] %>
-    protocol: <%= server_enc['protocol'] || 'TLS' %>
-    require_client_auth: <%= server_enc['require_client_auth'] ? 'true' : 'false' %>
+<%= c['server_encryption_options'].to_hash.to_yaml.sub(/---.*?\n/m, "").gsub(/^/, "    ") if c['server_encryption_options'] %>
 
 client_encryption_options:
-    enabled: <%= client_enc['enabled'] ? 'true' : 'false' %>
-    optional: <%= client_enc['optional'] ? 'true' : 'false' %>
-    keystore: <%= client_enc['keystore'] %>
-    keystore_password: <%= client_enc['keystore_password'] %>
-    require_client_auth: <%= client_enc['require_client_auth'] ? 'true' : 'false' %>
-    protocol: <%= client_enc['protocol'] || 'TLS' %>
+<%= c['client_encryption_options'].to_hash.to_yaml.sub(/---.*?\n/m, "").gsub(/^/, "    ") if c['client_encryption_options'] %>
 
 internode_compression: <%= c['internode_compression'] || 'dc' %>
 inter_dc_tcp_nodelay: false

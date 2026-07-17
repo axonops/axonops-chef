@@ -227,3 +227,7 @@ For existing users:
 
 ### Contributors
 - Brian Stark - Initial Chef Server deployment documentation and implementation
+
+## [Unreleased]
+### Added
+- Full test harness: ChefSpec unit specs, InSpec controls, Test Kitchen configuration with suites for 3.11/4.1/5.0 tarball, package install, GC variants, and TLS modes.
