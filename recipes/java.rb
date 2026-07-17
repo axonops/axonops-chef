@@ -185,6 +185,25 @@ elsif install_zulu && !node['java']['offline_install']
     java_home = node['java']['zulu_home']
   end
 
+  # Zulu's RPM/deb postinstall registers itself via alternatives with its own
+  # priority, so on a box that ends up with multiple Zulu majors installed
+  # (e.g. after switching a node between Cassandra versions), `java` on PATH
+  # can silently point at the wrong major regardless of which package this
+  # converge just asked for — alternatives --auto picks by priority, not by
+  # "most recently installed". Force it explicitly so java_major above is
+  # actually what runs.
+  alternatives_cmd = platform_family?('debian') ? 'update-alternatives' : 'alternatives'
+  # alternatives --set matches on the exact path a package registered, not
+  # its realpath — Zulu 8's own bin/java is a symlink to ../jre/bin/java,
+  # and it's the jre/bin/java form that got registered. Resolve to the real
+  # file so --set always names what's actually on file.
+  resolved_java_bin = ::File.exist?("#{java_home}/bin/java") ? ::File.realpath("#{java_home}/bin/java") : "#{java_home}/bin/java"
+  execute 'select-java-alternative' do
+    command "#{alternatives_cmd} --set java #{resolved_java_bin}"
+    not_if { ::File.exist?('/usr/bin/java') && ::File.realpath('/usr/bin/java') == resolved_java_bin }
+    only_if { ::File.exist?(resolved_java_bin) }
+  end
+
 else
   # Install OpenJDK (when zulu is false or fallback)
   Chef::Log.info('Installing OpenJDK as Zulu is disabled')

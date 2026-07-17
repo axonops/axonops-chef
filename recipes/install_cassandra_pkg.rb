@@ -78,7 +78,10 @@ if platform_family?('debian')
 elsif platform_family?('rhel', 'amazon')
   node.override['axonops']['cassandra']['conf_dir'] = '/etc/cassandra/conf'
 
-  yum_package 'cassandra' do
+  # yum_package needs python yum bindings that dnf-only distros (Amazon Linux
+  # 2023, RHEL 9+) don't ship. The generic package resource lets Chef pick
+  # dnf_package there and yum_package on older yum-based RHEL/CentOS.
+  package 'cassandra' do
     version "#{cassandra_version}-1"
     action :install
     allow_downgrade true

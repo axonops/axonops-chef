@@ -1,96 +1,106 @@
 {
+  "tags": [
+    "container",
+    "restricted",
+    "kubernetes",
+    "docker"
+  ],
+  "axonops": {
+    "skip_system_tuning": true,
+    "skip_vm_max_map_count": true,
+    "skip_vm_swappiness": true,
+    "agent": {
+      "hosts": "axonops-server.axonops.svc.cluster.local",
+      "port": 1888,
+      "api_key": "container-api-key",
+      "tls_mode": "TLS",
+      "org_name": "container-org",
+      "cluster": "k8s-cluster",
+      "tags": {
+        "environment": "kubernetes",
+        "namespace": "axonops",
+        "deployment": "containerized"
+      }
+    },
+    "server": {
+      "listen_address": "0.0.0.0",
+      "listen_port": 8080,
+      "tls": {
+        "mode": "TLS",
+        "cert_file": "/etc/axonops/tls/tls.crt",
+        "key_file": "/etc/axonops/tls/tls.key"
+      },
+      "auth": {
+        "enabled": true,
+        "type": "kubernetes"
+      },
+      "elastic": {
+        "install": false,
+        "url": "http://elasticsearch.elastic.svc.cluster.local:9200",
+        "heap_size": "2g"
+      },
+      "cassandra": {
+        "install": false,
+        "hosts": [
+          "cassandra-0.cassandra.cassandra.svc.cluster.local",
+          "cassandra-1.cassandra.cassandra.svc.cluster.local"
+        ],
+        "port": 9042,
+        "keyspace": "axonops",
+        "replication_factor": 2
+      },
+      "retention": {
+        "events": "30d",
+        "security_events": "8w",
+        "metrics": {
+          "high_resolution": "14d",
+          "medium_resolution": "8w",
+          "low_resolution": "12M",
+          "super_low_resolution": "2y"
+        },
+        "backups": {
+          "local": "7d",
+          "remote": "30d"
+        }
+      }
+    },
+    "cassandra": {
+      "cluster_name": "K8sCassandra",
+      "dc": "k8s-dc1",
+      "rack": "k8s-rack1",
+      "heap_size": "2G",
+      "seeds": [
+        "cassandra-0.cassandra.cassandra.svc.cluster.local"
+      ],
+      "listen_address": null,
+      "rpc_address": "0.0.0.0",
+      "broadcast_address": null,
+      "broadcast_rpc_address": null,
+      "data_file_directories": [
+        "/var/lib/cassandra/data"
+      ],
+      "commitlog_directory": "/var/lib/cassandra/commitlog",
+      "saved_caches_directory": "/var/lib/cassandra/saved_caches"
+    },
+    "dashboard": {
+      "enabled": true,
+      "port": 3000,
+      "nginx": {
+        "enabled": false
+      }
+    },
+    "java": {
+      "version": "17",
+      "jvm_options": {
+        "heap_dump_on_out_of_memory_error": true,
+        "heap_dump_path": "/tmp/heap_dumps"
+      }
+    }
+  },
   "name": "axonops-container-01",
   "cookbook_version": "0.2.0",
   "description": "AxonOps deployment for containerized/restricted environments",
   "chef_environment": "container",
-  "normal": {
-    "tags": ["container", "restricted", "kubernetes", "docker"],
-    "axonops": {
-      "skip_system_tuning": true,
-      "skip_vm_max_map_count": true,
-      "skip_vm_swappiness": true,
-      "agent": {
-        "hosts": "axonops-server.axonops.svc.cluster.local",
-        "port": 1888,
-        "api_key": "container-api-key",
-        "tls_mode": "TLS",
-        "org_name": "container-org",
-        "cluster": "k8s-cluster",
-        "tags": {
-          "environment": "kubernetes",
-          "namespace": "axonops",
-          "deployment": "containerized"
-        }
-      },
-      "server": {
-        "listen_address": "0.0.0.0",
-        "listen_port": 8080,
-        "tls": {
-          "mode": "TLS",
-          "cert_file": "/etc/axonops/tls/tls.crt",
-          "key_file": "/etc/axonops/tls/tls.key"
-        },
-        "auth": {
-          "enabled": true,
-          "type": "kubernetes"
-        },
-        "elastic": {
-          "install": false,
-          "url": "http://elasticsearch.elastic.svc.cluster.local:9200",
-          "heap_size": "2g"
-        },
-        "cassandra": {
-          "install": false,
-          "hosts": ["cassandra-0.cassandra.cassandra.svc.cluster.local", "cassandra-1.cassandra.cassandra.svc.cluster.local"],
-          "port": 9042,
-          "keyspace": "axonops",
-          "replication_factor": 2
-        },
-        "retention": {
-          "events": "30d",
-          "security_events": "8w",
-          "metrics": {
-            "high_resolution": "14d",
-            "medium_resolution": "8w",
-            "low_resolution": "12M",
-            "super_low_resolution": "2y"
-          },
-          "backups": {
-            "local": "7d",
-            "remote": "30d"
-          }
-        }
-      },
-      "cassandra": {
-        "cluster_name": "K8sCassandra",
-        "dc": "k8s-dc1",
-        "rack": "k8s-rack1",
-        "heap_size": "2G",
-        "seeds": ["cassandra-0.cassandra.cassandra.svc.cluster.local"],
-        "listen_address": null,
-        "rpc_address": "0.0.0.0",
-        "broadcast_address": null,
-        "broadcast_rpc_address": null,
-        "data_file_directories": ["/var/lib/cassandra/data"],
-        "commitlog_directory": "/var/lib/cassandra/commitlog",
-        "saved_caches_directory": "/var/lib/cassandra/saved_caches"
-      },
-      "dashboard": {
-        "enabled": true,
-        "port": 3000,
-        "nginx": {
-          "enabled": false
-        }
-      },
-      "java": {
-        "version": "17",
-        "jvm_options": {
-          "heap_dump_on_out_of_memory_error": true,
-          "heap_dump_path": "/tmp/heap_dumps"
-        }
-      }
-    }
-  },
   "run_list": [
     "recipe[axonops::agent]"
   ],

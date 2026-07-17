@@ -317,8 +317,19 @@ fi
 
 JVM_OPTS="$JVM_OPTS $JVM_EXTRA_OPTS"
 
-<% if ::File.exist?('/usr/share/axonops/axonops-jvm.options') -%>
-. /usr/share/axonops/axonops-jvm.options
+<% if @axon_java_agent_jar -%>
+<% if node['axonops']['cassandra']['version'].to_s.start_with?('5.') -%>
+# 5.0.x only: the java agent is wired in via this optional override file
+# rather than a -javaagent flag directly (matches the Ansible role). Runtime
+# guarded, not compile-time, since agent/cassandra install ordering across
+# separate converges can't guarantee the file exists when this template
+# renders.
+if [ -f /usr/share/axonops/axonops-jvm.options ]; then
+  . /usr/share/axonops/axonops-jvm.options
+fi
+<% else -%>
+JVM_OPTS="$JVM_OPTS -javaagent:/usr/share/axonops/<%= @axon_java_agent_jar %>.jar=/etc/axonops/axon-agent.yml"
+<% end -%>
 <% end -%>
 
 <% if @jemalloc_path %>

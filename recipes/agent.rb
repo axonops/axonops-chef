@@ -143,10 +143,18 @@ elsif node.run_list.include?('recipe[axonops::cassandra]') || cassandra_detected
   # BUG FIX: this previously read node['axonops']['java_agent']['cassandra'],
   # an attribute that is never defined anywhere, so java_agent_package always
   # resolved to nil for online (non-offline) Cassandra-monitoring installs.
+  #
+  # java_agent['package'] was also a single hardcoded default
+  # ('axon-cassandra5.0-agent-jdk17') despite its own comment promising
+  # auto-selection — every non-5.0/jdk17 install silently got the wrong
+  # agent build. Derive it from the actual Cassandra version instead, and
+  # only fall back to the attribute when it's been explicitly overridden.
   java_agent_package = if node['axonops']['cassandra']['edition'] == 'dse'
                           node['axonops']['java_agent']['dse']
-                        else
+                        elsif node['axonops']['java_agent']['package'] != 'axon-cassandra5.0-agent-jdk17'
                           node['axonops']['java_agent']['package']
+                        else
+                          AxonOpsCassandra.java_agent_package(node['axonops']['cassandra']['version'])
                         end
   java_agent_env_file = "#{cassandra_home}/conf/cassandra-env.sh"
   service = "cassandra"
@@ -170,34 +178,34 @@ if node['axonops']['offline_install']
 
   case node['platform_family']
   when 'debian'
+    dpkg_package java_agent_package do
+      source ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java_agent'])
+      action :install
+    end
     dpkg_package 'axon-agent' do
       source package_path
       action :install
       notifies :restart, 'service[axon-agent]', :delayed
     end
-    dpkg_package java_agent_package do
-      source ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java_agent'])
-      action :install
-    end
   when 'rhel', 'fedora', 'amazon'
-    rpm_package 'axon-agent' do
-      source package_path
-      action :install
-      notifies :restart, 'service[axon-agent]', :delayed
-    end
     rpm_package java_agent_package do
       source ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java_agent'])
       action :install
       notifies :restart, 'service[axon-agent]', :delayed
     end
+    rpm_package 'axon-agent' do
+      source package_path
+      action :install
+      notifies :restart, 'service[axon-agent]', :delayed
+    end
   end
 else
+  package java_agent_package do
+    action :install
+  end
   package 'axon-agent' do
     action :install
     notifies :restart, 'service[axon-agent]', :delayed
-  end
-  package java_agent_package do
-    action :install
   end
 end
 

@@ -95,34 +95,42 @@ cassandra_current = "#{install_dir}/cassandra"
 cassandra_user = node['axonops']['cassandra']['user']
 cassandra_group = node['axonops']['cassandra']['group']
 
-systemd_unit 'cassandra.service' do
-  content({
-            'Unit' => {
-              'Description' => 'Apache Cassandra',
-              'After' => 'network.target',
-            },
-            'Service' => {
-              'Type' => 'forking',
-              'ExecStart' => "#{cassandra_current}/bin/cassandra -p /var/run/cassandra/cassandra.pid",
-              'User' => cassandra_user,
-              'Group' => cassandra_group,
-              'LimitNOFILE' => node['axonops']['cassandra']['limits']['nofile'],
-              'LimitMEMLOCK' => 'infinity',
-              'LimitNPROC' => 32768,
-              'LimitAS' => 'infinity',
-              'Environment' => "CASSANDRA_HOME=#{cassandra_current}",
-              'PIDFile' => '/var/run/cassandra/cassandra.pid',
-              'RuntimeDirectory' => 'cassandra',
-              'RuntimeDirectoryMode' => '0755',
-              'Restart' => 'on-failure',
-              'RestartSec' => 10,
-            },
-            'Install' => {
-              'WantedBy' => 'multi-user.target',
-            },
-          })
-  action(node['axonops']['cassandra']['start_on_install'] ? [:create, :enable, :start] : [:create, :enable])
-  notifies :run, 'execute[systemctl-daemon-reload]', :immediately
+# The Cassandra package (apt/yum) ships its own init integration
+# (/etc/rc.d/init.d/cassandra or a native systemd unit) pointed at the
+# package's real binary/conf layout — creating a second, hardcoded-to-the
+# tar-layout unit here would either conflict with it or silently shadow it
+# with the wrong ExecStart/paths. Only tar installs need this recipe to
+# supply a unit at all.
+if node['axonops']['cassandra']['install_format'] == 'tar'
+  systemd_unit 'cassandra.service' do
+    content({
+              'Unit' => {
+                'Description' => 'Apache Cassandra',
+                'After' => 'network.target',
+              },
+              'Service' => {
+                'Type' => 'forking',
+                'ExecStart' => "#{cassandra_current}/bin/cassandra -p /var/run/cassandra/cassandra.pid",
+                'User' => cassandra_user,
+                'Group' => cassandra_group,
+                'LimitNOFILE' => node['axonops']['cassandra']['limits']['nofile'],
+                'LimitMEMLOCK' => 'infinity',
+                'LimitNPROC' => 32768,
+                'LimitAS' => 'infinity',
+                'Environment' => "CASSANDRA_HOME=#{cassandra_current}",
+                'PIDFile' => '/var/run/cassandra/cassandra.pid',
+                'RuntimeDirectory' => 'cassandra',
+                'RuntimeDirectoryMode' => '0755',
+                'Restart' => 'on-failure',
+                'RestartSec' => 10,
+              },
+              'Install' => {
+                'WantedBy' => 'multi-user.target',
+              },
+            })
+    action(node['axonops']['cassandra']['start_on_install'] ? [:create, :enable, :start] : [:create, :enable])
+    notifies :run, 'execute[systemctl-daemon-reload]', :immediately
+  end
 end
 
 execute 'systemctl-daemon-reload' do

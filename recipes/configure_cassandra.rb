@@ -143,7 +143,10 @@ template "#{cassandra_conf_dir}/cassandra-env.sh" do
     enable_jmx_authentication: node['axonops']['cassandra']['jmx_authentication'],
     gc_log_dir: node['axonops']['cassandra']['directories']['gc_logs'],
     java_major: AxonOpsCassandra.java_major(cassandra_version),
-    jemalloc_path: node.run_state['cassandra_jemalloc_path']
+    jemalloc_path: node.run_state['cassandra_jemalloc_path'],
+    axon_java_agent_jar: if node['axonops']['agent']['enabled'] && node['axonops']['cassandra']['edition'] != 'dse'
+                            AxonOpsCassandra.java_agent_package(cassandra_version)
+                          end
   )
   notifies(node['axonops']['cassandra']['start_on_install'] ? :restart : :nothing, 'service[cassandra]', :delayed)
 end
@@ -185,18 +188,24 @@ file node['axonops']['cassandra']['jmx_password_file'] do
   only_if { node['axonops']['cassandra']['jmx_authentication'] }
 end
 
-# Create systemd service
-template '/etc/systemd/system/cassandra.service' do
-  source 'cassandra.service.erb'
-  mode '0644'
-  variables(
-    cassandra_home: cassandra_home,
-    cassandra_user: cassandra_user,
-    cassandra_group: cassandra_group,
-    cassandra_log_dir: node['axonops']['cassandra']['log_dir']
-  )
-  notifies :run, 'execute[systemctl-daemon-reload]', :immediately
-  notifies(node['axonops']['cassandra']['start_on_install'] ? :restart : :nothing, 'service[cassandra]', :delayed)
+# Create systemd service. Tar installs only — recipes/cassandra.rb's own
+# systemd_unit resource used to duplicate this (same path, different
+# content, whichever ran last won), and for pkg installs the package's own
+# init/systemd integration is authoritative; writing a unit here would
+# shadow it with the wrong ExecStart/paths.
+if node['axonops']['cassandra']['install_format'] == 'tar'
+  template '/etc/systemd/system/cassandra.service' do
+    source 'cassandra.service.erb'
+    mode '0644'
+    variables(
+      cassandra_home: cassandra_home,
+      cassandra_user: cassandra_user,
+      cassandra_group: cassandra_group,
+      cassandra_log_dir: node['axonops']['cassandra']['log_dir']
+    )
+    notifies :run, 'execute[systemctl-daemon-reload]', :immediately
+    notifies(node['axonops']['cassandra']['start_on_install'] ? :restart : :nothing, 'service[cassandra]', :delayed)
+  end
 end
 
 # Enable and, unless start_on_install is disabled, start Cassandra service

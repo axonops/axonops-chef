@@ -31,6 +31,15 @@ module AxonOpsCassandra
     '5.1' => 8, # DSE 5.1 runs on Java 8, same as Apache Cassandra 3.11.
   }.freeze
 
+  # AxonOps Cassandra java-agent RPM/deb package name for each series. DSE
+  # 5.1 isn't listed — recipes/agent.rb selects node['axonops']['java_agent']
+  # ['dse'] for that edition instead of calling java_agent_package.
+  JAVA_AGENT_PACKAGE = {
+    '3.11' => 'axon-cassandra3.11-agent',
+    '4.1' => 'axon-cassandra4.1-agent',
+    '5.0' => 'axon-cassandra5.0-agent-jdk17',
+  }.freeze
+
   # Duration unit -> milliseconds.
   MS_PER_UNIT = {
     'ms' => 1,
@@ -83,6 +92,11 @@ module AxonOpsCassandra
   # version-specific ERB files for this version.
   def template_dir(version)
     series(version)
+  end
+
+  # AxonOps java-agent package name matching the given Cassandra version.
+  def java_agent_package(version)
+    JAVA_AGENT_PACKAGE.fetch(series(version))
   end
 
   # Parse a "<number><unit>" duration string ("2000ms", "3h", "30m") into an
