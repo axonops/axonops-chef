@@ -118,7 +118,8 @@ case $OS in
         # axon-agent/server/dash above. <%= @edition == 'dse' ? "DSE #{@dse_version}" : "#{@cassandra_series} series" %>
         # package: <%= @java_agent_package %>
         download_deb_package "<%= @java_agent_package %>=<%= @java_agent_version %>-1:all"
-        extract_jar_from_deb "$DOWNLOAD_DIR/<%= @java_agent_package %>_<%= @java_agent_version %>-1_all.deb"
+        JAVA_AGENT_PKG_FILE="<%= @java_agent_package %>_<%= @java_agent_version %>-1_all.deb"
+        extract_jar_from_deb "$DOWNLOAD_DIR/$JAVA_AGENT_PKG_FILE"
 
 <% if @edition != 'dse' && @cassandra_install_format == 'pkg' -%>
         # Cassandra <%= @cassandra_version %> itself, as a .deb (install_format
@@ -205,6 +206,7 @@ REPOEOF
         # dnf download's saved filename is content-hash-prefixed and
         # unpredictable — glob for the one just downloaded to extract from.
         JAVA_AGENT_RPM=$(ls "$DOWNLOAD_DIR"/*"<%= @java_agent_package %>-<%= @java_agent_version %>"*.rpm | head -1)
+        JAVA_AGENT_PKG_FILE=$(basename "$JAVA_AGENT_RPM")
         extract_jar_from_rpm "$JAVA_AGENT_RPM"
 
 <% if @edition != 'dse' && @cassandra_install_format == 'pkg' -%>
@@ -304,7 +306,7 @@ echo "  node['axonops']['offline_packages_path'] = '$DOWNLOAD_DIR'"
 echo "  node['axonops']['offline_packages']['agent'] = '$AGENT_PKG_FILE'"
 echo "  node['axonops']['offline_packages']['server'] = '$SERVER_PKG_FILE'"
 echo "  node['axonops']['offline_packages']['dashboard'] = '$DASHBOARD_PKG_FILE'"
-echo "  node['axonops']['offline_packages']['java_agent'] = '<%= @java_agent_package %>-<%= @java_agent_version %>.jar'"
+echo "  node['axonops']['offline_packages']['java_agent'] = '$JAVA_AGENT_PKG_FILE' # RPM/deb — recipes/agent.rb installs this, not the extracted jar below"
 <% if @edition != 'dse' && @cassandra_install_format == 'tar' -%>
 echo "  node['axonops']['offline_packages']['cassandra'] = '$CASSANDRA_TAR_FILE'"
 <% elsif @edition != 'dse' && @cassandra_install_format == 'pkg' -%>

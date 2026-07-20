@@ -60,6 +60,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### Post-download summary printed the java-agent jar instead of the RPM/deb (continued)
+- `offline_packages['java_agent']` printed the *extracted jar* filename
+  (`axon-cassandra3.11-agent-1.0.14.jar`) — but `recipes/agent.rb`'s
+  offline install (`rpm -Uvh`/`dpkg -i`) actually installs the RPM/deb
+  package, not the jar; the jar is only consumed separately (and
+  automatically, no attribute needed) by the tar/4.1/5.0
+  `cassandra-env.sh` sourcing path. Verified live: following the printed
+  instructions failed with "not an rpm package (or package manifest)".
+  Now prints the real downloaded package filename, same as
+  `agent`/`server`/`dashboard`/`cassandra_pkg`/`java` above it.
+
 #### Cassandra package installs never installed Java from a package (continued)
 - A Cassandra RPM/deb declares a real `java-X.Y.Z-headless` dependency —
   verified live: `dnf install cassandra-3.11.19-....rpm` alone fails with
