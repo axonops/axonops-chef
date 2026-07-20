@@ -115,10 +115,26 @@ case $OS in
         # ['java_agent'] — not the raw jar, which only the tar/4.1/5.0 sourcing
         # path in cassandra-env.sh uses). Like its RPM counterpart this is a
         # noarch/all package (single java-agent jar, no compiled code), unlike
-        # axon-agent/server/dash above. <%= @edition == 'dse' ? "DSE #{@dse_version}" : "#{@monitored_cassandra_series} series" %>
+        # axon-agent/server/dash above. <%= @edition == 'dse' ? "DSE #{@dse_version}" : "#{@cassandra_series} series" %>
         # package: <%= @java_agent_package %>
         download_deb_package "<%= @java_agent_package %>=<%= @java_agent_version %>-1:all"
         extract_jar_from_deb "$DOWNLOAD_DIR/<%= @java_agent_package %>_<%= @java_agent_version %>-1_all.deb"
+
+<% if @edition != 'dse' && @cassandra_install_format == 'pkg' -%>
+        # Cassandra <%= @cassandra_version %> itself, as a .deb (install_format
+        # 'pkg' — matches offline_packages['cassandra_pkg'], read by
+        # recipes/install_cassandra_pkg.rb). Not supported for 3.11 on Debian/
+        # Ubuntu at all (no apt channel upstream — see the raise in that
+        # recipe); this only runs for 4.1/5.0.
+        REPO_SERIES="<%= @cassandra_series.split('.')[0..1].join('') %>x"
+        DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates
+        curl -L https://downloads.apache.org/cassandra/KEYS | gpg --dearmor -o /usr/share/keyrings/apache-cassandra.gpg
+        echo "deb [signed-by=/usr/share/keyrings/apache-cassandra.gpg] https://debian.cassandra.apache.org ${REPO_SERIES} main" \
+            > /etc/apt/sources.list.d/cassandra.list
+        apt-get update
+        (cd "$DOWNLOAD_DIR" && apt-get download "cassandra=<%= @cassandra_version %>")
+        CASSANDRA_PKG_FILE=$(basename "$(ls "$DOWNLOAD_DIR"/cassandra_<%= @cassandra_version %>*.deb | head -1)")
+<% end -%>
         ;;
 
     centos|rhel|fedora|amzn)
@@ -165,7 +181,7 @@ REPOEOF
         # a fixed noarch build under the same name/version — dnf/yum prefer
         # the exact-arch match, so pin noarch explicitly here too (see
         # recipes/agent.rb for the matching online-install fix).
-        # <%= @edition == 'dse' ? "DSE #{@dse_version}" : "#{@monitored_cassandra_series} series" %>
+        # <%= @edition == 'dse' ? "DSE #{@dse_version}" : "#{@cassandra_series} series" %>
         # package: <%= @java_agent_package %>
         download_rpm_package "<%= @java_agent_package %>-<%= @java_agent_version %>-1.noarch"
         # dnf download's saved filename is content-hash-prefixed and
@@ -173,23 +189,25 @@ REPOEOF
         JAVA_AGENT_RPM=$(ls "$DOWNLOAD_DIR"/*"<%= @java_agent_package %>-<%= @java_agent_version %>"*.rpm | head -1)
         extract_jar_from_rpm "$JAVA_AGENT_RPM"
 
-<% if @edition != 'dse' && @monitored_cassandra_install_format == 'pkg' -%>
-        # Monitored Cassandra <%= @monitored_cassandra_version %> itself, as an
-        # RPM (install_format 'pkg'). 3.11 dropped off Apache's own RPM repo,
-        # so it comes from the JFrog mirror configured via
+<% if @edition != 'dse' && @cassandra_install_format == 'pkg' -%>
+        # Cassandra <%= @cassandra_version %> itself, as an RPM (install_format
+        # 'pkg' — matches offline_packages['cassandra_pkg'], read by
+        # recipes/install_cassandra_pkg.rb). 3.11 dropped off Apache's own RPM
+        # repo, so it comes from the JFrog mirror configured via
         # node['axonops']['cassandra']['redhat_repository_url_311x']; 4.1/5.0
         # still come from redhat.cassandra.apache.org (see
         # recipes/install_cassandra_pkg.rb). Unlike the AxonOps repo above,
         # these are real static paths (verified via direct curl), so a plain
         # download_package works.
-<% if @monitored_cassandra_series == '3.11' -%>
+<% if @cassandra_series == '3.11' -%>
         CASSANDRA_RPM_BASEURL="<%= @redhat_repository_url_311x %>"
 <% else -%>
-        CASSANDRA_RPM_BASEURL="https://redhat.cassandra.apache.org/<%= @monitored_cassandra_series.delete('.') %>x/noboolean/"
+        CASSANDRA_RPM_BASEURL="https://redhat.cassandra.apache.org/<%= @cassandra_series.delete('.') %>x/noboolean/"
 <% end -%>
         download_package \
-            "${CASSANDRA_RPM_BASEURL}cassandra-<%= @monitored_cassandra_version %>-1.noarch.rpm" \
-            "cassandra-<%= @monitored_cassandra_version %>-1.noarch.rpm"
+            "${CASSANDRA_RPM_BASEURL}cassandra-<%= @cassandra_version %>-1.noarch.rpm" \
+            "cassandra-<%= @cassandra_version %>-1.noarch.rpm"
+        CASSANDRA_PKG_FILE="cassandra-<%= @cassandra_version %>-1.noarch.rpm"
 <% end -%>
         ;;
 
@@ -203,12 +221,19 @@ esac
 # package above (RPM/deb), not downloaded standalone — there is no such URL
 # on packages.axonops.com (verified: /files/java-agent/... 404s).
 
-# Cassandra tarball for AxonOps metrics storage (axonops::server's own
-# Cassandra, always installed from tarball regardless of install_format).
-CASSANDRA_VERSION="<%= @cassandra_version || '5.0.4' %>"
+<% if @edition != 'dse' && @cassandra_install_format == 'tar' -%>
+# Cassandra <%= @cassandra_version %> tarball (install_format 'tar' — matches
+# offline_packages['cassandra'], read by recipes/install_cassandra_tarball.rb;
+# this is also what axonops::server's own metrics-storage Cassandra reads,
+# since recipes/server.rb overrides node['axonops']['cassandra']['*'] from
+# node['axonops']['server']['cassandra']['*'] before calling axonops::cassandra
+# — there's only one effective Cassandra config per node, not two).
+CASSANDRA_VERSION="<%= @cassandra_version %>"
 download_package \
     "https://archive.apache.org/dist/cassandra/${CASSANDRA_VERSION}/apache-cassandra-${CASSANDRA_VERSION}-bin.tar.gz" \
     "apache-cassandra-${CASSANDRA_VERSION}-bin.tar.gz"
+CASSANDRA_TAR_FILE="apache-cassandra-${CASSANDRA_VERSION}-bin.tar.gz"
+<% end -%>
 
 # Elasticsearch tarball for AxonOps configuration storage. Upstream uses
 # uname-style arch names (x86_64/aarch64), not Debian's (amd64/arm64) —
@@ -217,6 +242,7 @@ ELASTIC_VERSION="<%= @elastic_version || '7.17.16' %>"
 download_package \
     "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELASTIC_VERSION}-linux-${UNAME_ARCH}.tar.gz" \
     "elasticsearch-${ELASTIC_VERSION}-linux-${UNAME_ARCH}.tar.gz"
+ELASTIC_PKG_FILE="elasticsearch-${ELASTIC_VERSION}-linux-${UNAME_ARCH}.tar.gz"
 
 # Zulu JDK tarball. Also uname-style arch (aarch64, not arm64) on ARM —
 # verified via direct HEAD request; x86_64 is "x64" per Azul's own naming.
@@ -244,3 +270,9 @@ echo "  node['axonops']['offline_packages']['agent'] = '$AGENT_PKG_FILE'"
 echo "  node['axonops']['offline_packages']['server'] = '$SERVER_PKG_FILE'"
 echo "  node['axonops']['offline_packages']['dashboard'] = '$DASHBOARD_PKG_FILE'"
 echo "  node['axonops']['offline_packages']['java_agent'] = '<%= @java_agent_package %>-<%= @java_agent_version %>.jar'"
+<% if @edition != 'dse' && @cassandra_install_format == 'tar' -%>
+echo "  node['axonops']['offline_packages']['cassandra'] = '$CASSANDRA_TAR_FILE'"
+<% elsif @edition != 'dse' && @cassandra_install_format == 'pkg' -%>
+echo "  node['axonops']['offline_packages']['cassandra_pkg'] = '$CASSANDRA_PKG_FILE'"
+<% end -%>
+echo "  node['axonops']['offline_packages']['elasticsearch'] = '$ELASTIC_PKG_FILE'"

@@ -30,12 +30,17 @@ resolve_version = lambda do |attr_version, key|
   attr_version == 'latest' ? LATEST_KNOWN_PACKAGE_VERSIONS.fetch(key) : attr_version
 end
 
-# The *monitored* Cassandra (axonops::cassandra / axonops::agent) — drives
-# java_agent_package and, for package installs, the Cassandra RPM download.
-# Distinct from node['axonops']['server']['cassandra']['version'] below, which
-# is the separate metrics-storage Cassandra bundled with axonops::server and
-# is only ever fetched as a tarball.
-monitored_cassandra_version = node['axonops']['cassandra']['version']
+# node['axonops']['cassandra']['*'] drives java_agent_package and, depending
+# on install_format, either the Cassandra tarball (offline_packages['cassandra'],
+# read by recipes/install_cassandra_tarball.rb) or the Cassandra RPM/deb
+# (offline_packages['cassandra_pkg'], read by recipes/install_cassandra_pkg.rb).
+# There's only ever ONE effective Cassandra config per node — even when
+# axonops::server installs its own metrics-storage Cassandra, recipes/
+# server.rb overrides node['axonops']['cassandra']['*'] from
+# node['axonops']['server']['cassandra']['*'] before calling
+# axonops::cassandra, so both paths end up reading the same attributes.
+cassandra_version = node['axonops']['cassandra']['version']
+cassandra_install_format = node['axonops']['cassandra']['install_format']
 
 # Same resolution order as recipes/agent.rb: explicit override wins, DSE
 # resolves from dse_version (there is no generic 'axon-dse-agent' package),
@@ -48,7 +53,7 @@ java_agent_package = if node['axonops']['cassandra']['edition'] == 'dse'
                       elsif node['axonops']['java_agent']['package'] != 'axon-cassandra5.0-agent-jdk17'
                         node['axonops']['java_agent']['package']
                       else
-                        AxonOpsCassandra.java_agent_package(monitored_cassandra_version)
+                        AxonOpsCassandra.java_agent_package(cassandra_version)
                       end
 
 # Create download directory
@@ -79,8 +84,11 @@ Chef::Log.info("  default['axonops']['offline_packages']['agent'] = 'axon-agent_
 Chef::Log.info("  default['axonops']['offline_packages']['server'] = 'axon-server_VERSION_ARCH.deb'")
 Chef::Log.info("  default['axonops']['offline_packages']['dashboard'] = 'axon-dash_VERSION_ARCH.deb'")
 Chef::Log.info("  default['axonops']['offline_packages']['java_agent'] = 'axon-cassandraVER-agent-jdkVER.jar'")
+Chef::Log.info("  default['axonops']['offline_packages']['cassandra'] = 'apache-cassandra-VERSION-bin.tar.gz' # install_format 'tar'")
+Chef::Log.info("  default['axonops']['offline_packages']['cassandra_pkg'] = 'cassandra-VERSION-1.noarch.rpm' # install_format 'pkg'")
 Chef::Log.info('')
-Chef::Log.info('Replace VERSION and ARCH with actual values for your packages.')
+Chef::Log.info('Replace VERSION and ARCH with actual values for your packages. The generated')
+Chef::Log.info('download-packages.sh prints the exact filenames from its own run at the end.')
 Chef::Log.info('=' * 80)
 
 # Create a sample download script
@@ -94,15 +102,14 @@ template ::File.join(download_path, 'download-packages.sh') do
     java_agent_version: resolve_version.call(node['axonops']['java_agent']['version'], :java_agent),
     java_agent_package: java_agent_package,
     repository_url: node['axonops']['repository']['url'],
-    cassandra_version: node['axonops']['server']['cassandra']['version'],
     edition: node['axonops']['cassandra']['edition'],
     dse_version: node['axonops']['cassandra']['dse_version'],
-    monitored_cassandra_version: monitored_cassandra_version,
+    cassandra_version: cassandra_version,
     # DSE only ever downloads the java-agent, never a Cassandra package —
     # the series is meaningless/possibly unresolvable for a DSE version
     # string, so skip computing it rather than risk an ArgumentError.
-    monitored_cassandra_series: node['axonops']['cassandra']['edition'] == 'dse' ? nil : AxonOpsCassandra.series(monitored_cassandra_version),
-    monitored_cassandra_install_format: node['axonops']['cassandra']['install_format'],
+    cassandra_series: node['axonops']['cassandra']['edition'] == 'dse' ? nil : AxonOpsCassandra.series(cassandra_version),
+    cassandra_install_format: cassandra_install_format,
     redhat_repository_url_311x: node['axonops']['cassandra']['redhat_repository_url_311x'],
     elastic_version: node['axonops']['server']['elastic']['version'],
     zulu_version: node['java']['zulu_tarball_version'],

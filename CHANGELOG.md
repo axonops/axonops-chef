@@ -60,6 +60,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### Offline download script never downloaded the actual Cassandra package (continued)
+- The false premise from earlier in this branch that `axonops::server`'s own
+  metrics-storage Cassandra and the *monitored* Cassandra
+  (`axonops::cassandra`) are two independent versions/tarballs led the
+  script to always download a hardcoded-default tarball
+  (`node['axonops']['server']['cassandra']['version']`, defaulting `5.0.4`)
+  regardless of what was actually configured — and never downloaded
+  anything at all for `install_format: 'pkg'`. In reality
+  `recipes/server.rb` overrides `node['axonops']['cassandra']['*']` from
+  `node['axonops']['server']['cassandra']['*']` before calling
+  `axonops::cassandra`, so there's only one effective Cassandra config per
+  node; `recipes/install_cassandra_tarball.rb`/`install_cassandra_pkg.rb`
+  both read from the same `node['axonops']['cassandra']['version']`/
+  `install_format`. Rewrote the script to download the real configured
+  Cassandra — a tarball (`offline_packages['cassandra']`) for
+  `install_format: 'tar'`, or an RPM/deb (`offline_packages['cassandra_pkg']`)
+  for `'pkg'` (including a new Debian/Ubuntu `.deb` download path, matching
+  the offline branch already added to `install_cassandra_pkg.rb`) — skipped
+  entirely for `edition: 'dse'`, which never installs Cassandra. The
+  post-download summary now prints whichever one actually got downloaded,
+  plus the previously-missing `elasticsearch` line.
+
 #### Offline download script's post-download summary (continued)
 - The final "Set the following Chef attributes" summary printed
   `node['axonops']['packages'][...]` — the wrong attribute key throughout
