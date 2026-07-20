@@ -68,6 +68,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed the dead, unused `node['axonops']['server']['elasticsearch']`
   attribute namespace (`attributes/default.rb`) — a stray duplicate of
   `server.elastic.*` never referenced by any recipe.
+- Added `node['axonops']['server']['opensearch']['*']` as the preferred
+  attribute namespace, aliasing `elastic.*`. `recipes/opensearch.rb` and
+  `recipes/server.rb` merge `elastic` as the base with `opensearch`
+  overriding key-by-key when set — set either namespace, or mix both, with
+  `opensearch` winning on conflicts. `elastic.*` keeps working unchanged.
 
 #### Chef Solo Quickstart guide for beginners
 - New `docs/CHEF_SOLO_QUICKSTART.md`: a beginner-friendly, no-prior-Chef-knowledge

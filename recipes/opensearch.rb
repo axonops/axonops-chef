@@ -12,9 +12,16 @@
 # See docs/OPENSEARCH.md.
 #
 
-opensearch_version = node['axonops']['server']['elastic']['version']
-opensearch_data_dir = node['axonops']['server']['elastic']['data_dir']
-opensearch_logs_dir = node['axonops']['server']['elastic']['logs_dir']
+# 'opensearch' is the preferred attribute namespace; 'elastic' is kept for
+# backwards compatibility. Merge with opensearch winning key-by-key over
+# elastic so either (or both, mixed) can be set in node config.
+opensearch_config = node['axonops']['server']['elastic'].to_hash.merge(
+  node['axonops']['server']['opensearch'].to_hash.reject { |_, v| v.nil? }
+)
+
+opensearch_version = opensearch_config['version']
+opensearch_data_dir = opensearch_config['data_dir']
+opensearch_logs_dir = opensearch_config['logs_dir']
 
 # System tuning OpenSearch (like Elasticsearch before it) requires.
 execute 'set-vm-max-map-count' do
@@ -127,13 +134,13 @@ template '/etc/opensearch/opensearch.yml' do
   group 'opensearch'
   mode '0640'
   variables(
-    cluster_name: node['axonops']['server']['elastic']['cluster_name'],
+    cluster_name: opensearch_config['cluster_name'],
     node_name: "#{node['hostname']}-axonops",
-    listen_host: node['axonops']['server']['elastic']['listen_address'],
-    listen_port: node['axonops']['server']['elastic']['listen_port'],
+    listen_host: opensearch_config['listen_address'],
+    listen_port: opensearch_config['listen_port'],
     path_data: opensearch_data_dir,
     path_logs: opensearch_logs_dir,
-    security_plugin_enabled: node['axonops']['server']['elastic']['security_plugin_enabled']
+    security_plugin_enabled: opensearch_config['security_plugin_enabled']
   )
   notifies :restart, 'service[opensearch]', :delayed
 end
@@ -150,7 +157,7 @@ template '/etc/opensearch/jvm.options.d/heap.options' do
   owner 'opensearch'
   group 'opensearch'
   mode '0640'
-  variables(heap_size: node['axonops']['server']['elastic']['heap_size'])
+  variables(heap_size: opensearch_config['heap_size'])
   notifies :restart, 'service[opensearch]', :delayed
 end
 
@@ -169,7 +176,7 @@ ruby_block 'wait-for-opensearch' do
     require 'uri'
 
     retries = 30
-    uri = URI("http://127.0.0.1:#{node['axonops']['server']['elastic']['listen_port']}/_cluster/health")
+    uri = URI("http://127.0.0.1:#{opensearch_config['listen_port']}/_cluster/health")
 
     begin
       retries.times do

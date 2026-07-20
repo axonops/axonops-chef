@@ -30,6 +30,12 @@ default['axonops']['server']['elastic']['install'] = true
 # docs/OPENSEARCH.md) for a production-hardened setup.
 default['axonops']['server']['elastic']['security_plugin_enabled'] = false
 
+# Preferred alias namespace — set any of these to override the matching
+# 'elastic' key above without touching it. recipes/opensearch.rb merges
+# 'elastic' as the base and 'opensearch' as the override (opensearch wins
+# key-by-key when set). Left empty by default so the merge is a no-op.
+default['axonops']['server']['opensearch'] = {}
+
 # Search DB configuration (new format) — axon-server's own connection to
 # OpenSearch. http:// by default to match security_plugin_enabled = false
 # above; switch to https:// if you enable the security plugin.
