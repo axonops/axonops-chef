@@ -196,16 +196,8 @@ end
 
 # Install AxonOps agent package
 if node['axonops']['offline_install']
-  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['agent'])
-  java_agent_package = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java_agent'])
-
-  unless ::File.exist?(package_path)
-    raise("Offline package not found: #{package_path}")
-  end
-
-  unless ::File.exist?(java_agent_package)
-    raise("Offline package not found: #{java_agent_package}")
-  end
+  package_path = AxonOpsOffline.resolve(self, node['axonops']['offline_packages']['agent'])
+  java_agent_package = AxonOpsOffline.resolve(self, node['axonops']['offline_packages']['java_agent'])
 
   # Same root cause as the online branch below: axon-cassandra*-agent depends
   # on axon-agent, but two separate rpm_package/dpkg_package resources run as

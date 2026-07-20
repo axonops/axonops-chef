@@ -49,7 +49,11 @@ default['axonops']['backups'] = {}
 # Log Parsing Rules
 default['axonops']['log_rules'] = {}
 
-# Offline installation settings
+# Offline installation settings.
+# offline_packages_path accepts a local directory (default) or an http(s)://
+# base URL — package files are then downloaded via remote_file into Chef's
+# file cache. axonops::java's package-chain/tarball auto-discovery still
+# requires a local directory since it globs for dependent files by pattern.
 default['axonops']['offline_install'] = false
 default['axonops']['offline_packages_path'] = '/opt/axonops/offline'
 

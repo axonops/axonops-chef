@@ -63,8 +63,7 @@ unless node['axonops']['offline_install']
 end
 
 if node['axonops']['offline_install']
-  cassandra_pkg_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['cassandra_pkg'])
-  raise("Offline package not found: #{cassandra_pkg_path}") unless ::File.exist?(cassandra_pkg_path)
+  cassandra_pkg_path = AxonOpsOffline.resolve(self, node['axonops']['offline_packages']['cassandra_pkg'])
 end
 
 if platform_family?('debian')

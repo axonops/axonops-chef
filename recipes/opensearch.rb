@@ -45,11 +45,7 @@ file '/etc/sysctl.d/99-opensearch.conf' do
 end
 
 if node['axonops']['offline_install']
-  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['opensearch'])
-
-  unless ::File.exist?(package_path)
-    raise("Offline package not found: #{package_path}")
-  end
+  package_path = AxonOpsOffline.resolve(self, node['axonops']['offline_packages']['opensearch'])
 
   case node['platform_family']
   when 'debian'

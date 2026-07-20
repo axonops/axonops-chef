@@ -571,6 +571,12 @@ include_recipe 'axonops::cassandra'
 # Configure for offline installation
 node.override['axonops']['offline_install'] = true
 node.override['axonops']['offline_packages_path'] = '/path/to/packages'
+# offline_packages_path also accepts an http(s):// base URL (e.g. an internal
+# artifact server) — package files are fetched once via remote_file into
+# Chef's file cache. Local paths keep working as before. This applies to every
+# offline recipe EXCEPT axonops::java's package-chain/tarball auto-discovery,
+# which globs the local directory for dependent files and needs a real path.
+# node.override['axonops']['offline_packages_path'] = 'https://packages.internal.example.com/axonops'
 
 # Package filenames are defined in attributes/default.rb. 'cassandra' is the
 # tarball (tar install_format, and axonops::server's own metrics-storage
