@@ -183,6 +183,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or `--packages axon-agent,axon-cassandra5.0-agent-jdk17`). Only the latest
   version of each match is fetched; omit the flag to mirror every `axon-*`
   package as before.
+- A version can be pinned per package with `name=version`
+  (e.g. `--packages axon-agent=2.0.30,axon-server=2.0.34`); unpinned entries
+  still fetch the latest. The pin matches an exact version or the upstream
+  portion of an RPM `ver-rel` string, so `axon-agent=2.0.30` selects both the
+  `2.0.30` DEB and the `2.0.30-1` RPM.
 - RPM discovery now collapses a package to its `noarch` build when one exists,
   dropping obsolete per-arch (`x86_64`) builds the repo still carries for the
   Cassandra/DSE/Kafka agents. Genuinely per-arch packages (`axon-agent`,

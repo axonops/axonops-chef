@@ -477,19 +477,41 @@ class PackageDownloader:
         print(f"\n  URL: {url}")
         self.download_file(url, self.download_dir / filename)
 
-    def _wanted_package(self, name, patterns):
-        """Return True if ``name`` should be downloaded.
+    def _match_filter(self, name, patterns):
+        """Decide whether ``name`` is wanted and which version is pinned.
 
-        ``patterns`` is an optional list of shell-style globs matched against
-        the full package name (e.g. ``axon-cassandra3.11-agent`` or
-        ``axon-cassandra5*``). When empty/None, every ``axon-*`` package is
-        selected.
+        ``patterns`` is an optional list of ``(glob, version_or_None)`` tuples,
+        where ``glob`` is a shell-style pattern matched against the full package
+        name (e.g. ``axon-cassandra3.11-agent`` or ``axon-cassandra5*``) and the
+        optional pinned version restricts which version is downloaded. When
+        ``patterns`` is empty/None, every ``axon-*`` package is selected at its
+        latest version.
+
+        Returns ``(matched, pinned_version)``.
         """
         if not name.startswith(AXONOPS_PACKAGE_PREFIX):
-            return False
+            return (False, None)
         if not patterns:
+            return (True, None)
+        for glob, pinned in patterns:
+            if fnmatch.fnmatch(name, glob):
+                return (True, pinned)
+        return (False, None)
+
+    def _version_matches(self, actual, pinned):
+        """Return True if ``actual`` satisfies the ``pinned`` version.
+
+        Accepts an exact match, or matches the upstream version portion of an
+        RPM ``ver-rel`` string (so ``--packages axon-agent=2.0.30`` matches the
+        ``2.0.30-1`` RPM as well as the ``2.0.30`` DEB).
+        """
+        if pinned is None:
             return True
-        return any(fnmatch.fnmatch(name, pat) for pat in patterns)
+        if actual == pinned:
+            return True
+        if actual.split('-', 1)[0] == pinned:
+            return True
+        return False
 
     def download_axonops(self, package_type=None, package_filter=None):
         """Download AxonOps packages.
@@ -555,7 +577,8 @@ class PackageDownloader:
                     if not name_match:
                         continue
                     package_name = name_match.group(1).strip()
-                    if not self._wanted_package(package_name, package_filter):
+                    matched, pinned = self._match_filter(package_name, package_filter)
+                    if not matched:
                         continue
 
                     version_match = re.search(r'^Version: (.+)$', pkg, re.MULTILINE)
@@ -565,6 +588,8 @@ class PackageDownloader:
                         continue
 
                     version = version_match.group(1).strip()
+                    if not self._version_matches(version, pinned):
+                        continue
                     filename = filename_match.group(1).strip()
                     sha256 = sha256_match.group(1).strip() if sha256_match else None
 
@@ -653,7 +678,8 @@ class PackageDownloader:
                 if name_elem is None or name_elem.text is None:
                     continue
                 package_name = name_elem.text
-                if not self._wanted_package(package_name, package_filter):
+                matched, pinned = self._match_filter(package_name, package_filter)
+                if not matched:
                     continue
 
                 arch_elem = package.find('common:arch', ns)
@@ -666,6 +692,8 @@ class PackageDownloader:
 
                 arch = arch_elem.text if arch_elem is not None else 'noarch'
                 version = f"{version_elem.get('ver')}-{version_elem.get('rel')}"
+                if not self._version_matches(version, pinned):
+                    continue
                 location = location_elem.get('href')
                 checksum = (
                     checksum_elem.text
@@ -770,11 +798,12 @@ def main():
     parser.add_argument("--elasticsearch", action="store_true", help="Download Elasticsearch tarballs")
     parser.add_argument("--java", action="store_true", help="Download Java distributions")
     parser.add_argument("--package-type", choices=["deb", "rpm"], help="Package type for AxonOps")
-    parser.add_argument("--packages", help="Comma-separated list of AxonOps package names to "
+    parser.add_argument("--packages", help="Comma-separated list of AxonOps packages to "
                         "download (shell-style globs allowed, e.g. "
                         "'axon-cassandra3.11-agent' or 'axon-cassandra5*,axon-agent'). "
-                        "Only the latest version of each match is fetched. "
-                        "Default: all axon-* packages.")
+                        "Pin a version per package with 'name=version', e.g. "
+                        "'axon-agent=2.0.30,axon-server=2.0.34'; unpinned entries fetch "
+                        "the latest. Default: all axon-* packages at latest.")
     parser.add_argument("--version", help="Specific version to download (for Cassandra/Elasticsearch)")
     parser.add_argument("--output-dir", default=DOWNLOAD_DIR, help="Output directory")
     parser.add_argument("--java-arch", choices=["x64", "aarch64"], default="x64", help="Java architecture (default: x64)")
@@ -785,7 +814,16 @@ def main():
 
     package_filter = None
     if args.packages:
-        package_filter = [p.strip() for p in args.packages.split(',') if p.strip()]
+        package_filter = []
+        for entry in args.packages.split(','):
+            entry = entry.strip()
+            if not entry:
+                continue
+            if '=' in entry:
+                name, version = entry.split('=', 1)
+                package_filter.append((name.strip(), version.strip() or None))
+            else:
+                package_filter.append((entry, None))
 
     downloader = PackageDownloader(args.output_dir)
 
