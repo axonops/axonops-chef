@@ -301,6 +301,23 @@ template '/etc/axonops/axon-agent.yml' do
 end
 
 unless java_agent_env_file.nil?
+  # notifies resolves its target against the compiled resource collection
+  # immediately, regardless of whether only_if below would skip this block
+  # at runtime — Chef raises Chef::Exceptions::ResourceNotFound right away
+  # if service[cassandra]/service[kafka] was never declared. Those are only
+  # declared by recipes/configure_cassandra.rb / recipes/kafka.rb, not this
+  # recipe — so axonops::agent run standalone to monitor an existing,
+  # cookbook-external Cassandra/DSE/Kafka (a common, documented use case —
+  # see docs/DSE.md) crashed unconditionally. Verified live. Only notify
+  # when the target genuinely exists in this run; this cookbook shouldn't
+  # be restarting a service it doesn't manage anyway.
+  service_resource_exists = begin
+    resources(service: service)
+    true
+  rescue Chef::Exceptions::ResourceNotFound
+    false
+  end
+
   ruby_block 'configure-jvm-agent' do
     agent_line = ". /usr/share/axonops/axonops-jvm.options"
 
@@ -310,7 +327,7 @@ unless java_agent_env_file.nil?
       file.write_file
     end
 
-    notifies :restart, "service[#{service}]", :delayed
+    notifies :restart, "service[#{service}]", :delayed if service_resource_exists
     only_if { ::File.exist?(java_agent_env_file) }
   end
 end

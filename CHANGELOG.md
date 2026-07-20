@@ -60,6 +60,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### `axonops::agent` crashed when run standalone against an existing Cassandra/DSE/Kafka (continued)
+- `notifies` resolves its target against the compiled resource collection
+  immediately — regardless of whether an `only_if` guard would skip the
+  notifying resource at runtime. `ruby_block[configure-jvm-agent]`
+  unconditionally notified `service[cassandra]`/`service[kafka]`, but
+  those are only ever declared by `recipes/configure_cassandra.rb`/
+  `recipes/kafka.rb`, not `recipes/agent.rb` itself — so running
+  `axonops::agent` standalone to monitor an existing, cookbook-external
+  Cassandra/DSE/Kafka (a common, explicitly documented use case — see
+  `docs/DSE.md`) crashed unconditionally with
+  `Chef::Exceptions::ResourceNotFound`. Verified live. Now only attaches
+  the notification when the target resource genuinely exists in the
+  current run (`resources(service: service)`, rescued) — this cookbook
+  shouldn't be restarting a service it doesn't manage anyway.
+
 #### Force-selecting DSE edition alone never actually installed anything (continued)
 - `docs/DSE.md` documents forcing DSE monitoring explicitly via
   `node.override['axonops']['cassandra']['edition'] = 'dse'` — precisely
