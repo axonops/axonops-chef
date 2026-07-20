@@ -65,7 +65,7 @@ All settings live under `node['axonops']['server']['elastic']`:
 
 | Attribute | Default | Description |
 |-----------|---------|-------------|
-| `version` | `2.19.6` | OpenSearch version to install |
+| `version` | `3.6.0` | OpenSearch version to install |
 | `cluster_name` | `axonops-cluster` | Cluster name |
 | `heap_size` | `512m` | JVM heap size — increase for production |
 | `data_dir` | `/var/lib/opensearch` | Data directory |
@@ -124,7 +124,7 @@ node.override['axonops']['offline_packages_path'] = '/opt/axonops/offline'
 
 # Set from the exact filename axonops::offline_download_helper's generated
 # download-packages.sh prints at the end of its own run:
-node.override['axonops']['offline_packages']['opensearch'] = 'opensearch-2.19.6-linux-x64.rpm'
+node.override['axonops']['offline_packages']['opensearch'] = 'opensearch-3.6.0-linux-x64.rpm'
 
 include_recipe 'axonops::server'
 ```

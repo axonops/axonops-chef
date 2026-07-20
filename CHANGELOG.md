@@ -46,6 +46,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed `templates/default/offline-download-script.sh.erb` (superseded by the
   static script).
 
+- Default OpenSearch version bumped to `3.6.0` (was `2.19.6`).
+  `recipes/opensearch.rb` now derives the package-repo major (`2.x`/`3.x`) from
+  the requested version instead of hardcoding `2.x`, so the apt/yum repo matches
+  the installed version (falls back to `3` for non-`X.Y.Z` versions like
+  `latest`). Updated defaults and docs across `attributes/server.rb`,
+  `attributes/default.rb`, `README.md`, `docs/OPENSEARCH.md`, `docs/SERVER.md`,
+  `docs/OFFLINE.md`, and `examples/nodes/offline-server-node.json`.
+
 #### Switched from Elasticsearch to OpenSearch
 - `axonops::server`'s internal search/config-storage dependency is now
   **OpenSearch**, installed as a real RPM/deb package from OpenSearch's own

@@ -565,7 +565,7 @@ node.override['axonops']['offline_packages_path'] = '/path/to/packages'
 # Cassandra, which is always tar); 'cassandra_pkg' is the separate RPM/deb
 # used by axonops::cassandra's pkg install_format — never the same file.
 # default['axonops']['offline_packages'] = {
-#   'opensearch' => 'opensearch-2.19.6-linux-x64.rpm',
+#   'opensearch' => 'opensearch-3.6.0-linux-x64.rpm',
 #   'cassandra' => 'apache-cassandra-5.0.5-bin.tar.gz',
 #   'cassandra_pkg' => 'cassandra-5.0.5-1.noarch.rpm',
 #   'java' => 'zulu17-ca-jdk-headless-17.0.16-1.x86_64.rpm',

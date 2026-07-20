@@ -8,7 +8,7 @@
     "offline_install": true,
     "offline_packages_path": "/opt/axonops/packages",
     "offline_packages": {
-      "opensearch": "opensearch-2.19.6-linux-x64.rpm"
+      "opensearch": "opensearch-3.6.0-linux-x64.rpm"
     },
     "repository": {
       "enabled": false

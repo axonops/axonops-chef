@@ -20,6 +20,10 @@ opensearch_config = node['axonops']['server']['elastic'].to_hash.merge(
 )
 
 opensearch_version = opensearch_config['version']
+# OpenSearch publishes a separate package repo per major (…/opensearch/2.x,
+# …/opensearch/3.x). Derive the major from the requested version so the repo
+# matches; fall back to '3' when the version isn't a plain X.Y.Z (e.g. 'latest').
+opensearch_major = opensearch_version.to_s[/\A(\d+)\./, 1] || '3'
 opensearch_data_dir = opensearch_config['data_dir']
 opensearch_logs_dir = opensearch_config['logs_dir']
 
@@ -74,9 +78,9 @@ else
       not_if { ::File.exist?('/usr/share/keyrings/opensearch-keyring') }
     end
 
-    file '/etc/apt/sources.list.d/opensearch-2.x.list' do
+    file "/etc/apt/sources.list.d/opensearch-#{opensearch_major}.x.list" do
       content 'deb [signed-by=/usr/share/keyrings/opensearch-keyring] ' \
-              "https://artifacts.opensearch.org/releases/bundle/opensearch/2.x/apt stable main\n"
+              "https://artifacts.opensearch.org/releases/bundle/opensearch/#{opensearch_major}.x/apt stable main\n"
       mode '0644'
       notifies :run, 'execute[apt-update-opensearch]', :immediately
     end
@@ -98,8 +102,8 @@ else
     end
 
     yum_repository 'opensearch' do
-      description 'OpenSearch 2.x'
-      baseurl 'https://artifacts.opensearch.org/releases/bundle/opensearch/2.x/yum'
+      description "OpenSearch #{opensearch_major}.x"
+      baseurl "https://artifacts.opensearch.org/releases/bundle/opensearch/#{opensearch_major}.x/yum"
       gpgkey 'https://artifacts.opensearch.org/publickeys/opensearch.pgp'
       gpgcheck true
       action :create

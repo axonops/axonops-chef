@@ -14,7 +14,7 @@ default['axonops']['server']['package'] = 'axon-server'
 # and docs/OPENSEARCH.md). The 'elastic' attribute namespace is kept as-is
 # to minimize disruption for existing node configs — it now configures
 # OpenSearch, not Elasticsearch.
-default['axonops']['server']['elastic']['version'] = '2.19.6'
+default['axonops']['server']['elastic']['version'] = '3.6.0'
 default['axonops']['server']['elastic']['heap_size'] = '512m'
 default['axonops']['server']['elastic']['cluster_name'] = 'axonops-cluster'
 default['axonops']['server']['elastic']['data_dir'] = '/var/lib/opensearch'

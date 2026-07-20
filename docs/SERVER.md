@@ -126,7 +126,7 @@ Settings for embedded OpenSearch:
 | Attribute | Default | Description |
 |-----------|---------|-------------|
 | `['axonops']['server']['elastic']['install']` | `true` | Install embedded OpenSearch |
-| `['axonops']['server']['elastic']['version']` | `2.19.6` | OpenSearch version |
+| `['axonops']['server']['elastic']['version']` | `3.6.0` | OpenSearch version |
 | `['axonops']['server']['elastic']['heap_size']` | `512m` | JVM heap size |
 | `['axonops']['server']['elastic']['cluster_name']` | `axonops-cluster` | Cluster name |
 | `['axonops']['server']['elastic']['listen_address']` | `127.0.0.1` | Listen address |
