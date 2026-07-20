@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Chef Solo Quickstart guide for beginners
+- New `docs/CHEF_SOLO_QUICKSTART.md`: a beginner-friendly, no-prior-Chef-knowledge
+  walkthrough covering three scenarios — Cassandra only, Cassandra + AxonOps
+  agent, and agent-only (monitoring an existing Cassandra or DSE cluster) —
+  plus a troubleshooting section built from the real errors hit and fixed
+  while writing this cookbook. Linked from README.md.
+- Removed the unused `sysctl` cookbook dependency from `Berksfile`/
+  `Berksfile.lock` (and its own transitive `ohai` dependency) — grepped the
+  whole codebase confirming no recipe ever calls a resource from either;
+  this cookbook writes `/etc/sysctl.d` config directly via plain `file`/
+  `directory` resources, it never needed the `sysctl` cookbook at all.
+
 #### DSE 6.7/6.8/6.9 java-agent support, offline download included
 - `node['axonops']['cassandra']['dse_version']` attribute (default `'5.1'`) and
   `AxonOpsCassandra.dse_java_agent_package` (`libraries/cassandra_version.rb`),

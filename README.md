@@ -399,6 +399,8 @@ See [docs/CASSANDRA.md](docs/CASSANDRA.md#ssl-caveat) for details. PEM-based TLS
 
 Detailed documentation for each component:
 
+- 🚀 **[Chef Solo Quickstart](docs/CHEF_SOLO_QUICKSTART.md)** - New to Chef? Start
+  here — installing Cassandra, Cassandra + agent, or agent-only with chef-solo
 - 📘 **[AxonOps Server Guide](docs/SERVER.md)** - Deploy and configure the AxonOps server
 - 📗 **[AxonOps Agent Guide](docs/AGENT.md)** - Install agents on Cassandra, DSE, or Kafka nodes
 - 📙 **[Cassandra Installation](docs/CASSANDRA.md)** - Apache Cassandra deployment options
