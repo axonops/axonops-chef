@@ -51,16 +51,21 @@ cassandra_search_paths = [
   cassandra_home,
 ].compact.uniq
 
-# Search for Cassandra installation
+# Search for Cassandra installation. DSE tarballs don't expose bin/cassandra
+# at the top level (it's wrapped by bin/dse) — the real Cassandra tree lives
+# under resources/cassandra/, so that's checked as a second candidate.
 ruby_block 'detect-cassandra' do
   block do
+    bin_candidates = ['bin/cassandra', 'resources/cassandra/bin/cassandra']
+    conf_candidates = %w(conf config resources/cassandra/conf /etc/cassandra /etc/dse/cassandra)
+
     cassandra_search_paths.each do |path|
       expanded_paths = Dir.glob(path)
       expanded_paths.each do |expanded_path|
-        next unless ::File.exist?("#{expanded_path}/bin/cassandra")
+        next unless bin_candidates.any? { |bin| ::File.exist?("#{expanded_path}/#{bin}") }
         cassandra_home = expanded_path
         # Look for config directory
-        %w(conf config /etc/cassandra /etc/dse/cassandra).each do |conf_dir|
+        conf_candidates.each do |conf_dir|
           full_conf_path = conf_dir.start_with?('/') ? conf_dir : "#{cassandra_home}/#{conf_dir}"
           if ::File.exist?("#{full_conf_path}/cassandra.yaml")
             cassandra_config = full_conf_path
@@ -171,7 +176,18 @@ elsif node.run_list.include?('recipe[axonops::cassandra]') || cassandra_detected
                         else
                           AxonOpsCassandra.java_agent_package(node['axonops']['cassandra']['version'])
                         end
-  java_agent_env_file = "#{cassandra_home}/conf/cassandra-env.sh"
+  java_agent_env_file = if node['axonops']['cassandra']['edition'] == 'dse'
+                          # See docs/DSE.md — rpm/deb and tar DSE installs put
+                          # cassandra-env.sh at different paths, and unlike a
+                          # cookbook-managed Cassandra there's no install_dir
+                          # attribute to derive it from.
+                          AxonOpsCassandra.dse_env_file(
+                            node['axonops']['cassandra']['dse_env_file'],
+                            cassandra_search_paths
+                          )
+                        else
+                          "#{cassandra_home}/conf/cassandra-env.sh"
+                        end
   service = "cassandra"
 else
   Chef::Log.error("Could not detect Cassandra or Kafka")
@@ -319,15 +335,25 @@ unless java_agent_env_file.nil?
   end
 
   ruby_block 'configure-jvm-agent' do
-    agent_line = ". /usr/share/axonops/axonops-jvm.options"
+    # DSE has no /usr/share/axonops/axonops-jvm.options override file (that's
+    # only shipped for the cookbook-managed Cassandra versions its own
+    # cassandra-env.sh.erb sources) — append the -javaagent flag directly,
+    # matching the axon-dse<version>-agent.jar this run installed.
+    is_dse = node['axonops']['cassandra']['edition'] == 'dse'
+    agent_line = if is_dse
+                   "JVM_OPTS=\"$JVM_OPTS -javaagent:/usr/share/axonops/#{java_agent_package}.jar=/etc/axonops/axon-agent.yml\""
+                 else
+                   ". /usr/share/axonops/axonops-jvm.options"
+                 end
+    match_pattern = is_dse ? /-javaagent:\/usr\/share\/axonops\/#{Regexp.escape(java_agent_package)}\.jar/ : /axonops-jvm\.options/
 
     block do
       file = Chef::Util::FileEdit.new(java_agent_env_file)
-      file.insert_line_if_no_match(/axonops-jvm\.options/, agent_line)
+      file.insert_line_if_no_match(match_pattern, agent_line)
       file.write_file
     end
 
     notifies :restart, "service[#{service}]", :delayed if service_resource_exists
-    only_if { ::File.exist?(java_agent_env_file) }
+    only_if { java_agent_env_file && ::File.exist?(java_agent_env_file) }
   end
 end

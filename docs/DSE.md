@@ -59,6 +59,33 @@ Cassandra package, since this cookbook doesn't install/manage DSE itself. Set
 `node['axonops']['cassandra']['edition'] = 'dse'` (and `dse_version` if not `'5.1'`)
 before running the download helper.
 
+## JVM agent (cassandra-env.sh)
+
+To collect JVM metrics, `axonops::agent` appends a `JVM_OPTS` line to DSE's
+`cassandra-env.sh`, loading the `axon-dse<version>-agent.jar` installed above:
+
+```bash
+JVM_OPTS="$JVM_OPTS -javaagent:/usr/share/axonops/axon-dse5.1-agent.jar=/etc/axonops/axon-agent.yml"
+```
+
+The path to `cassandra-env.sh` is resolved in this order:
+
+1. `node['axonops']['cassandra']['dse_env_file']` — set this if neither
+   default below matches your install.
+2. `/etc/dse/cassandra/cassandra-env.sh` — the rpm/deb package default.
+3. `<dse_home>/resources/cassandra/conf/cassandra-env.sh` — tar installs,
+   where `dse_home` is whichever of the detected/search paths
+   (`node['axonops']['cassandra']['edition'] == 'dse'`-driven detection, see
+   `cassandra_search_paths` in `recipes/agent.rb`) actually contains it.
+
+```ruby
+# Only needed if your DSE install doesn't match either default above.
+node.override['axonops']['cassandra']['dse_env_file'] = '/opt/dse-5.1.32/resources/cassandra/conf/cassandra-env.sh'
+```
+
+If none of the three resolves to an existing file, the JVM agent line is
+skipped — the agent still runs and reports non-JVM metrics.
+
 ## Java
 
 DSE 5.1 requires Java 8, same as Apache Cassandra 3.11 —

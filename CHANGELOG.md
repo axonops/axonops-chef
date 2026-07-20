@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### DSE cassandra-env.sh JVM-agent path
+- New `node['axonops']['cassandra']['dse_env_file']` attribute and
+  `AxonOpsCassandra.dse_env_file` helper (`libraries/cassandra_version.rb`) to
+  resolve DSE's `cassandra-env.sh` path: explicit override, then the rpm/deb
+  default (`/etc/dse/cassandra/cassandra-env.sh`), then the tar layout
+  (`<dse_home>/resources/cassandra/conf/cassandra-env.sh` — DSE tarballs wrap
+  Cassandra under `bin/dse`, not a top-level `bin/cassandra`).
+- `recipes/agent.rb`'s `configure-jvm-agent` now appends a direct
+  `-javaagent:/usr/share/axonops/axon-dse<version>-agent.jar=...` line for DSE
+  instead of the Cassandra-only `axonops-jvm.options` source line, which DSE
+  installs don't ship. `detect-cassandra` also now recognizes the DSE tar
+  layout when searching for an existing install. See `docs/DSE.md`.
+
 #### Standalone offline package downloader
 - New `files/default/download-packages.sh`: a static, Chef-free script that
   downloads offline-install packages, selecting the component set via

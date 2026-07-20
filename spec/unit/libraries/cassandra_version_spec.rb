@@ -57,6 +57,32 @@ RSpec.describe AxonOpsCassandra do
     end
   end
 
+  describe '.dse_env_file' do
+    it 'returns the explicit override unconditionally' do
+      expect(described_class.dse_env_file('/custom/cassandra-env.sh', ['/opt/dse'])).to eq('/custom/cassandra-env.sh')
+    end
+
+    it 'falls back to the rpm/deb default when it exists' do
+      allow(::File).to receive(:exist?).and_return(false)
+      allow(::File).to receive(:exist?).with('/etc/dse/cassandra/cassandra-env.sh').and_return(true)
+      expect(described_class.dse_env_file(nil, ['/opt/dse'])).to eq('/etc/dse/cassandra/cassandra-env.sh')
+    end
+
+    it 'searches the tar layout under resources/cassandra/conf when the rpm/deb default is absent' do
+      allow(::File).to receive(:exist?).and_return(false)
+      allow(::File).to receive(:exist?)
+        .with('/opt/dse/resources/cassandra/conf/cassandra-env.sh').and_return(true)
+      allow(::Dir).to receive(:glob).with('/opt/dse').and_return(['/opt/dse'])
+      expect(described_class.dse_env_file(nil, ['/opt/dse'])).to eq('/opt/dse/resources/cassandra/conf/cassandra-env.sh')
+    end
+
+    it 'returns nil when nothing matches' do
+      allow(::File).to receive(:exist?).and_return(false)
+      allow(::Dir).to receive(:glob).with('/opt/dse').and_return([])
+      expect(described_class.dse_env_file(nil, ['/opt/dse'])).to be_nil
+    end
+  end
+
   describe '.legacy_schema?' do
     it 'is true only for 3.11' do
       expect(described_class.legacy_schema?('3.11.17')).to be(true)

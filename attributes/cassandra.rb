@@ -27,6 +27,13 @@ default['axonops']['cassandra']['edition'] = 'apache'
 # Apache Cassandra's can, so this must be set explicitly for anything other
 # than the default 5.1. One of: '5.1', '6.7', '6.8', '6.9'.
 default['axonops']['cassandra']['dse_version'] = '5.1'
+# Path to DSE's cassandra-env.sh, where recipes/agent.rb appends the
+# axon-agent JAVA_OPTS -javaagent line. Auto-detected when nil: rpm/deb
+# installs use /etc/dse/cassandra/cassandra-env.sh; tar installs are searched
+# under the detected DSE home (see cassandra_search_paths in recipes/agent.rb)
+# at resources/cassandra/conf/cassandra-env.sh. Set explicitly if your layout
+# doesn't match either default.
+default['axonops']['cassandra']['dse_env_file'] = nil
 default['axonops']['cassandra']['data_root'] = '/var/lib/cassandra'
 default['axonops']['cassandra']['local_jmx'] = 'yes'
 default['axonops']['cassandra']['directories'] = {

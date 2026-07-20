@@ -160,6 +160,29 @@ module AxonOpsCassandra
     ::File.exist?('/etc/dse/cassandra/cassandra.yaml') || ::Dir.glob('/opt/dse').any?
   end
 
+  # Resolve the cassandra-env.sh path for a DSE install, where recipes/agent.rb
+  # appends the axon-agent JAVA_OPTS -javaagent line. `explicit_path` (from
+  # node['axonops']['cassandra']['dse_env_file']) always wins. Otherwise tries
+  # the rpm/deb package default, then searches `search_paths` (globbed) for the
+  # tar layout, where cassandra-env.sh lives under resources/cassandra/conf —
+  # DSE tarballs wrap Cassandra with bin/dse, not a top-level bin/cassandra.
+  # Returns nil if nothing matches, so callers can skip silently.
+  def dse_env_file(explicit_path, search_paths = [])
+    return explicit_path if explicit_path
+
+    rpm_deb_default = '/etc/dse/cassandra/cassandra-env.sh'
+    return rpm_deb_default if ::File.exist?(rpm_deb_default)
+
+    search_paths.each do |path|
+      ::Dir.glob(path).each do |dse_home|
+        candidate = "#{dse_home}/resources/cassandra/conf/cassandra-env.sh"
+        return candidate if ::File.exist?(candidate)
+      end
+    end
+
+    nil
+  end
+
   # --- internal helpers -------------------------------------------------
 
   # Returns [Float number, String unit]. Unit is downcased; "MiB"/"KiB" are
