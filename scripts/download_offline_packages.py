@@ -25,6 +25,7 @@ import argparse
 import re
 import gzip
 import shutil
+import fnmatch
 import xml.etree.ElementTree as ET
 import time
 from pathlib import Path
@@ -476,8 +477,27 @@ class PackageDownloader:
         print(f"\n  URL: {url}")
         self.download_file(url, self.download_dir / filename)
 
-    def download_axonops(self, package_type=None):
-        """Download AxonOps packages."""
+    def _wanted_package(self, name, patterns):
+        """Return True if ``name`` should be downloaded.
+
+        ``patterns`` is an optional list of shell-style globs matched against
+        the full package name (e.g. ``axon-cassandra3.11-agent`` or
+        ``axon-cassandra5*``). When empty/None, every ``axon-*`` package is
+        selected.
+        """
+        if not name.startswith(AXONOPS_PACKAGE_PREFIX):
+            return False
+        if not patterns:
+            return True
+        return any(fnmatch.fnmatch(name, pat) for pat in patterns)
+
+    def download_axonops(self, package_type=None, package_filter=None):
+        """Download AxonOps packages.
+
+        ``package_filter`` optionally restricts which ``axon-*`` packages are
+        fetched (list of shell-style globs). Regardless of the filter, only the
+        latest version of each matching package is downloaded.
+        """
         print("\n=== AxonOps Downloads ===")
 
         if not package_type:
@@ -498,16 +518,17 @@ class PackageDownloader:
 
         for pkg_type in package_types:
             if pkg_type == "deb":
-                self._download_axonops_deb()
+                self._download_axonops_deb(package_filter)
             elif pkg_type == "rpm":
-                self._download_axonops_rpm()
+                self._download_axonops_rpm(package_filter)
 
-    def _download_axonops_deb(self):
+    def _download_axonops_deb(self, package_filter=None):
         """Download AxonOps Debian packages.
 
         Discovers every ``axon-*`` package present in the apt repository (across
         the ``all``, ``amd64`` and ``arm64`` binary indexes) and downloads the
-        latest version of each. The apt index is a plain, uncompressed
+        latest version of each, optionally restricted by ``package_filter``
+        (list of shell-style globs). The apt index is a plain, uncompressed
         ``Packages`` file — there is no ``Packages.gz``.
         """
         print("\nDownloading AxonOps DEB packages...")
@@ -534,7 +555,7 @@ class PackageDownloader:
                     if not name_match:
                         continue
                     package_name = name_match.group(1).strip()
-                    if not package_name.startswith(AXONOPS_PACKAGE_PREFIX):
+                    if not self._wanted_package(package_name, package_filter):
                         continue
 
                     version_match = re.search(r'^Version: (.+)$', pkg, re.MULTILINE)
@@ -557,7 +578,10 @@ class PackageDownloader:
                 print(f"  ✗ Error reading apt index for {arch}: {e}")
 
         if not latest:
-            print("  ✗ No axon-* packages found in the apt repository")
+            if package_filter:
+                print(f"  ✗ No packages matched {package_filter} in the apt repository")
+            else:
+                print("  ✗ No axon-* packages found in the apt repository")
             return
 
         for package_name in sorted(latest):
@@ -570,8 +594,13 @@ class PackageDownloader:
             except Exception as e:
                 print(f"  ✗ Error downloading {package_name} {version}: {e}")
 
-    def _download_axonops_rpm(self):
-        """Download AxonOps RPM packages."""
+    def _download_axonops_rpm(self, package_filter=None):
+        """Download AxonOps RPM packages.
+
+        Discovers every ``axon-*`` package in the yum repository and downloads
+        the latest version of each (per architecture), optionally restricted by
+        ``package_filter`` (list of shell-style globs).
+        """
         print("\nDownloading AxonOps RPM packages...")
         base_url = "https://packages.axonops.com/yum"
 
@@ -624,7 +653,7 @@ class PackageDownloader:
                 if name_elem is None or name_elem.text is None:
                     continue
                 package_name = name_elem.text
-                if not package_name.startswith(AXONOPS_PACKAGE_PREFIX):
+                if not self._wanted_package(package_name, package_filter):
                     continue
 
                 arch_elem = package.find('common:arch', ns)
@@ -649,6 +678,18 @@ class PackageDownloader:
                 if current is None or self._compare_versions(version, current[0]) > 0:
                     latest[key] = (version, location, checksum)
 
+            # The Cassandra/DSE/Kafka java-agent packages are now shipped as
+            # `noarch` but the repo still carries obsolete `x86_64` builds of
+            # older versions. When a `noarch` build exists for a package, drop
+            # its arch-specific builds so we fetch a single current artifact.
+            # Packages that only exist per-arch (axon-agent, axon-server,
+            # axon-dash) are unaffected and keep every architecture.
+            names_with_noarch = {n for (n, a) in latest if a == 'noarch'}
+            latest = {
+                (n, a): v for (n, a), v in latest.items()
+                if a == 'noarch' or n not in names_with_noarch
+            }
+
             # Cleanup metadata before downloading packages so a package-download
             # failure doesn't leave metadata behind.
             os.remove(repomd_path)
@@ -656,7 +697,10 @@ class PackageDownloader:
             os.remove(primary_path)
 
             if not latest:
-                print("  ✗ No axon-* packages found in the yum repository")
+                if package_filter:
+                    print(f"  ✗ No packages matched {package_filter} in the yum repository")
+                else:
+                    print("  ✗ No axon-* packages found in the yum repository")
                 return
 
             for (package_name, arch) in sorted(latest):
@@ -726,6 +770,11 @@ def main():
     parser.add_argument("--elasticsearch", action="store_true", help="Download Elasticsearch tarballs")
     parser.add_argument("--java", action="store_true", help="Download Java distributions")
     parser.add_argument("--package-type", choices=["deb", "rpm"], help="Package type for AxonOps")
+    parser.add_argument("--packages", help="Comma-separated list of AxonOps package names to "
+                        "download (shell-style globs allowed, e.g. "
+                        "'axon-cassandra3.11-agent' or 'axon-cassandra5*,axon-agent'). "
+                        "Only the latest version of each match is fetched. "
+                        "Default: all axon-* packages.")
     parser.add_argument("--version", help="Specific version to download (for Cassandra/Elasticsearch)")
     parser.add_argument("--output-dir", default=DOWNLOAD_DIR, help="Output directory")
     parser.add_argument("--java-arch", choices=["x64", "aarch64"], default="x64", help="Java architecture (default: x64)")
@@ -733,6 +782,10 @@ def main():
     parser.add_argument("--non-interactive", action="store_true", help="Run in non-interactive mode")
 
     args = parser.parse_args()
+
+    package_filter = None
+    if args.packages:
+        package_filter = [p.strip() for p in args.packages.split(',') if p.strip()]
 
     downloader = PackageDownloader(args.output_dir)
 
@@ -745,10 +798,10 @@ def main():
             # Download everything. Honour --package-type when given so
             # `--all --package-type rpm` mirrors only RPMs; default is both.
             if args.package_type:
-                downloader.download_axonops(args.package_type)
+                downloader.download_axonops(args.package_type, package_filter)
             else:
-                downloader.download_axonops("deb")
-                downloader.download_axonops("rpm")
+                downloader.download_axonops("deb", package_filter)
+                downloader.download_axonops("rpm", package_filter)
             downloader.download_cassandra(non_interactive=True)
             downloader.download_elasticsearch(non_interactive=True)
             downloader.download_java(args.java_arch)
@@ -756,7 +809,7 @@ def main():
             # Download specified components
             for component in args.components:
                 if component == 'axonops':
-                    downloader.download_axonops(args.package_type)
+                    downloader.download_axonops(args.package_type, package_filter)
                 elif component == 'cassandra':
                     downloader.download_cassandra(args.version, non_interactive=args.non_interactive)
                 elif component == 'elasticsearch':
@@ -766,7 +819,7 @@ def main():
         elif args.axonops or args.cassandra or args.elasticsearch or args.java:
             # Legacy argument support
             if args.axonops:
-                downloader.download_axonops(args.package_type)
+                downloader.download_axonops(args.package_type, package_filter)
             if args.cassandra:
                 downloader.download_cassandra(args.version, non_interactive=args.non_interactive)
             if args.elasticsearch:

@@ -174,6 +174,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Verified end-to-end in a real container: downloaded packages, installed
   from them, both `axon-agent` and `cassandra` (3.11) services came up.
 
+### Added
+
+#### `scripts/download_offline_packages.py --packages` filter
+- New `--packages` flag restricts which `axon-*` packages are downloaded, taking
+  a comma-separated list of shell-style globs (e.g.
+  `--packages axon-cassandra3.11-agent`, `--packages 'axon-cassandra5.0-agent*'`,
+  or `--packages axon-agent,axon-cassandra5.0-agent-jdk17`). Only the latest
+  version of each match is fetched; omit the flag to mirror every `axon-*`
+  package as before.
+- RPM discovery now collapses a package to its `noarch` build when one exists,
+  dropping obsolete per-arch (`x86_64`) builds the repo still carries for the
+  Cassandra/DSE/Kafka agents. Genuinely per-arch packages (`axon-agent`,
+  `axon-server`, `axon-dash`) keep every architecture.
+
 ### Fixed
 
 #### `scripts/download_offline_packages.py` could not download any AxonOps packages
