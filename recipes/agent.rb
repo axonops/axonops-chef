@@ -176,26 +176,23 @@ if node['axonops']['offline_install']
     raise("Offline package not found: #{java_agent_package}")
   end
 
+  # Same root cause as the online branch below: axon-cassandra*-agent depends
+  # on axon-agent, but two separate rpm_package/dpkg_package resources run as
+  # two separate transactions, so the first one (whichever it is) fails with
+  # an unresolved dependency. A single `rpm -Uvh`/`dpkg -i` invocation with
+  # both files installs them together in one transaction, exactly like dnf
+  # does online.
   case node['platform_family']
   when 'debian'
-    dpkg_package java_agent_package do
-      source ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java_agent'])
-      action :install
-    end
-    dpkg_package 'axon-agent' do
-      source package_path
-      action :install
+    execute 'install-axon-agent-packages' do
+      command "dpkg -i #{java_agent_package} #{package_path}"
+      not_if "dpkg -s axon-agent 2>/dev/null | grep -q '^Status: install ok installed'"
       notifies :restart, 'service[axon-agent]', :delayed
     end
   when 'rhel', 'fedora', 'amazon'
-    rpm_package java_agent_package do
-      source ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java_agent'])
-      action :install
-      notifies :restart, 'service[axon-agent]', :delayed
-    end
-    rpm_package 'axon-agent' do
-      source package_path
-      action :install
+    execute 'install-axon-agent-packages' do
+      command "rpm -Uvh #{java_agent_package} #{package_path}"
+      not_if 'rpm -q axon-agent'
       notifies :restart, 'service[axon-agent]', :delayed
     end
   end

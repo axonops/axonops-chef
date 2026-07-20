@@ -5,17 +5,6 @@ All notable changes to the AxonOps Chef Cookbook will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2025-07-27
-
-### Added
-- Added `skip_vm_swappiness` attribute to control vm.swappiness setting
-- Added not_if condition to vm.swappiness sysctl resource in system_tuning recipe
-- Updated example node configurations to include skip_vm_swappiness attribute
-
-### Changed
-- Updated cookbook version from 0.1.0 to 0.2.0 in metadata.rb
-- Updated cookbook_version field in all example JSON files to match new version
-
 ## [Unreleased]
 
 ### Added
@@ -39,6 +28,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   systemd-enabled base images for kitchen-docker CI — AxonOps packages call
   `systemctl` in their postinst scripts, which needs a real init system
   kitchen-docker's stock containers don't have.
+- `offline-download-script.sh.erb`: rewritten to use `dnf download`/
+  `apt-get download` against the real AxonOps repo (same repo config as
+  `recipes/repo.rb`) for `axon-agent`/`axon-server`/`axon-dash`/the
+  series-specific `axon-cassandra*-agent` java-agent package, instead of
+  guessing download URLs — confirmed via `dnf download --url` that
+  packages.axonops.com serves flat, content-hashed filenames with no
+  predictable `el${VER}/${ARCH}/name-version.rpm` path. The java-agent jar
+  is extracted from that downloaded package (no standalone jar URL exists).
+  Also downloads the monitored Cassandra itself as an RPM when
+  `install_format == 'pkg'` (3.11 via the JFrog mirror, 4.1/5.0 via
+  `redhat.cassandra.apache.org` — both real static paths, unlike the
+  AxonOps repo). Elasticsearch/Zulu tarball URLs fixed to use uname-style
+  arch names (`aarch64`/`x86_64`), not Debian-style (`arm64`/`amd64`), which
+  404 upstream. New `axonops.offline_packages.cassandra_pkg` attribute
+  (distinct from the tarball `cassandra` key) for the RPM/deb case.
+  Verified end-to-end in a real container: downloaded packages, installed
+  from them, both `axon-agent` and `cassandra` (3.11) services came up.
 
 ### Fixed
 
@@ -91,6 +97,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 tarball and RPM/`install_format: pkg`, on Amazon Linux 2023) surfaced a long
 chain of real, previously-undetected bugs. Verified with `nodetool status`
 showing the node `UN` and CQL bound on 9042.
+
+#### Offline/airgapped install, verified end to end (download → install → running services)
+- `recipes/agent.rb`'s offline branch had the exact same RPM-transaction-split
+  bug already fixed for the online path: `axon-cassandra*-agent` and
+  `axon-agent` installed as two separate `rpm_package`/`dpkg_package`
+  resources, so whichever ran first failed on the unresolved `axon-agent`
+  dependency. Fixed the same way — a single `rpm -Uvh`/`dpkg -i` invocation
+  installing both files in one transaction.
+- `recipes/install_cassandra_pkg.rb`: offline + `install_format: pkg` had no
+  install path at all — the online branch's `package 'cassandra'` resource
+  resolves from a yum/apt repo that offline mode explicitly skips creating,
+  so it had nothing to install from. Added an offline branch that installs
+  directly from a local RPM/deb (new `offline_packages.cassandra_pkg`
+  attribute), matching the pattern `recipes/agent.rb` already used.
+- `recipes/cassandra_self_signed.rb`: `keytool` was invoked bare, relying on
+  PATH — but Chef `bash`/`execute` resources don't source
+  `/etc/profile.d/java.sh` (login-shell only), so it was never actually
+  resolvable even with Java installed. Now resolved from the stable
+  `java_home` symlink `recipes/java.rb` maintains.
+- `recipes/cassandra_self_signed.rb`: the self-signed cert's SAN extension
+  included `dns:#{node['fqdn']}`/`dns:#{node['hostname']}` unfiltered — on a
+  host where Ohai can't resolve a hostname (e.g. a bare container), these
+  come back blank, and `keytool` rejects the whole `-ext` flag with
+  "DNSName must not be null or empty". Blank entries are now filtered out,
+  keeping `localhost`/`127.0.0.1` as a guaranteed fallback.
+- `recipes/cassandra_self_signed.rb`: added a defensive `package 'openssl'`
+  install — the recipe hard-requires it for the DER→PEM conversion steps but
+  never ensured it was present.
+- `recipes/system_tuning.rb`: `/etc/security/limits.d` and `/etc/default`
+  aren't guaranteed present on minimal container images (same reasoning as
+  the existing `/etc/sysctl.d` guard) — guarded/created defensively.
+- `recipes/common.rb`'s `sysctl-reload` execute resource checked that the
+  `sysctl` binary existed but not whether the environment could actually
+  write to `/proc/sys` — an unprivileged container has the binary but gets
+  "permission denied" regardless. Now skipped in containers, matching
+  `system_tuning.rb`'s own existing container-detection guard.
+
+**Reason**: Manually testing offline/airgapped install end to end (download
+via the regenerated `offline-download-script.sh.erb`, then
+`recipe[axonops::cassandra]` with `offline_install: true` against those
+downloaded packages, on Amazon Linux 2023) surfaced this chain of real bugs.
+Verified with `systemctl status` showing both `axon-agent` and `cassandra`
+`active (running)`, and `nodetool status` showing the node `UN`.
 
 #### Multi-version Cassandra support (epic #19)
 - Added `AxonOps::CassandraVersion` library (`libraries/cassandra_version.rb`)
@@ -299,3 +348,14 @@ For existing users:
 
 ### Contributors
 - Brian Stark - Initial Chef Server deployment documentation and implementation
+
+## [0.2.0] - 2025-07-27
+
+### Added
+- Added `skip_vm_swappiness` attribute to control vm.swappiness setting
+- Added not_if condition to vm.swappiness sysctl resource in system_tuning recipe
+- Updated example node configurations to include skip_vm_swappiness attribute
+
+### Changed
+- Updated cookbook version from 0.1.0 to 0.2.0 in metadata.rb
+- Updated cookbook_version field in all example JSON files to match new version

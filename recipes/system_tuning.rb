@@ -46,6 +46,12 @@ execute 'sysctl -p /etc/sysctl.d/99-cassandra.conf' do
   not_if { running_in_container }
 end
 
+# /etc/security/limits.d normally ships with pam/shadow-utils, but minimal
+# container base images can lack it (same reasoning as /etc/sysctl.d above).
+directory '/etc/security/limits.d' do
+  recursive true
+end
+
 template '/etc/security/limits.d/cassandra.conf' do
   source 'limits.conf.erb'
   owner 'root'
@@ -61,6 +67,12 @@ template '/etc/security/limits.d/cassandra.conf' do
 end
 
 if node['axonops']['cassandra']['disable_irqbalance']
+  # /etc/default normally ships with the base OS, but minimal container
+  # images can lack it (same reasoning as /etc/sysctl.d above).
+  directory '/etc/default' do
+    recursive true
+  end
+
   file '/etc/default/irqbalance' do
     content "ENABLED=\"0\"\n"
     mode '0644'

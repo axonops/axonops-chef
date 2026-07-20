@@ -62,29 +62,57 @@ unless node['axonops']['offline_install']
   end
 end
 
+if node['axonops']['offline_install']
+  cassandra_pkg_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['cassandra_pkg'])
+  raise("Offline package not found: #{cassandra_pkg_path}") unless ::File.exist?(cassandra_pkg_path)
+end
+
 if platform_family?('debian')
   node.override['axonops']['cassandra']['conf_dir'] = '/etc/cassandra'
 
-  apt_package 'cassandra' do
-    version cassandra_version
-    action :install
-  end
+  if node['axonops']['offline_install']
+    # No repo was configured above in offline mode, so `apt_package
+    # 'cassandra'` (which resolves the version from a repo) has nothing to
+    # install from — install the downloaded .deb directly instead, same
+    # pattern as recipes/agent.rb's offline branch.
+    dpkg_package 'cassandra' do
+      source cassandra_pkg_path
+      action :install
+    end
+  else
+    apt_package 'cassandra' do
+      version cassandra_version
+      action :install
+    end
 
-  execute 'hold-cassandra' do
-    command 'apt-mark hold cassandra'
-    action :run
-    not_if "apt-mark showhold | grep -q '^cassandra$'"
+    execute 'hold-cassandra' do
+      command 'apt-mark hold cassandra'
+      action :run
+      not_if "apt-mark showhold | grep -q '^cassandra$'"
+    end
   end
 elsif platform_family?('rhel', 'amazon')
   node.override['axonops']['cassandra']['conf_dir'] = '/etc/cassandra/conf'
 
-  # yum_package needs python yum bindings that dnf-only distros (Amazon Linux
-  # 2023, RHEL 9+) don't ship. The generic package resource lets Chef pick
-  # dnf_package there and yum_package on older yum-based RHEL/CentOS.
-  package 'cassandra' do
-    version "#{cassandra_version}-1"
-    action :install
-    allow_downgrade true
+  if node['axonops']['offline_install']
+    # Same reasoning as the Debian branch above: no yum repo in offline mode,
+    # so point the package resource at the downloaded RPM directly.
+    package 'cassandra' do
+      source cassandra_pkg_path
+      version "#{cassandra_version}-1"
+      action :install
+      allow_downgrade true
+    end
+  else
+    # yum_package needs python yum bindings that dnf-only distros (Amazon
+    # Linux 2023, RHEL 9+) don't ship. The generic package resource lets
+    # Chef pick dnf_package there and yum_package on older yum-based
+    # RHEL/CentOS.
+    package 'cassandra' do
+      version "#{cassandra_version}-1"
+      action :install
+      allow_downgrade true
+    end
   end
 else
   raise Chef::Exceptions::UnsupportedAction, 'Unsupported platform family for Cassandra package installation.'

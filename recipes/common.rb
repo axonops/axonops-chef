@@ -57,6 +57,11 @@ execute 'sysctl-reload' do
   # sysctl ships with procps, present on any real target but not always on
   # minimal container base images — don't hard-fail the whole converge over
   # a reload command that couldn't possibly matter if the kernel-tunable
-  # apply mechanism itself isn't even installed.
+  # apply mechanism itself isn't even installed. Even when the binary is
+  # present, an unprivileged container's /proc/sys is read-only, so sysctl -p
+  # exits nonzero with "permission denied" regardless — skip there too,
+  # same reasoning recipes/system_tuning.rb already applies to its own
+  # sysctl execute resource.
   only_if { ::File.exist?('/usr/sbin/sysctl') || ::File.exist?('/sbin/sysctl') }
+  not_if { ::File.exist?('/.dockerenv') || (::File.exist?('/proc/1/cgroup') && ::File.read('/proc/1/cgroup').match?(/docker|lxc|kubepods/)) }
 end

@@ -3,3 +3,5 @@ INTERNAL.md
 example/inventory
 
 .DS_Store
+berks-cookbooks/
+issues.json

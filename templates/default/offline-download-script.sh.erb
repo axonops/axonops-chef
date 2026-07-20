@@ -28,14 +28,46 @@ else
     exit 1
 fi
 
-ARCH=$(uname -m)
+UNAME_ARCH=$(uname -m)
+ARCH="$UNAME_ARCH"
 if [ "$ARCH" = "x86_64" ]; then
     ARCH="amd64"
 elif [ "$ARCH" = "aarch64" ]; then
     ARCH="arm64"
 fi
 
-# Download function
+# Extract the java-agent jar from an already-downloaded axon-cassandra*-agent
+# package rather than guessing a standalone download URL — verified there
+# isn't one (packages.axonops.com/files/java-agent/... 404s). `rpm -qlp`
+# against the real RPM confirms the jar only ships inside the package, at
+# /usr/share/axonops/<package>.jar.
+extract_jar_from_rpm() {
+    local rpm_file=$1
+    local out_jar="$DOWNLOAD_DIR/<%= @java_agent_package %>-<%= @java_agent_version %>.jar"
+    local extract_dir
+    extract_dir=$(mktemp -d)
+    (cd "$extract_dir" && rpm2cpio "$rpm_file" | cpio -idm --quiet)
+    find "$extract_dir" -name '*.jar' -exec cp {} "$out_jar" \;
+    rm -rf "$extract_dir"
+}
+
+extract_jar_from_deb() {
+    local deb_file=$1
+    local out_jar="$DOWNLOAD_DIR/<%= @java_agent_package %>-<%= @java_agent_version %>.jar"
+    local extract_dir
+    extract_dir=$(mktemp -d)
+    dpkg-deb -x "$deb_file" "$extract_dir"
+    find "$extract_dir" -name '*.jar' -exec cp {} "$out_jar" \;
+    rm -rf "$extract_dir"
+}
+
+# Download function for real, static URLs (Cassandra/Elasticsearch/Zulu
+# upstream tarballs and RPMs) — NOT for AxonOps' own axon-agent/server/dash/
+# java-agent packages below, which come from a flat, repodata-driven yum/apt
+# repo with content-hashed filenames (confirmed via `dnf download --url`
+# against packages.axonops.com — there is no predictable el${VER}/${ARCH}/
+# name-version.rpm path to construct). Those are fetched via the package
+# manager itself, pointed at the real repo from recipes/repo.rb.
 download_package() {
     local url=$1
     local filename=$2
@@ -51,40 +83,103 @@ download_package() {
     fi
 }
 
-# Example downloads (adjust versions and URLs as needed)
+# Example downloads (adjust versions as needed)
 case $OS in
     ubuntu|debian)
-        # Agent
-        download_package \
-            "${REPO_URL}/apt/pool/main/a/axon-agent/axon-agent_<%= @agent_version %>_${ARCH}.deb" \
-            "axon-agent_<%= @agent_version %>_${ARCH}.deb"
+        # Configure the real AxonOps apt repo (recipes/repo.rb) so apt-get
+        # download resolves actual package filenames/paths itself.
+        apt-get install -y apt-transport-https ca-certificates curl gnupg apt-utils
+        curl -L "${REPO_URL}/apt/repo-signing-key.gpg" | gpg --dearmor -o /usr/share/keyrings/axonops.gpg
+        echo "deb [arch=arm64,amd64 trusted=yes signed-by=/usr/share/keyrings/axonops.gpg] ${REPO_URL}/apt axonops-apt main" \
+            > /etc/apt/sources.list.d/axonops.list
+        apt-get update
 
-        # Server
-        download_package \
-            "${REPO_URL}/apt/pool/main/a/axon-server/axon-server_<%= @server_version %>_${ARCH}.deb" \
-            "axon-server_<%= @server_version %>_${ARCH}.deb"
+        download_deb_package() {
+            local pkg_spec=$1
+            echo "Downloading (apt-get download): $pkg_spec"
+            (cd "$DOWNLOAD_DIR" && apt-get download "$pkg_spec")
+        }
 
-        # Dashboard
-        download_package \
-            "${REPO_URL}/apt/pool/main/a/axon-dash/axon-dash_<%= @dashboard_version %>_${ARCH}.deb" \
-            "axon-dash_<%= @dashboard_version %>_${ARCH}.deb"
+        # pkg=version:arch pins the exact arch — matches the dnf/RPM lesson
+        # above (a version-only spec can otherwise resolve ambiguously on a
+        # multi-arch repo).
+        download_deb_package "axon-agent=<%= @agent_version %>-1:${ARCH}"
+        download_deb_package "axon-server=<%= @server_version %>-1:${ARCH}"
+        download_deb_package "axon-dash=<%= @dashboard_version %>-1:${ARCH}"
+
+        # Cassandra java-agent package (axonops::agent's offline install expects
+        # an actual .deb here, matching node['axonops']['offline_packages']
+        # ['java_agent'] — not the raw jar, which only the tar/4.1/5.0 sourcing
+        # path in cassandra-env.sh uses). Like its RPM counterpart this is a
+        # noarch/all package (single java-agent jar, no compiled code), unlike
+        # axon-agent/server/dash above. <%= @monitored_cassandra_series %>
+        # series package: <%= @java_agent_package %>
+        download_deb_package "<%= @java_agent_package %>=<%= @java_agent_version %>-1:all"
+        extract_jar_from_deb "$DOWNLOAD_DIR/<%= @java_agent_package %>_<%= @java_agent_version %>-1_all.deb"
         ;;
 
-    centos|rhel|fedora)
-        # Agent
-        download_package \
-            "${REPO_URL}/yum/el${VER%%.*}/${ARCH}/axon-agent-<%= @agent_version %>-1.el${VER%%.*}.${ARCH}.rpm" \
-            "axon-agent-<%= @agent_version %>-1.el${VER%%.*}.${ARCH}.rpm"
+    centos|rhel|fedora|amzn)
+        # Configure the real AxonOps yum repo (recipes/repo.rb) so dnf
+        # download resolves the actual content-hashed package URLs itself.
+        cat > /etc/yum.repos.d/axonops.repo <<REPOEOF
+[axonops]
+name=AxonOps Repository
+baseurl=${REPO_URL}/yum/
+enabled=1
+gpgcheck=0
+REPOEOF
+        # dnf-command(download) is usually present via dnf-plugins-core; cpio
+        # and find/findutils aren't on minimal images (e.g. Amazon Linux
+        # 2023) but are needed below to extract the jar out of the
+        # java-agent RPM.
+        dnf -y install 'dnf-command(download)' cpio findutils > /dev/null 2>&1 || true
 
-        # Server
-        download_package \
-            "${REPO_URL}/yum/el${VER%%.*}/${ARCH}/axon-server-<%= @server_version %>-1.el${VER%%.*}.${ARCH}.rpm" \
-            "axon-server-<%= @server_version %>-1.el${VER%%.*}.${ARCH}.rpm"
+        # NEVRA spec (name-version-release.arch) — a bare "name-version" spec
+        # matches every arch dnf knows about and silently downloads all of
+        # them (verified: "axon-agent-2.0.30" alone pulled both x86_64 *and*
+        # aarch64 RPMs). Pin the exact arch so only one file comes down.
+        RPM_ARCH=$(uname -m)
 
-        # Dashboard
+        download_rpm_package() {
+            local pkg_spec=$1
+            echo "Downloading (dnf download): $pkg_spec"
+            dnf download --destdir "$DOWNLOAD_DIR" "$pkg_spec"
+        }
+
+        download_rpm_package "axon-agent-<%= @agent_version %>-1.${RPM_ARCH}"
+        download_rpm_package "axon-server-<%= @server_version %>-1.${RPM_ARCH}"
+        download_rpm_package "axon-dash-<%= @dashboard_version %>-1.${RPM_ARCH}"
+
+        # Cassandra java-agent package. axon-cassandra3.11-agent in particular
+        # ships both a stale x86_64 build and the fixed noarch build under the
+        # same name/version — dnf/yum prefer the exact-arch match, so pin
+        # noarch explicitly here too (see recipes/agent.rb for the matching
+        # online-install fix). <%= @monitored_cassandra_series %> series
+        # package: <%= @java_agent_package %>
+        download_rpm_package "<%= @java_agent_package %>-<%= @java_agent_version %>-1.noarch"
+        # dnf download's saved filename is content-hash-prefixed and
+        # unpredictable — glob for the one just downloaded to extract from.
+        JAVA_AGENT_RPM=$(ls "$DOWNLOAD_DIR"/*"<%= @java_agent_package %>-<%= @java_agent_version %>"*.rpm | head -1)
+        extract_jar_from_rpm "$JAVA_AGENT_RPM"
+
+<% if @monitored_cassandra_install_format == 'pkg' -%>
+        # Monitored Cassandra <%= @monitored_cassandra_version %> itself, as an
+        # RPM (install_format 'pkg'). 3.11 dropped off Apache's own RPM repo,
+        # so it comes from the JFrog mirror configured via
+        # node['axonops']['cassandra']['redhat_repository_url_311x']; 4.1/5.0
+        # still come from redhat.cassandra.apache.org (see
+        # recipes/install_cassandra_pkg.rb). Unlike the AxonOps repo above,
+        # these are real static paths (verified via direct curl), so a plain
+        # download_package works.
+<% if @monitored_cassandra_series == '3.11' -%>
+        CASSANDRA_RPM_BASEURL="<%= @redhat_repository_url_311x %>"
+<% else -%>
+        CASSANDRA_RPM_BASEURL="https://redhat.cassandra.apache.org/<%= @monitored_cassandra_series.delete('.') %>x/noboolean/"
+<% end -%>
         download_package \
-            "${REPO_URL}/yum/el${VER%%.*}/${ARCH}/axon-dash-<%= @dashboard_version %>-1.el${VER%%.*}.${ARCH}.rpm" \
-            "axon-dash-<%= @dashboard_version %>-1.el${VER%%.*}.${ARCH}.rpm"
+            "${CASSANDRA_RPM_BASEURL}cassandra-<%= @monitored_cassandra_version %>-1.noarch.rpm" \
+            "cassandra-<%= @monitored_cassandra_version %>-1.noarch.rpm"
+<% end -%>
         ;;
 
     *)
@@ -93,30 +188,33 @@ case $OS in
         ;;
 esac
 
-# Java Agent (platform independent)
-download_package \
-    "${REPO_URL}/files/java-agent/<%= @java_agent_version %>/<%= @java_agent_package %>.jar" \
-    "<%= @java_agent_package %>-<%= @java_agent_version %>.jar"
+# Note: the java-agent jar is extracted from the axon-cassandra*-agent
+# package above (RPM/deb), not downloaded standalone — there is no such URL
+# on packages.axonops.com (verified: /files/java-agent/... 404s).
 
-# Cassandra tarball for AxonOps metrics storage
+# Cassandra tarball for AxonOps metrics storage (axonops::server's own
+# Cassandra, always installed from tarball regardless of install_format).
 CASSANDRA_VERSION="<%= @cassandra_version || '5.0.4' %>"
 download_package \
     "https://archive.apache.org/dist/cassandra/${CASSANDRA_VERSION}/apache-cassandra-${CASSANDRA_VERSION}-bin.tar.gz" \
     "apache-cassandra-${CASSANDRA_VERSION}-bin.tar.gz"
 
-# Elasticsearch tarball for AxonOps configuration storage
+# Elasticsearch tarball for AxonOps configuration storage. Upstream uses
+# uname-style arch names (x86_64/aarch64), not Debian's (amd64/arm64) —
+# verified via direct HEAD request; the latter 404s.
 ELASTIC_VERSION="<%= @elastic_version || '7.17.16' %>"
 download_package \
-    "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELASTIC_VERSION}-linux-${ARCH}.tar.gz" \
-    "elasticsearch-${ELASTIC_VERSION}-linux-${ARCH}.tar.gz"
+    "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELASTIC_VERSION}-linux-${UNAME_ARCH}.tar.gz" \
+    "elasticsearch-${ELASTIC_VERSION}-linux-${UNAME_ARCH}.tar.gz"
 
-# Zulu JDK tarball
+# Zulu JDK tarball. Also uname-style arch (aarch64, not arm64) on ARM —
+# verified via direct HEAD request; x86_64 is "x64" per Azul's own naming.
 ZULU_VERSION="<%= @zulu_version || '17.0.9' %>"
 ZULU_BUILD="<%= @zulu_build || '17.46.19-ca' %>"
-if [ "$ARCH" = "amd64" ]; then
+if [ "$UNAME_ARCH" = "x86_64" ]; then
     ZULU_ARCH="x64"
 else
-    ZULU_ARCH="$ARCH"
+    ZULU_ARCH="$UNAME_ARCH"
 fi
 download_package \
     "https://cdn.azul.com/zulu/bin/zulu${ZULU_BUILD}-jdk${ZULU_VERSION}-linux_${ZULU_ARCH}.tar.gz" \

@@ -9,12 +9,24 @@
 return unless node['axonops']['cassandra']['ssl']['self_signed']
 
 # Get keystore configuration from server_encryption_options (used for both server and client)
-keytool_cmd = node['axonops']['cassandra']['ssl']['keytool'] || "keytool"
+# recipes/java.rb only ever puts `java` itself on PATH (via `alternatives
+# --set java`, or /etc/profile.d/java.sh for interactive shells only — a
+# `bash` resource's non-login shell doesn't source it either way); resolve
+# keytool from the stable java_home symlink instead of relying on PATH.
+keytool_cmd = node['axonops']['cassandra']['ssl']['keytool'] || "#{node['java']['java_home']}/bin/keytool"
 keystore_path = node['axonops']['cassandra']['server_encryption_options']['keystore']
 keystore_password = node['axonops']['cassandra']['server_encryption_options']['keystore_password']
 truststore_path = node['axonops']['cassandra']['server_encryption_options']['truststore']
 truststore_password = node['axonops']['cassandra']['server_encryption_options']['truststore_password']
 key_alias = node['axonops']['cassandra']['key_alias'] || 'cassandra'
+
+# openssl is near-universal but not guaranteed on minimal container base
+# images (verified missing on a stock Amazon Linux 2023 image) — this
+# recipe hard-requires it for the PEM conversion steps below.
+package 'openssl' do
+  action :install
+  not_if { ::File.exist?('/usr/bin/openssl') }
+end
 
 # Ensure the directory exists
 keystore_dir = ::File.dirname(keystore_path)
@@ -26,9 +38,15 @@ directory keystore_dir do
 end
 
 # Generate self-signed certificate and keystore
-# Note: CN should be the hostname or IP that clients will connect to
+# Note: CN should be the hostname or IP that clients will connect to.
+# node['hostname']/node['fqdn'] can come back blank from Ohai on a bare
+# container without a resolvable hostname — an empty `dns:` SAN entry makes
+# keytool reject the whole -ext flag ("DNSName must not be null or empty"),
+# so filter blanks out and always keep localhost as a fallback.
 hostname = node['hostname']
 fqdn = node['fqdn'] || hostname
+cn = fqdn && !fqdn.empty? ? fqdn : 'localhost'
+san_entries = ([fqdn, hostname, 'localhost'].compact.reject(&:empty?).uniq.map { |n| "dns:#{n}" } + ['ip:127.0.0.1']).join(',')
 
 bash 'generate_cassandra_keystore' do
   code <<-EOH
@@ -44,8 +62,8 @@ bash 'generate_cassandra_keystore' do
       -keystore #{keystore_path} \
       -storepass #{keystore_password} \
       -keypass #{keystore_password} \
-      -dname "CN=#{fqdn}, OU=Cassandra, O=AxonOps, L=City, ST=State, C=US" \
-      -ext "SAN=dns:#{fqdn},dns:#{hostname},dns:localhost,ip:127.0.0.1"
+      -dname "CN=#{cn}, OU=Cassandra, O=AxonOps, L=City, ST=State, C=US" \
+      -ext "SAN=#{san_entries}"
 
     # Export the certificate
     #{keytool_cmd} -exportcert \
