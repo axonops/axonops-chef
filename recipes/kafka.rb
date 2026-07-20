@@ -57,13 +57,7 @@ end
 if node['axonops']['offline_install']
   # Offline installation
   tarball_name = node['axonops']['packages']['kafka_tarball'] || "kafka_#{scala_version}-#{kafka_version}.tgz"
-  tarball_path = ::File.join(node['axonops']['offline_packages_path'], tarball_name)
-
-  unless ::File.exist?(tarball_path)
-    raise("Offline Kafka tarball not found: #{tarball_path}")
-  end
-
-  tarball_source = tarball_path
+  tarball_source = AxonOpsOffline.resolve(self, tarball_name)
 else
   # Online installation
   tarball_url = node['axonops']['kafka']['tarball_url'] || "#{node['axonops']['kafka']['apache_mirror']}/kafka/#{kafka_version}/kafka_#{scala_version}-#{kafka_version}.tgz"

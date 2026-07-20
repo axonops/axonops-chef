@@ -31,6 +31,26 @@ module AxonOpsCassandra
     '5.1' => 8, # DSE 5.1 runs on Java 8, same as Apache Cassandra 3.11.
   }.freeze
 
+  # AxonOps Cassandra java-agent RPM/deb package name for each series. DSE
+  # isn't listed here — recipes/agent.rb calls dse_java_agent_package below
+  # for that edition instead, keyed by node['axonops']['cassandra']
+  # ['dse_version'] rather than the Cassandra version.
+  JAVA_AGENT_PACKAGE = {
+    '3.11' => 'axon-cassandra3.11-agent',
+    '4.1' => 'axon-cassandra4.1-agent',
+    '5.0' => 'axon-cassandra5.0-agent-jdk17',
+  }.freeze
+
+  # AxonOps DSE java-agent RPM/deb package name for each DSE series (there is
+  # no single generic 'axon-dse-agent' package — confirmed via `dnf search
+  # dse` against packages.axonops.com).
+  DSE_JAVA_AGENT_PACKAGE = {
+    '5.1' => 'axon-dse5.1-agent',
+    '6.7' => 'axon-dse6.7-agent',
+    '6.8' => 'axon-dse6.8-agent',
+    '6.9' => 'axon-dse6.9-agent',
+  }.freeze
+
   # Duration unit -> milliseconds.
   MS_PER_UNIT = {
     'ms' => 1,
@@ -85,6 +105,20 @@ module AxonOpsCassandra
     series(version)
   end
 
+  # AxonOps java-agent package name matching the given Cassandra version.
+  def java_agent_package(version)
+    JAVA_AGENT_PACKAGE.fetch(series(version))
+  end
+
+  # AxonOps java-agent package name matching the given DSE series
+  # (node['axonops']['cassandra']['dse_version']: '5.1', '6.7', '6.8', '6.9').
+  def dse_java_agent_package(dse_version)
+    DSE_JAVA_AGENT_PACKAGE.fetch(dse_version.to_s) do
+      raise ArgumentError,
+            "Unsupported DSE version '#{dse_version}'. Supported: #{DSE_JAVA_AGENT_PACKAGE.keys.join(', ')}."
+    end
+  end
+
   # Parse a "<number><unit>" duration string ("2000ms", "3h", "30m") into an
   # integer number of milliseconds. Bare numbers are treated as milliseconds.
   def to_ms(value)
@@ -124,6 +158,29 @@ module AxonOpsCassandra
   # or manage it as Apache Cassandra.
   def dse_installed?
     ::File.exist?('/etc/dse/cassandra/cassandra.yaml') || ::Dir.glob('/opt/dse').any?
+  end
+
+  # Resolve the cassandra-env.sh path for a DSE install, where recipes/agent.rb
+  # appends the axon-agent JAVA_OPTS -javaagent line. `explicit_path` (from
+  # node['axonops']['cassandra']['dse_env_file']) always wins. Otherwise tries
+  # the rpm/deb package default, then searches `search_paths` (globbed) for the
+  # tar layout, where cassandra-env.sh lives under resources/cassandra/conf —
+  # DSE tarballs wrap Cassandra with bin/dse, not a top-level bin/cassandra.
+  # Returns nil if nothing matches, so callers can skip silently.
+  def dse_env_file(explicit_path, search_paths = [])
+    return explicit_path if explicit_path
+
+    rpm_deb_default = '/etc/dse/cassandra/cassandra-env.sh'
+    return rpm_deb_default if ::File.exist?(rpm_deb_default)
+
+    search_paths.each do |path|
+      ::Dir.glob(path).each do |dse_home|
+        candidate = "#{dse_home}/resources/cassandra/conf/cassandra-env.sh"
+        return candidate if ::File.exist?(candidate)
+      end
+    end
+
+    nil
   end
 
   # --- internal helpers -------------------------------------------------

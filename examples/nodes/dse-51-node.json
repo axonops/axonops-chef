@@ -1,0 +1,25 @@
+{
+  "tags": [
+    "dse",
+    "axonops"
+  ],
+  "java": {
+    "version": 8
+  },
+  "axonops": {
+    "agent": {
+      "org_name": "axonops_dev",
+      "tls_mode": "disabled"
+    },
+    "cassandra": {
+      "edition": "dse",
+      "dse_version": "5.1"
+    }
+  },
+  "name": "chef01",
+  "description": "Existing DSE 5.1 cluster, monitored by the AxonOps agent (no Cassandra install/manage)",
+  "run_list": [
+    "recipe[axonops::java]",
+    "recipe[axonops::agent]"
+  ]
+}

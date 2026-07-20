@@ -51,16 +51,21 @@ cassandra_search_paths = [
   cassandra_home,
 ].compact.uniq
 
-# Search for Cassandra installation
+# Search for Cassandra installation. DSE tarballs don't expose bin/cassandra
+# at the top level (it's wrapped by bin/dse) — the real Cassandra tree lives
+# under resources/cassandra/, so that's checked as a second candidate.
 ruby_block 'detect-cassandra' do
   block do
+    bin_candidates = ['bin/cassandra', 'resources/cassandra/bin/cassandra']
+    conf_candidates = %w(conf config resources/cassandra/conf /etc/cassandra /etc/dse/cassandra)
+
     cassandra_search_paths.each do |path|
       expanded_paths = Dir.glob(path)
       expanded_paths.each do |expanded_path|
-        next unless ::File.exist?("#{expanded_path}/bin/cassandra")
+        next unless bin_candidates.any? { |bin| ::File.exist?("#{expanded_path}/#{bin}") }
         cassandra_home = expanded_path
         # Look for config directory
-        %w(conf config /etc/cassandra /etc/dse/cassandra).each do |conf_dir|
+        conf_candidates.each do |conf_dir|
           full_conf_path = conf_dir.start_with?('/') ? conf_dir : "#{cassandra_home}/#{conf_dir}"
           if ::File.exist?("#{full_conf_path}/cassandra.yaml")
             cassandra_config = full_conf_path
@@ -139,16 +144,50 @@ if node.run_list.include?('recipe[axonops::kafka]') || kafka_detected
   java_agent_package = node['axonops']['java_agent']['kafka']
   java_agent_env_file = "#{kafka_home}/bin/kafka-server-start.sh"
   service = "kafka"
-elsif node.run_list.include?('recipe[axonops::cassandra]') || cassandra_detected
+elsif node.run_list.include?('recipe[axonops::cassandra]') || cassandra_detected ||
+      node['axonops']['cassandra']['edition'] == 'dse'
+  # DSE is force-selectable via node['axonops']['cassandra']['edition'] =
+  # 'dse' (see docs/DSE.md) precisely for cases where path-based
+  # auto-detection (cassandra_search_paths above) might miss a real,
+  # non-standard DSE install — an explicitly forced edition must be enough
+  # on its own to reach this branch, or the whole point of forcing it is
+  # defeated. Verified live: without this, edition: 'dse' alone still fell
+  # through to the "Could not detect Cassandra or Kafka" bail-out below and
+  # never installed anything.
   # BUG FIX: this previously read node['axonops']['java_agent']['cassandra'],
   # an attribute that is never defined anywhere, so java_agent_package always
   # resolved to nil for online (non-offline) Cassandra-monitoring installs.
+  #
+  # java_agent['package'] was also a single hardcoded default
+  # ('axon-cassandra5.0-agent-jdk17') despite its own comment promising
+  # auto-selection — every non-5.0/jdk17 install silently got the wrong
+  # agent build. Derive it from the actual Cassandra version instead, and
+  # only fall back to the attribute when it's been explicitly overridden.
   java_agent_package = if node['axonops']['cassandra']['edition'] == 'dse'
-                          node['axonops']['java_agent']['dse']
-                        else
+                          # There is no generic 'axon-dse-agent' package —
+                          # DSE's java-agent is version-specific
+                          # ('axon-dse5.1-agent', 'axon-dse6.7-agent', ...).
+                          # Explicit override wins (java_agent['dse']),
+                          # otherwise resolve from dse_version.
+                          node['axonops']['java_agent']['dse'] ||
+                            AxonOpsCassandra.dse_java_agent_package(node['axonops']['cassandra']['dse_version'])
+                        elsif node['axonops']['java_agent']['package'] != 'axon-cassandra5.0-agent-jdk17'
                           node['axonops']['java_agent']['package']
+                        else
+                          AxonOpsCassandra.java_agent_package(node['axonops']['cassandra']['version'])
                         end
-  java_agent_env_file = "#{cassandra_home}/conf/cassandra-env.sh"
+  java_agent_env_file = if node['axonops']['cassandra']['edition'] == 'dse'
+                          # See docs/DSE.md — rpm/deb and tar DSE installs put
+                          # cassandra-env.sh at different paths, and unlike a
+                          # cookbook-managed Cassandra there's no install_dir
+                          # attribute to derive it from.
+                          AxonOpsCassandra.dse_env_file(
+                            node['axonops']['cassandra']['dse_env_file'],
+                            cassandra_search_paths
+                          )
+                        else
+                          "#{cassandra_home}/conf/cassandra-env.sh"
+                        end
   service = "cassandra"
 else
   Chef::Log.error("Could not detect Cassandra or Kafka")
@@ -157,47 +196,55 @@ end
 
 # Install AxonOps agent package
 if node['axonops']['offline_install']
-  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['agent'])
-  java_agent_package = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java_agent'])
+  package_path = AxonOpsOffline.resolve(self, node['axonops']['offline_packages']['agent'])
+  java_agent_package = AxonOpsOffline.resolve(self, node['axonops']['offline_packages']['java_agent'])
 
-  unless ::File.exist?(package_path)
-    raise("Offline package not found: #{package_path}")
-  end
-
-  unless ::File.exist?(java_agent_package)
-    raise("Offline package not found: #{java_agent_package}")
-  end
-
+  # Same root cause as the online branch below: axon-cassandra*-agent depends
+  # on axon-agent, but two separate rpm_package/dpkg_package resources run as
+  # two separate transactions, so the first one (whichever it is) fails with
+  # an unresolved dependency. A single `rpm -Uvh`/`dpkg -i` invocation with
+  # both files installs them together in one transaction, exactly like dnf
+  # does online.
   case node['platform_family']
   when 'debian'
-    dpkg_package 'axon-agent' do
-      source package_path
-      action :install
+    execute 'install-axon-agent-packages' do
+      command "dpkg -i #{java_agent_package} #{package_path}"
+      not_if "dpkg -s axon-agent 2>/dev/null | grep -q '^Status: install ok installed'"
       notifies :restart, 'service[axon-agent]', :delayed
-    end
-    dpkg_package java_agent_package do
-      source ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java_agent'])
-      action :install
     end
   when 'rhel', 'fedora', 'amazon'
-    rpm_package 'axon-agent' do
-      source package_path
-      action :install
-      notifies :restart, 'service[axon-agent]', :delayed
-    end
-    rpm_package java_agent_package do
-      source ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java_agent'])
-      action :install
+    execute 'install-axon-agent-packages' do
+      command "rpm -Uvh #{java_agent_package} #{package_path}"
+      not_if 'rpm -q axon-agent'
       notifies :restart, 'service[axon-agent]', :delayed
     end
   end
 else
-  package 'axon-agent' do
+  # axon-cassandra*-agent packages depend on axon-agent, but two separate
+  # `package` resources run as two separate dnf/apt transactions — and
+  # rpm/dpkg can only reconcile a directory shared between two packages
+  # (both ship /var/lib/axonops) when they're installed together in the
+  # SAME transaction. Installed separately, the second install fails:
+  # "file /var/lib/axonops conflicts between attempted installs of
+  # axon-cassandra3.11-agent... and axon-agent...". One resource with both
+  # names installs them together, exactly like `dnf install
+  # axon-cassandra3.11-agent` does on its own (pulls axon-agent in as a
+  # dependency, single transaction, no conflict).
+  #
+  # axon-cassandra3.11-agent and axon-dse5.1-agent specifically also ship
+  # stale legacy digitalis.io-branded x86_64 builds (up to 1.0.4/1.0.3
+  # respectively) alongside newer axonops.com noarch builds under the same
+  # package name (confirmed via `dnf list --showduplicates`). dnf prefers an
+  # exact-arch match over a higher-version noarch one, so on x86_64 it
+  # silently picks the older, broken x86_64 build — which is exactly the one
+  # with the /var/lib/axonops conflict; the newer noarch build doesn't have
+  # it. Every other axon-cassandra*-agent/axon-dse*-agent package is
+  # noarch-only already, so forcing the .noarch arch selector is a no-op
+  # for them and only changes behavior for the packages that need it.
+  agent_package_name = platform_family?('rhel', 'fedora', 'amazon') ? "#{java_agent_package}.noarch" : java_agent_package
+  package [agent_package_name, 'axon-agent'] do
     action :install
     notifies :restart, 'service[axon-agent]', :delayed
-  end
-  package java_agent_package do
-    action :install
   end
 end
 
@@ -262,16 +309,43 @@ template '/etc/axonops/axon-agent.yml' do
 end
 
 unless java_agent_env_file.nil?
+  # notifies resolves its target against the compiled resource collection
+  # immediately, regardless of whether only_if below would skip this block
+  # at runtime — Chef raises Chef::Exceptions::ResourceNotFound right away
+  # if service[cassandra]/service[kafka] was never declared. Those are only
+  # declared by recipes/configure_cassandra.rb / recipes/kafka.rb, not this
+  # recipe — so axonops::agent run standalone to monitor an existing,
+  # cookbook-external Cassandra/DSE/Kafka (a common, documented use case —
+  # see docs/DSE.md) crashed unconditionally. Verified live. Only notify
+  # when the target genuinely exists in this run; this cookbook shouldn't
+  # be restarting a service it doesn't manage anyway.
+  service_resource_exists = begin
+    resources(service: service)
+    true
+  rescue Chef::Exceptions::ResourceNotFound
+    false
+  end
+
   ruby_block 'configure-jvm-agent' do
-    agent_line = ". /usr/share/axonops/axonops-jvm.options"
+    # DSE has no /usr/share/axonops/axonops-jvm.options override file (that's
+    # only shipped for the cookbook-managed Cassandra versions its own
+    # cassandra-env.sh.erb sources) — append the -javaagent flag directly,
+    # matching the axon-dse<version>-agent.jar this run installed.
+    is_dse = node['axonops']['cassandra']['edition'] == 'dse'
+    agent_line = if is_dse
+                   "JVM_OPTS=\"$JVM_OPTS -javaagent:/usr/share/axonops/#{java_agent_package}.jar=/etc/axonops/axon-agent.yml\""
+                 else
+                   ". /usr/share/axonops/axonops-jvm.options"
+                 end
+    match_pattern = is_dse ? /-javaagent:\/usr\/share\/axonops\/#{Regexp.escape(java_agent_package)}\.jar/ : /axonops-jvm\.options/
 
     block do
       file = Chef::Util::FileEdit.new(java_agent_env_file)
-      file.insert_line_if_no_match(/axonops-jvm\.options/, agent_line)
+      file.insert_line_if_no_match(match_pattern, agent_line)
       file.write_file
     end
 
-    notifies :restart, "service[#{service}]", :delayed
-    only_if { ::File.exist?(java_agent_env_file) }
+    notifies :restart, "service[#{service}]", :delayed if service_resource_exists
+    only_if { java_agent_env_file && ::File.exist?(java_agent_env_file) }
   end
 end

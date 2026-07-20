@@ -10,8 +10,17 @@
   roles_update_ms    = c['roles_update_interval'] ? cv.to_ms(c['roles_update_interval']) : cv.to_ms(c['roles_validity'])
   perms_update_ms    = c['permissions_update_interval'] ? cv.to_ms(c['permissions_update_interval']) : cv.to_ms(c['permissions_validity'])
   creds_update_ms    = c['credentials_update_interval'] ? cv.to_ms(c['credentials_update_interval']) : cv.to_ms(c['credentials_validity'])
-  server_enc         = c['server_encryption_options'] || {}
-  client_enc         = c['client_encryption_options'] || {}
+  # legacy_ssl_storage_port_enabled and accepted_protocols don't exist in
+  # Cassandra 3.11's encryption-options schema (added in later versions) —
+  # 3.11 rejects the yaml outright with "Invalid yaml. Please remove
+  # properties [...]" if they're present, so strip them before rendering.
+  # to_hash first: it deep-converts nested Chef::Node::Immutable{Mash,Array}
+  # values to plain Ruby, which reject alone won't do (it only filters keys,
+  # leaving nested values as Immutable objects that dump as YAML tagged
+  # types instead of plain arrays/hashes).
+  unsupported_311_enc_keys = %w(legacy_ssl_storage_port_enabled accepted_protocols)
+  server_enc = (c['server_encryption_options'] || {}).to_hash.reject { |k, _| unsupported_311_enc_keys.include?(k) }
+  client_enc = (c['client_encryption_options'] || {}).to_hash.reject { |k, _| unsupported_311_enc_keys.include?(k) }
 -%>
 # Cassandra 3.11 storage config YAML
 # Managed by Chef with the axonops cookbook (legacy schema)
@@ -167,10 +176,10 @@ dynamic_snitch_reset_interval_in_ms: <%= cv.to_ms(c['dynamic_snitch_reset_interv
 dynamic_snitch_badness_threshold: <%= c['dynamic_snitch_badness_threshold'] %>
 
 server_encryption_options:
-<%= c['server_encryption_options'].to_hash.to_yaml.sub(/---.*?\n/m, "").gsub(/^/, "    ") if c['server_encryption_options'] %>
+<%= server_enc.to_yaml.sub(/---.*?\n/m, "").gsub(/^/, "    ") unless server_enc.empty? %>
 
 client_encryption_options:
-<%= c['client_encryption_options'].to_hash.to_yaml.sub(/---.*?\n/m, "").gsub(/^/, "    ") if c['client_encryption_options'] %>
+<%= client_enc.to_yaml.sub(/---.*?\n/m, "").gsub(/^/, "    ") unless client_enc.empty? %>
 
 internode_compression: <%= c['internode_compression'] || 'dc' %>
 inter_dc_tcp_nodelay: false

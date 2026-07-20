@@ -12,8 +12,12 @@ end
 # Let the top-level axonops.offline_install flag drive Java's own offline
 # switch too, so a single flag airgaps the whole stack (agent/server/cassandra
 # -> java). Standalone callers can still set node['java']['offline_install']
-# directly.
-node.override['java']['offline_install'] ||= node['axonops']['offline_install']
+# directly. Reading node.override['java']['offline_install'] here (e.g. via
+# ||=) would auto-vivify an empty, truthy Mash on first access and get stuck
+# — only write to it, never read-then-write through the override chain.
+if node['axonops']['offline_install'] && !node['java']['offline_install']
+  node.override['java']['offline_install'] = true
+end
 
 # Resolve the package names and JAVA_HOME for the requested Java major version
 # (8, 11 or 17). The Cassandra recipe sets node['java']['version'] from the
@@ -36,22 +40,51 @@ install_from_tarball = node['java']['install_from_package'] == false || node['ja
 install_zulu = node['java']['zulu'] != false
 
 if node['java']['offline_install'] && node['java']['package']
-  # Install from specified package path
-  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java'])
+  # Explicit offline_packages['java'] filename selects just the top-level
+  # package; otherwise glob for every major-appropriate headless package
+  # (recipes/cassandra.rb sets node['java']['package'] = true specifically
+  # when install_format == 'pkg', keyed by java_major — offline_packages
+  # ['java'] is a single flat attribute, not major-aware, so most callers
+  # rely on the glob). Either way, install ALL matching files together in
+  # one transaction: the headless JDK package itself depends on further
+  # zulu*-headless packages (e.g. zulu8-jdk-headless needs zulu8-jre-headless
+  # and zulu8-ca-jdk-headless) that a single-file `rpm -i`/`dpkg -i` can't
+  # resolve offline — verified live: installing just the one named file
+  # fails with "Failed dependencies" / unmet deps. The download script's
+  # `dnf download --resolve` / `apt-get install --download-only` already
+  # stage the whole chain in offline_packages_path for this to glob up.
+  offline_dir = node['axonops']['offline_packages_path']
+  ext = platform_family?('debian') ? 'deb' : 'rpm'
+  headless_pkg_name = node['java']['zulu_headless_packages'][java_major]
 
-  unless ::File.exist?(package_path)
-    raise Chef::Exceptions::FileNotFound, "Java package not found at specified path: #{package_path}"
+  package_paths = if node['axonops']['offline_packages']['java'] &&
+                      ::File.exist?(::File.join(offline_dir, node['axonops']['offline_packages']['java']))
+                     [::File.join(offline_dir, node['axonops']['offline_packages']['java'])]
+                   else
+                     Dir.glob("#{offline_dir}/#{headless_pkg_name}*.#{ext}") +
+                       Dir.glob("#{offline_dir}/zulu#{java_major}*.#{ext}")
+                   end.uniq
+
+  if package_paths.empty?
+    raise Chef::Exceptions::FileNotFound,
+          "No offline Java package(s) found for major #{java_major} — looked for " \
+          "#{headless_pkg_name}*.#{ext} / zulu#{java_major}*.#{ext} in #{offline_dir} " \
+          "(or set node['axonops']['offline_packages']['java'] explicitly)"
   end
 
-  case node['platform_family']
-  when 'debian'
-    dpkg_package package_path do
-      action :install
-    end
-  when 'rhel', 'fedora'
-    rpm_package package_path do
-      action :install
-    end
+  execute 'install-offline-java-packages' do
+    command "#{platform_family?('debian') ? 'dpkg -i' : 'rpm -Uvh'} #{package_paths.join(' ')}"
+    not_if { ::Dir.glob('/usr/lib/jvm/*zulu*').any? }
+  end
+
+  # The package's own postinstall registers alternatives at a version-
+  # derived priority, but that doesn't override a *manually* pinned
+  # selection (e.g. left over from a prior tarball install on the same
+  # box) — force it back to auto so the newly-installed, highest-priority
+  # entry actually wins.
+  execute 'select-offline-java-package' do
+    command "#{platform_family?('debian') ? 'update-alternatives' : 'alternatives'} --auto java"
+    action :run
   end
 
   java_home = node['java']['java_home'] || node['java']['zulu_home'] || node['java']['openjdk_home']
@@ -165,7 +198,7 @@ elsif install_zulu && !node['java']['offline_install']
 
     java_home = node['java']['zulu_home']
 
-  when 'rhel', 'fedora'
+  when 'rhel', 'fedora', 'amazon'
     # Add Zulu repository
     rpm_package 'zulu-repo' do
       source node['java']['zulu_pkg_rpm']
@@ -173,12 +206,51 @@ elsif install_zulu && !node['java']['offline_install']
       not_if 'rpm -qa | grep -q zulu-repo'
     end
 
-    # Install Zulu JDK 17
+    # Install Zulu JDK. dnf/yum's package metadata cache doesn't pick up a
+    # repo registered earlier in this same converge (rpm_package[zulu-repo]
+    # above) automatically — without flushing it first this fails with "No
+    # candidate version available" on a fresh box that never had a dnf cache
+    # populated before the repo existed.
     package node['java']['zulu_pkg'] do
       action :install
+      flush_cache [:before]
     end
 
     java_home = node['java']['zulu_home']
+  end
+
+  # Zulu's RPM/deb postinstall registers itself via alternatives with its own
+  # priority, so on a box that ends up with multiple Zulu majors installed
+  # (e.g. after switching a node between Cassandra versions), `java` on PATH
+  # can silently point at the wrong major regardless of which package this
+  # converge just asked for — alternatives --auto picks by priority, not by
+  # "most recently installed". Force it explicitly so java_major above is
+  # actually what runs.
+  alternatives_cmd = platform_family?('debian') ? 'update-alternatives' : 'alternatives'
+  # alternatives --set matches on the exact path a package registered, which
+  # is NOT reliably "<zulu_home>/bin/java" or its realpath — that varies by
+  # distro/package (Amazon Linux's Zulu 8 build registers .../jre/bin/java,
+  # a symlink target different from its own bin/java; Ubuntu's Zulu 17 deb
+  # registers .../zulu17/bin/java directly, whose realpath differs again).
+  # Ask alternatives what it actually has instead of guessing a path shape.
+  registered_java_bins = begin
+    Mixlib::ShellOut.new("#{alternatives_cmd} --list java").tap(&:run_command).stdout.lines.map(&:strip)
+  rescue Errno::ENOENT
+    []
+  end
+  # Match by realpath, not the literal registered string — whichever symlink
+  # route a package's postinst used to register itself, it and our own
+  # "<zulu_home>/bin/java" both resolve to the same physical binary when
+  # they're the same JDK.
+  desired_java_bin = "#{java_home}/bin/java"
+  desired_java_realpath = ::File.exist?(desired_java_bin) ? ::File.realpath(desired_java_bin) : nil
+  target_java_bin = registered_java_bins.find do |path|
+    desired_java_realpath && ::File.exist?(path) && ::File.realpath(path) == desired_java_realpath
+  end
+
+  execute 'select-java-alternative' do
+    command "#{alternatives_cmd} --set java #{target_java_bin}"
+    not_if { target_java_bin.nil? || (::File.exist?('/usr/bin/java') && ::File.realpath('/usr/bin/java') == desired_java_realpath) }
   end
 
 else

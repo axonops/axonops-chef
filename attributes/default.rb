@@ -21,8 +21,6 @@ default['axonops']['server']['listen_address'] = '0.0.0.0'
 default['axonops']['server']['listen_port'] = 8080
 
 # Server Dependencies
-default['axonops']['server']['elasticsearch']['install'] = true
-default['axonops']['server']['elasticsearch']['url'] = 'http://127.0.0.1:9200'
 default['axonops']['server']['cassandra']['install'] = true
 default['axonops']['server']['cassandra']['hosts'] = ['127.0.0.1']
 
@@ -51,14 +49,23 @@ default['axonops']['backups'] = {}
 # Log Parsing Rules
 default['axonops']['log_rules'] = {}
 
-# Offline installation settings
+# Offline installation settings.
+# offline_packages_path accepts a local directory (default) or an http(s)://
+# base URL — package files are then downloaded via remote_file into Chef's
+# file cache. axonops::java's package-chain/tarball auto-discovery still
+# requires a local directory since it globs for dependent files by pattern.
 default['axonops']['offline_install'] = false
 default['axonops']['offline_packages_path'] = '/opt/axonops/offline'
 
-# Package names
+# Package names. 'cassandra' is the tarball used by axonops::cassandra's
+# tar install_format (also axonops::server's own metrics-storage Cassandra,
+# which is tar-only regardless of install_format); 'cassandra_pkg' is the
+# separate RPM/deb used by axonops::cassandra's pkg install_format
+# (recipes/install_cassandra_pkg.rb) — the two are never the same file.
 default['axonops']['offline_packages'] = {
-  'elasticsearch' => 'elasticsearch-7.17.29-linux-x86_64.tar.gz',
+  'opensearch' => 'opensearch-3.6.0-linux-x64.rpm',
   'cassandra' => 'apache-cassandra-5.0.5-bin.tar.gz',
+  'cassandra_pkg' => 'cassandra-5.0.5-1.noarch.rpm',
   'java' => 'zulu17-ca-jdk-headless-17.0.16-1.x86_64.rpm',
   'agent' => 'axon-agent-2.0.6-1.x86_64.rpm',
   'server' => 'axon-server-2.0.5-1.x86_64.rpm',

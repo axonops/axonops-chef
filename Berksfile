@@ -4,4 +4,3 @@ metadata
 
 cookbook 'yum', '~> 7.4'
 cookbook 'apt', '~> 7.6'
-cookbook 'sysctl', '~> 1.0'

@@ -1,0 +1,14 @@
+# Base image for kitchen-docker Rocky Linux platforms that actually boots
+# systemd as PID 1. See Dockerfile.systemd-ubuntu for why this is needed —
+# same fix, RHEL-family package manager.
+FROM rockylinux:9
+
+RUN dnf install -y systemd \
+    && dnf clean all
+
+# See Dockerfile.systemd-ubuntu — kitchen-docker's transport uses native
+# docker exec, so this needs to be a real container-level ENV, not
+# /etc/environment (PAM/login-shell only, docker exec never reads it).
+ENV CHEF_LICENSE=accept-no-persist
+
+STOPSIGNAL SIGRTMIN+3

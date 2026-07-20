@@ -37,7 +37,13 @@ jobs:
 
       - name: YAML validity (kitchen.yml + workflows)
         run: |
-          ruby -ryaml -e 'YAML.load_file("kitchen.yml")'
+          # kitchen.yml is an ERB template (driver name, per-platform docker
+          # overrides) — render it the same way test-kitchen itself does
+          # before parsing, otherwise this only validates the parts that
+          # happen to also be valid raw YAML, not what test-kitchen actually
+          # consumes.
+          ruby -ryaml -rerb -e 'YAML.safe_load(ERB.new(File.read("kitchen.yml")).result)'
+          KITCHEN_DRIVER=docker ruby -ryaml -rerb -e 'YAML.safe_load(ERB.new(File.read("kitchen.yml")).result)'
           for f in .github/workflows/*.yml; do ruby -ryaml -e "YAML.load_file('$f')"; done
 
   # Pure-Ruby unit specs for the version library and 3.11 template render.

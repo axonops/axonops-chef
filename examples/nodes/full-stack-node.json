@@ -1,171 +1,200 @@
 {
+  "tags": [
+    "all-in-one",
+    "development",
+    "test"
+  ],
+  "axonops": {
+    "offline_install": false,
+    "skip_system_tuning": true,
+    "skip_vm_max_map_count": true,
+    "skip_vm_swappiness": true,
+    "agent": {
+      "hosts": "localhost",
+      "port": 1888,
+      "api_key": "dev-api-key",
+      "tls_mode": "disabled",
+      "org_name": "dev-org",
+      "tags": {
+        "environment": "development",
+        "purpose": "testing"
+      }
+    },
+    "server": {
+      "listen_address": "0.0.0.0",
+      "listen_port": 8080,
+      "tls": {
+        "mode": "disabled"
+      },
+      "auth": {
+        "enabled": false
+      },
+      "elastic": {
+        "install": true,
+        "listen_address": "127.0.0.1",
+        "listen_port": 9200,
+        "heap_size": "2g",
+        "cluster_name": "axonops-dev"
+      },
+      "cassandra": {
+        "install": true,
+        "hosts": [
+          "localhost"
+        ],
+        "port": 9042,
+        "keyspace": "axonops",
+        "replication_factor": 1
+      },
+      "retention": {
+        "events": "14d",
+        "security_events": "8w",
+        "metrics": {
+          "high_resolution": "7d",
+          "medium_resolution": "4w",
+          "low_resolution": "6M",
+          "super_low_resolution": "1y"
+        },
+        "backups": {
+          "local": "10d",
+          "remote": "30d"
+        }
+      }
+    },
+    "cassandra": {
+      "cluster_name": "DevCluster",
+      "dc": "datacenter1",
+      "rack": "rack1",
+      "heap_size": "2G",
+      "seeds": [
+        "127.0.0.1"
+      ],
+      "listen_address": "127.0.0.1",
+      "rpc_address": "127.0.0.1",
+      "native_transport_port": 9042,
+      "storage_port": 7000,
+      "ssl_storage_port": 7001,
+      "jmx_port": 7199,
+      "compaction_throughput_mb_per_sec": 16,
+      "concurrent_reads": 16,
+      "concurrent_writes": 16,
+      "endpoint_snitch": "SimpleSnitch"
+    },
+    "dashboard": {
+      "enabled": true,
+      "port": 3000,
+      "nginx": {
+        "enabled": false
+      }
+    },
+    "java": {
+      "version": "17",
+      "jvm_options": {
+        "enable_assertions": true,
+        "thread_priority_policy": 42
+      }
+    },
+    "api": {
+      "org": "dev-org",
+      "cluster": "DevCluster"
+    },
+    "log_alert_rules": [
+      {
+        "name": "Node Down Detection",
+        "warning_value": 1,
+        "critical_value": 3,
+        "duration": "5m",
+        "content": "is now DOWN",
+        "level": [
+          "error"
+        ],
+        "source": [
+          "/var/log/cassandra/system.log"
+        ],
+        "description": "Detected node down events in Cassandra logs",
+        "present": true
+      },
+      {
+        "name": "Out of Memory Errors",
+        "warning_value": 1,
+        "critical_value": 1,
+        "duration": "1m",
+        "content": "OutOfMemoryError",
+        "level": [
+          "error"
+        ],
+        "source": [
+          "/var/log/cassandra/system.log"
+        ],
+        "description": "Critical: Java OutOfMemoryError detected",
+        "present": true
+      },
+      {
+        "name": "High GC Pause",
+        "warning_value": 5,
+        "critical_value": 10,
+        "duration": "10m",
+        "content": "GC pause",
+        "source": [
+          "/var/log/cassandra/gc.log"
+        ],
+        "description": "Excessive garbage collection pauses detected",
+        "present": true
+      },
+      {
+        "name": "Authentication Failures",
+        "warning_value": 10,
+        "critical_value": 50,
+        "duration": "15m",
+        "content": "Authentication failed",
+        "level": [
+          "warning",
+          "error"
+        ],
+        "source": [
+          "/var/log/cassandra/system.log"
+        ],
+        "description": "Multiple authentication failures detected",
+        "present": true
+      },
+      {
+        "name": "Compaction Errors",
+        "warning_value": 1,
+        "critical_value": 5,
+        "duration": "30m",
+        "content": "Compaction failed",
+        "level": [
+          "error"
+        ],
+        "source": [
+          "/var/log/cassandra/system.log"
+        ],
+        "description": "Compaction failures detected",
+        "present": true
+      },
+      {
+        "name": "AxonOps Agent Errors",
+        "warning_value": 5,
+        "critical_value": 20,
+        "duration": "10m",
+        "level": [
+          "error"
+        ],
+        "source": [
+          "/var/log/axonops/axon-agent.log"
+        ],
+        "description": "AxonOps agent reporting errors",
+        "present": true
+      }
+    ]
+  },
   "name": "axonops-all-in-one",
   "cookbook_version": "0.2.0",
   "description": "Complete AxonOps stack on a single node (development/testing)",
   "chef_environment": "development",
-  "normal": {
-    "tags": ["all-in-one", "development", "test"],
-    "axonops": {
-      "offline_install": false,
-      "skip_system_tuning": true,
-      "skip_vm_max_map_count": true,
-      "skip_vm_swappiness": true,
-      "agent": {
-        "hosts": "localhost",
-        "port": 1888,
-        "api_key": "dev-api-key",
-        "tls_mode": "disabled",
-        "org_name": "dev-org",
-        "tags": {
-          "environment": "development",
-          "purpose": "testing"
-        }
-      },
-      "server": {
-        "listen_address": "0.0.0.0",
-        "listen_port": 8080,
-        "tls": {
-          "mode": "disabled"
-        },
-        "auth": {
-          "enabled": false
-        },
-        "elastic": {
-          "install": true,
-          "url": "http://localhost:9200",
-          "heap_size": "2g",
-          "cluster_name": "axonops-dev",
-          "node_name": "es-dev-01"
-        },
-        "cassandra": {
-          "install": true,
-          "hosts": ["localhost"],
-          "port": 9042,
-          "keyspace": "axonops",
-          "replication_factor": 1
-        },
-        "retention": {
-          "events": "14d",
-          "security_events": "8w",
-          "metrics": {
-            "high_resolution": "7d",
-            "medium_resolution": "4w",
-            "low_resolution": "6M",
-            "super_low_resolution": "1y"
-          },
-          "backups": {
-            "local": "10d",
-            "remote": "30d"
-          }
-        }
-      },
-      "cassandra": {
-        "cluster_name": "DevCluster",
-        "dc": "datacenter1",
-        "rack": "rack1",
-        "heap_size": "2G",
-        "seeds": ["127.0.0.1"],
-        "listen_address": "127.0.0.1",
-        "rpc_address": "127.0.0.1",
-        "native_transport_port": 9042,
-        "storage_port": 7000,
-        "ssl_storage_port": 7001,
-        "jmx_port": 7199,
-        "compaction_throughput_mb_per_sec": 16,
-        "concurrent_reads": 16,
-        "concurrent_writes": 16,
-        "endpoint_snitch": "SimpleSnitch"
-      },
-      "dashboard": {
-        "enabled": true,
-        "port": 3000,
-        "nginx": {
-          "enabled": false
-        }
-      },
-      "java": {
-        "version": "17",
-        "jvm_options": {
-          "enable_assertions": true,
-          "thread_priority_policy": 42
-        }
-      },
-      "api": {
-        "org": "dev-org",
-        "cluster": "DevCluster"
-      },
-      "log_alert_rules": [
-        {
-          "name": "Node Down Detection",
-          "warning_value": 1,
-          "critical_value": 3,
-          "duration": "5m",
-          "content": "is now DOWN",
-          "level": ["error"],
-          "source": ["/var/log/cassandra/system.log"],
-          "description": "Detected node down events in Cassandra logs",
-          "present": true
-        },
-        {
-          "name": "Out of Memory Errors",
-          "warning_value": 1,
-          "critical_value": 1,
-          "duration": "1m",
-          "content": "OutOfMemoryError",
-          "level": ["error"],
-          "source": ["/var/log/cassandra/system.log"],
-          "description": "Critical: Java OutOfMemoryError detected",
-          "present": true
-        },
-        {
-          "name": "High GC Pause",
-          "warning_value": 5,
-          "critical_value": 10,
-          "duration": "10m",
-          "content": "GC pause",
-          "source": ["/var/log/cassandra/gc.log"],
-          "description": "Excessive garbage collection pauses detected",
-          "present": true
-        },
-        {
-          "name": "Authentication Failures",
-          "warning_value": 10,
-          "critical_value": 50,
-          "duration": "15m",
-          "content": "Authentication failed",
-          "level": ["warning", "error"],
-          "source": ["/var/log/cassandra/system.log"],
-          "description": "Multiple authentication failures detected",
-          "present": true
-        },
-        {
-          "name": "Compaction Errors",
-          "warning_value": 1,
-          "critical_value": 5,
-          "duration": "30m",
-          "content": "Compaction failed",
-          "level": ["error"],
-          "source": ["/var/log/cassandra/system.log"],
-          "description": "Compaction failures detected",
-          "present": true
-        },
-        {
-          "name": "AxonOps Agent Errors",
-          "warning_value": 5,
-          "critical_value": 20,
-          "duration": "10m",
-          "level": ["error"],
-          "source": ["/var/log/axonops/axon-agent.log"],
-          "description": "AxonOps agent reporting errors",
-          "present": true
-        }
-      ]
-    }
-  },
   "run_list": [
     "recipe[axonops::java]",
     "recipe[axonops::system_tuning]",
-    "recipe[axonops::elasticsearch]",
+    "recipe[axonops::opensearch]",
     "recipe[axonops::cassandra]",
     "recipe[axonops::server]",
     "recipe[axonops::dashboard]",

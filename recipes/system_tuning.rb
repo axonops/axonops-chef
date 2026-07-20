@@ -5,10 +5,10 @@
 # Applies system-level tuning optimized for Apache Cassandra
 #
 
-def running_in_container
-  ::File.exist?('/.dockerenv') ||
-    (::File.exist?('/proc/1/cgroup') && ::File.read('/proc/1/cgroup').match?(/docker|lxc|kubepods/))
-end
+# not_if blocks run with self rebound to the resource, so a def'd method
+# isn't reachable there — compute once and close over the local var instead.
+running_in_container = ::File.exist?('/.dockerenv') ||
+  (::File.exist?('/proc/1/cgroup') && ::File.read('/proc/1/cgroup').match?(/docker|lxc|kubepods/))
 
 sysctl_content = <<~SYSCTL
   vm.swappiness=1
@@ -24,6 +24,13 @@ sysctl_content = <<~SYSCTL
   net.ipv4.tcp_wmem=4096 65536 16777216
 SYSCTL
 
+# /etc/sysctl.d normally ships with procps/systemd, but minimal container
+# base images can lack it, and this recipe can run before axonops::common
+# (which also writes here) in the include order.
+directory '/etc/sysctl.d' do
+  recursive true
+end
+
 file '/etc/sysctl.d/99-cassandra.conf' do
   content sysctl_content
   mode '0644'
@@ -37,6 +44,12 @@ execute 'sysctl -p /etc/sysctl.d/99-cassandra.conf' do
   command 'sysctl -p /etc/sysctl.d/99-cassandra.conf'
   action :nothing
   not_if { running_in_container }
+end
+
+# /etc/security/limits.d normally ships with pam/shadow-utils, but minimal
+# container base images can lack it (same reasoning as /etc/sysctl.d above).
+directory '/etc/security/limits.d' do
+  recursive true
 end
 
 template '/etc/security/limits.d/cassandra.conf' do
@@ -54,6 +67,12 @@ template '/etc/security/limits.d/cassandra.conf' do
 end
 
 if node['axonops']['cassandra']['disable_irqbalance']
+  # /etc/default normally ships with the base OS, but minimal container
+  # images can lack it (same reasoning as /etc/sysctl.d above).
+  directory '/etc/default' do
+    recursive true
+  end
+
   file '/etc/default/irqbalance' do
     content "ENABLED=\"0\"\n"
     mode '0644'

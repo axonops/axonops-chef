@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://axonops.com">
-    <img src="https://axonops.com/wp-content/uploads/2024/02/logo.svg" alt="AxonOps" width="300">
+    <img src="https://digitalis-marketplace-assets.s3.us-east-1.amazonaws.com/AxonopsDigitalMaster_AxonopsFullLogoBlue.jpg" alt="AxonOps" width="300">
   </a>
 </p>
 
@@ -19,7 +19,7 @@ The AxonOps Chef cookbook provides flexible, modular recipes for:
 - **AxonOps Server** - Self-hosted monitoring and management platform
 - **AxonOps Agent** - Lightweight agents for Cassandra node monitoring
 - **Apache Cassandra** - Optional Cassandra installation and configuration
-- **Elasticsearch** - Search and analytics engine for AxonOps
+- **OpenSearch** - Search and analytics engine for AxonOps
 - **Java/JDK** - Java runtime management
 - **API Configuration** - Automated configuration via AxonOps APIs
 
@@ -80,7 +80,7 @@ Supported platforms:
 include_recipe 'axonops::agent'
 ```
 
-Also monitors an existing **DataStax Enterprise (DSE) 5.1** install — auto-detected, never
+Also monitors an existing **DataStax Enterprise (DSE)** install (5.1, 6.7, 6.8, 6.9) — auto-detected, never
 installed or reinstalled. See [docs/DSE.md](docs/DSE.md).
 
 ### Deploy Self-Hosted AxonOps Server
@@ -399,13 +399,16 @@ See [docs/CASSANDRA.md](docs/CASSANDRA.md#ssl-caveat) for details. PEM-based TLS
 
 Detailed documentation for each component:
 
+- 🚀 **[Chef Solo Quickstart](docs/CHEF_SOLO_QUICKSTART.md)** - New to Chef? Start
+  here — installing Cassandra, Cassandra + agent, or agent-only with chef-solo
 - 📘 **[AxonOps Server Guide](docs/SERVER.md)** - Deploy and configure the AxonOps server
 - 📗 **[AxonOps Agent Guide](docs/AGENT.md)** - Install agents on Cassandra, DSE, or Kafka nodes
 - 📙 **[Cassandra Installation](docs/CASSANDRA.md)** - Apache Cassandra deployment options
-- 🗄️ **[DataStax Enterprise Monitoring](docs/DSE.md)** - Monitor an existing DSE 5.1 cluster
+- 🗄️ **[DataStax Enterprise Monitoring](docs/DSE.md)** - Monitor an existing DSE cluster (5.1, 6.7, 6.8, 6.9)
 - 📨 **[Kafka Installation](docs/KAFKA.md)** - Apache Kafka deployment options
-- 📕 **[Elasticsearch Setup](docs/ELASTIC.md)** - Configure Elasticsearch for AxonOps
+- 📕 **[OpenSearch Setup](docs/OPENSEARCH.md)** - Configure OpenSearch for AxonOps
 - 🔔 **[Alert Rules & Service Checks](docs/ALERTS.md)** - Configure alerts, checks, and notifications via API
+- 📦 **[Offline Package Downloader](scripts/README.md)** - Mirror AxonOps packages for air-gapped installs (`scripts/download_offline_packages.py`), with per-package and version selection
 
 ## Cookbook Structure
 
@@ -421,7 +424,7 @@ axonops/
 │   ├── agent.rb        # Agent installation
 │   ├── server.rb       # Server deployment
 │   ├── cassandra.rb    # Cassandra setup
-│   ├── elasticsearch.rb # Elasticsearch install
+│   ├── opensearch.rb   # OpenSearch install
 │   ├── java.rb         # Java installation
 │   ├── chef_workstation.rb # Chef/Knife prerequisites
 │   └── configure_api.rb # API configuration
@@ -446,10 +449,22 @@ knife node from file examples/nodes/cassandra-node.json
 knife node run_list set cassandra-node-01 'recipe[axonops::java],recipe[axonops::cassandra],recipe[axonops::agent]'
 ```
 
+### [cassandra-311-pkg-node.json](examples/nodes/cassandra-311-pkg-node.json)
+Apache Cassandra 3.11 installed from the RPM package repository (rather than
+tarball), with AxonOps agent monitoring. Includes:
+- `install_format: 'pkg'` — installs from `packages.axonops.com`/the 3.11
+  JFrog mirror instead of downloading a tarball
+- `start_on_install: true` — starts Cassandra immediately after converge
+
+```bash
+# Upload and apply configuration
+knife node from file examples/nodes/cassandra-311-pkg-node.json
+```
+
 ### [server-node.json](examples/nodes/server-node.json)
-Self-hosted AxonOps server with dashboard and Elasticsearch. Features:
+Self-hosted AxonOps server with dashboard and OpenSearch. Features:
 - Full AxonOps server stack
-- Integrated Elasticsearch for metrics storage
+- Integrated OpenSearch for metrics storage
 - Nginx-fronted dashboard with SSL
 - Retention policies for metrics and logs
 
@@ -461,7 +476,7 @@ knife node from file examples/nodes/server-node.json
 ### [full-stack-node.json](examples/nodes/full-stack-node.json)
 All-in-one development/testing setup. Includes:
 - Complete AxonOps stack on single node
-- Cassandra, Elasticsearch, Server, and Agent
+- Cassandra, OpenSearch, Server, and Agent
 - Minimal resource requirements for development
 
 ```bash
@@ -486,13 +501,25 @@ Containerized/restricted environment setup. Features:
 - System tuning disabled for container compatibility
 - vm.max_map_count skipped (managed by orchestrator)
 - Kubernetes service discovery DNS names
-- External Elasticsearch and Cassandra services
+- External OpenSearch and Cassandra services
 - Minimal run_list for container deployments
 
 ```bash
 # Perfect for Kubernetes or Docker environments
 knife node from file examples/nodes/container-node.json
 ```
+
+## Packer / Image Baking Examples
+
+Bake this cookbook into an AMI (or other image) with Packer's built-in
+`chef-solo` provisioner — no Chef Server required:
+
+- **[examples/packer/cassandra-agent/](examples/packer/cassandra-agent/)** —
+  fresh Apache Cassandra + AxonOps agent baked into one image.
+- **[examples/packer/dse-agent-only/](examples/packer/dse-agent-only/)** —
+  AxonOps agent only, attached to an already-installed DataStax Enterprise
+  base image (this cookbook never installs/manages DSE — see
+  [docs/DSE.md](docs/DSE.md)).
 
 ## Common Use Cases
 
@@ -506,19 +533,19 @@ node.override['axonops']['agent']['org_name'] = 'your-org-name'
 include_recipe 'axonops::agent'
 ```
 
-Also monitors an existing DataStax Enterprise (DSE) 5.1 install automatically —
+Also monitors an existing DataStax Enterprise (DSE) install (5.1, 6.7, 6.8, 6.9) automatically —
 see [docs/AGENT.md](docs/AGENT.md) and [docs/DSE.md](docs/DSE.md) for more
 examples (self-hosted mode, TLS/mTLS, Kafka monitoring, offline install).
 
 ### 2. Self-Hosted AxonOps with External Services
 
 ```ruby
-# Use existing Elasticsearch and Cassandra
+# Use existing OpenSearch and Cassandra
 node.override['axonops']['server']['elastic']['install'] = false
 
 # For axon-server >= 2.0.4, use the new search_db format
-node.override['axonops']['server']['search_db']['hosts'] = ['http://elastic:9200/']
-node.override['axonops']['server']['search_db']['username'] = 'elastic'
+node.override['axonops']['server']['search_db']['hosts'] = ['http://opensearch:9200/']
+node.override['axonops']['server']['search_db']['username'] = 'opensearch'
 node.override['axonops']['server']['search_db']['password'] = 'secure-password'
 
 # The cookbook automatically handles older versions using elastic_host/elastic_port
@@ -532,7 +559,7 @@ include_recipe 'axonops::server'
 ### 3. Complete Stack Installation
 
 ```ruby
-# Install everything: Java, Elasticsearch, Cassandra, AxonOps
+# Install everything: Java, OpenSearch, Cassandra, AxonOps
 include_recipe 'axonops::java'
 include_recipe 'axonops::server'
 include_recipe 'axonops::agent'
@@ -545,23 +572,62 @@ include_recipe 'axonops::cassandra'
 # Configure for offline installation
 node.override['axonops']['offline_install'] = true
 node.override['axonops']['offline_packages_path'] = '/path/to/packages'
+# offline_packages_path also accepts an http(s):// base URL (e.g. an internal
+# artifact server) — package files are fetched once via remote_file into
+# Chef's file cache. Local paths keep working as before. This applies to every
+# offline recipe EXCEPT axonops::java's package-chain/tarball auto-discovery,
+# which globs the local directory for dependent files and needs a real path.
+# node.override['axonops']['offline_packages_path'] = 'https://packages.internal.example.com/axonops'
 
-# Package filenames are defined in attributes/default.rb
+# Package filenames are defined in attributes/default.rb. 'cassandra' is the
+# tarball (tar install_format, and axonops::server's own metrics-storage
+# Cassandra, which is always tar); 'cassandra_pkg' is the separate RPM/deb
+# used by axonops::cassandra's pkg install_format — never the same file.
 # default['axonops']['offline_packages'] = {
-#   'elasticsearch' => 'elasticsearch-7.17.29-linux-x86_64.tar.gz',
+#   'opensearch' => 'opensearch-3.6.0-linux-x64.rpm',
 #   'cassandra' => 'apache-cassandra-5.0.5-bin.tar.gz',
+#   'cassandra_pkg' => 'cassandra-5.0.5-1.noarch.rpm',
 #   'java' => 'zulu17-ca-jdk-headless-17.0.16-1.x86_64.rpm',
 #   'agent' => 'axon-agent-2.0.6-1.x86_64.rpm',
 #   'server' => 'axon-server-2.0.5-1.x86_64.rpm',
 #   'dashboard' => 'axon-dash-2.0.10-1.x86_64.rpm',
-#   'kafka' => 'kafka_2.13-3.6.1.tgz'
+#   'java_agent' => 'axon-cassandra5.0-agent-jdk17-1.0.10-1.noarch.rpm'
 # }
 
 include_recipe 'axonops::server'
 ```
 
+**Getting the packages** — use the standalone downloader (no Chef required). Run
+it on any machine with internet access and pick which component set to fetch
+with `--components`, then copy the results to your air-gapped target:
+
+```bash
+# Just the Cassandra tarball
+files/default/download-packages.sh --components cassandra
+
+# Cassandra + Azul Zulu JDK
+files/default/download-packages.sh --components cassandra,java
+
+# Cassandra + Java + AxonOps agent (+ java-agent)
+files/default/download-packages.sh --components cassandra,java,agent
+
+# Full self-hosted stack
+files/default/download-packages.sh --components cassandra,java,agent,server,dashboard
+```
+
+The script prints the exact `node['axonops']['offline_packages'][*]` values to
+set once it finishes. `recipe[axonops::offline_download_helper]` still works —
+it ships this same script to `node['axonops']['offline_packages_path']` and logs
+a recommended command line for the node. See [docs/OFFLINE.md](docs/OFFLINE.md)
+for the full component matrix and flag reference.
+
+For finer control over *which* AxonOps packages and versions to mirror (e.g.
+just `axon-agent`, a single Cassandra agent, or pinned versions), use
+`scripts/download_offline_packages.py` instead — see
+[scripts/README.md](scripts/README.md).
+
 Covered by `offline_install`: `axonops::agent`, `axonops::server`, `axonops::cassandra`,
-`axonops::kafka`, `axonops::elasticsearch`, and their shared `axonops::java` dependency —
+`axonops::kafka`, `axonops::opensearch`, and their shared `axonops::java` dependency —
 setting the single flag above is enough for all of them.
 
 **Not covered:** `axonops::chef_workstation` always downloads Chef Workstation from
@@ -630,10 +696,13 @@ default['axonops']['server']['listen_address'] = '0.0.0.0'
 default['axonops']['server']['listen_port'] = 8080
 
 # Cassandra settings
-default['axonops']['cassandra']['version']      = '5.0.5'  # 3.11.x / 4.1.x / 5.0.x
-default['axonops']['cassandra']['cluster_name'] = 'AxonOps Cluster'
-default['axonops']['cassandra']['heap_size']    = '2G'
-default['axonops']['cassandra']['gc_type']      = 'Shenandoah'  # or 'G1GC' (required for 3.11)
+default['axonops']['cassandra']['version']         = '5.0.5'  # 3.11.x / 4.1.x / 5.0.x
+default['axonops']['cassandra']['cluster_name']    = 'AxonOps Cluster'
+default['axonops']['cassandra']['heap_size']       = '2G'
+default['axonops']['cassandra']['gc_type']         = 'Shenandoah'  # or 'G1GC' (required for 3.11)
+default['axonops']['cassandra']['install_format']  = 'tar'  # or 'pkg' (apt/yum; not available for 3.11 on Debian)
+default['axonops']['cassandra']['start_on_install'] = false  # Chef only starts Cassandra if true — leave false for controlled multi-node bootstraps
+default['axonops']['cassandra']['redhat_repository_url_311x'] = 'https://apache.jfrog.io/artifactory/cassandra-rpm/311x/'  # 3.11 RPM mirror (Apache dropped it from the official repo)
 
 # Java options — overridden automatically by axonops::cassandra based on Cassandra version
 # (3.11 -> 8, 4.1 -> 11, 5.0 -> 17). Override only when skip_java_install is true.
@@ -725,7 +794,7 @@ Additional resources:
 
 ---
 
-*AxonOps is a registered trademark of AxonOps Limited. Apache, Apache Cassandra, Cassandra, Apache Kafka and Kafka are either registered trademarks or trademarks of the Apache Software Foundation or its subsidiaries in Canada, the United States and/or other countries. Elasticsearch is a trademark of Elasticsearch B.V. Docker is a trademark or registered trademark of Docker, Inc.*
+*AxonOps is a registered trademark of AxonOps Limited. Apache, Apache Cassandra, Cassandra, Apache Kafka and Kafka are either registered trademarks or trademarks of the Apache Software Foundation or its subsidiaries in Canada, the United States and/or other countries. OpenSearch is a trademark of OpenSearch B.V. Docker is a trademark or registered trademark of Docker, Inc.*
 
 ## Testing
 
@@ -743,3 +812,12 @@ By default, Kitchen uses Vagrant. You can select Docker with:
 ```bash
 KITCHEN_DRIVER=docker bundle exec kitchen test
 ```
+
+Docker-driven Kitchen runs boot real systemd inside the container (see
+`test/docker/Dockerfile.systemd-ubuntu`/`Dockerfile.systemd-rockylinux`) —
+AxonOps packages call `systemctl` in their postinst scripts, which needs an
+actual init system kitchen-docker's stock containers don't provide.
+
+`chefignore` keeps this repo's own dev/test tooling (`Gemfile`, `spec/`,
+`test/`, `kitchen.yml`, etc.) out of what Chef treats as "the cookbook" —
+without it, Chef auto-bundle-installs the dev `Gemfile` on every converge.

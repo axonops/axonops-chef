@@ -29,13 +29,26 @@ end
 
 package 'tar' do
   action :install
-  only_if { platform_family?('rhel') }
+  only_if { platform_family?('rhel', 'fedora', 'amazon') }
 end
 
 # Install Java if not already installed. Select the Java major version required
 # by the configured Cassandra version (3.11 -> 8, 4.1 -> 11, 5.0 -> 17).
 unless node['axonops']['cassandra']['skip_java_install']
   node.override['java']['version'] = AxonOpsCassandra.java_major(node['axonops']['cassandra']['version'])
+
+  # A Cassandra RPM/deb package declares a real `java-X.Y.Z-headless`
+  # dependency — only an actually-installed OS package registers that with
+  # rpm/dnf/dpkg, a tarball-extracted JDK doesn't (confirmed live: `dnf
+  # install cassandra-3.11.19-...rpm` fails with "nothing provides
+  # java-1.8.0-headless" against a tarball-only Java install). Force the
+  # package-based install path (recipes/java.rb) instead of tarball whenever
+  # install_format is 'pkg' — this only affects java.rb's offline branch;
+  # online installs already go through the package repo either way.
+  if node['axonops']['cassandra']['install_format'] == 'pkg'
+    node.override['java']['package'] = true
+  end
+
   include_recipe 'axonops::java'
 end
 
@@ -90,41 +103,10 @@ end
 # Configure Cassandra
 include_recipe 'axonops::configure_cassandra'
 
-install_dir = node['axonops']['cassandra']['install_dir']
-cassandra_current = "#{install_dir}/cassandra"
-cassandra_user = node['axonops']['cassandra']['user']
-cassandra_group = node['axonops']['cassandra']['group']
-
-systemd_unit 'cassandra.service' do
-  content({
-            'Unit' => {
-              'Description' => 'Apache Cassandra',
-              'After' => 'network.target',
-            },
-            'Service' => {
-              'Type' => 'forking',
-              'ExecStart' => "#{cassandra_current}/bin/cassandra -p /var/run/cassandra/cassandra.pid",
-              'User' => cassandra_user,
-              'Group' => cassandra_group,
-              'LimitNOFILE' => node['axonops']['cassandra']['limits']['nofile'],
-              'LimitMEMLOCK' => 'infinity',
-              'LimitNPROC' => 32768,
-              'LimitAS' => 'infinity',
-              'Environment' => "CASSANDRA_HOME=#{cassandra_current}",
-              'PIDFile' => '/var/run/cassandra/cassandra.pid',
-              'RuntimeDirectory' => 'cassandra',
-              'RuntimeDirectoryMode' => '0755',
-              'Restart' => 'on-failure',
-              'RestartSec' => 10,
-            },
-            'Install' => {
-              'WantedBy' => 'multi-user.target',
-            },
-          })
-  action [:create, :enable, :start]
-  notifies :run, 'execute[systemctl-daemon-reload]', :immediately
-end
-
+# The systemd unit itself (tar installs only) is created by
+# axonops::configure_cassandra's template resource — creating it here too
+# used to duplicate that file with different content, whichever recipe ran
+# last won, and Cassandra could time out starting under the stale version.
 execute 'systemctl-daemon-reload' do
   command 'systemctl daemon-reload'
   action :nothing

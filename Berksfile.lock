@@ -3,7 +3,6 @@ DEPENDENCIES
   axonops
     path: .
     metadata: true
-  sysctl (~> 1.0)
   yum (~> 7.4)
 
 GRAPH
@@ -11,7 +10,4 @@ GRAPH
   axonops (0.2.0)
     apt (>= 7.0)
     yum (>= 5.0)
-  ohai (5.3.1)
-  sysctl (1.1.0)
-    ohai (>= 5.0)
   yum (7.4.20)

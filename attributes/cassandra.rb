@@ -4,16 +4,36 @@
 # Recipe:: options
 default['axonops']['cassandra']['skip_java_install'] = false
 default['axonops']['cassandra']['start_on_boot'] = true
+# Whether Chef starts the Cassandra service during this converge. Enabling
+# on boot (start_on_boot) is independent of starting it right now — leave
+# false for multi-node bootstraps where nodes must join in a controlled order.
+default['axonops']['cassandra']['start_on_install'] = false
 default['axonops']['cassandra']['base_url'] = 'https://archive.apache.org/dist/cassandra'
 default['axonops']['cassandra']['user'] = 'cassandra'
 default['axonops']['cassandra']['group'] = 'cassandra'
 default['axonops']['cassandra']['version'] = '5.0.5'
 default['axonops']['cassandra']['install_format'] = 'tar'
+# Apache dropped 3.11 from its own RPM repo; this JFrog mirror is what the
+# Ansible role uses instead. No 3.11 apt channel exists anywhere, so
+# install_format: pkg + version 3.11.x remains unsupported on Debian.
+default['axonops']['cassandra']['redhat_repository_url_311x'] = 'https://apache.jfrog.io/artifactory/cassandra-rpm/311x/'
 default['axonops']['cassandra']['conf_dir'] = nil
 # 'apache' (installed/managed by this cookbook) or 'dse' (DataStax Enterprise,
 # monitored only — see recipes/agent.rb detection and docs/DSE.md). Normally
 # auto-detected; override only to force a specific edition.
 default['axonops']['cassandra']['edition'] = 'apache'
+# DSE series, used to select the matching axon-dse<series>-agent package
+# (recipes/agent.rb) — DSE version can't be reliably auto-detected the way
+# Apache Cassandra's can, so this must be set explicitly for anything other
+# than the default 5.1. One of: '5.1', '6.7', '6.8', '6.9'.
+default['axonops']['cassandra']['dse_version'] = '5.1'
+# Path to DSE's cassandra-env.sh, where recipes/agent.rb appends the
+# axon-agent JAVA_OPTS -javaagent line. Auto-detected when nil: rpm/deb
+# installs use /etc/dse/cassandra/cassandra-env.sh; tar installs are searched
+# under the detected DSE home (see cassandra_search_paths in recipes/agent.rb)
+# at resources/cassandra/conf/cassandra-env.sh. Set explicitly if your layout
+# doesn't match either default.
+default['axonops']['cassandra']['dse_env_file'] = nil
 default['axonops']['cassandra']['data_root'] = '/var/lib/cassandra'
 default['axonops']['cassandra']['local_jmx'] = 'yes'
 default['axonops']['cassandra']['directories'] = {

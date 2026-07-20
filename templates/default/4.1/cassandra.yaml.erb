@@ -1539,7 +1539,7 @@ crypto_provider:
 # Step 2: Set optional=false (or remove it) and if you generated truststores and want to use mutual
 # auth set require_client_auth=true. Restart all nodes
 server_encryption_options:
-<%= @server_encryption_options.to_hash.to_yaml.sub(/---.*?\n/m, "").gsub(/^/, "  ") if @server_encryption_options %>
+<%= @server_encryption_options.to_hash.compact.to_yaml.sub(/---.*?\n/m, "").gsub(/^/, "  ") if @server_encryption_options %>
 
 # Configure client-to-server encryption.
 #
@@ -1554,7 +1554,7 @@ server_encryption_options:
 # Step 2: Set optional=false (or remove it) and if you generated truststores and want to use mutual
 # auth set require_client_auth=true. Restart all nodes
 client_encryption_options:
-<%= @client_encryption_options.to_hash.to_yaml.sub(/---.*?\n/m, "").gsub(/^/, "  ") if @client_encryption_options %>
+<%= @client_encryption_options.to_hash.compact.to_yaml.sub(/---.*?\n/m, "").gsub(/^/, "  ") if @client_encryption_options %>
 
 # internode_compression controls whether traffic between nodes is
 # compressed.
@@ -1743,13 +1743,13 @@ default_keyspace_rf: <%= @default_keyspace_rf || 2 %>
   # archive_command:
   # max_archive_retries: 10
 audit_logging_options:
-<%= @audit_logging_options.to_hash.to_yaml.sub("---\n", "").gsub(/^/, "  ") if @audit_logging_options %>
+<%= @audit_logging_options.to_hash.compact.to_yaml.sub("---\n", "").gsub(/^/, "  ") if @audit_logging_options %>
 
 
 # default options for full query logging - these can be overridden from command line when executing
 # nodetool enablefullquerylog
 full_query_logging_options:
-<%= @full_query_logging_options.to_hash.to_yaml.sub(/---.*?\n/m, "").gsub(/^/, "  ") if @full_query_logging_options %>
+<%= @full_query_logging_options.to_hash.compact.to_yaml.sub(/---.*?\n/m, "").gsub(/^/, "  ") if @full_query_logging_options %>
   ## archive command is "/path/to/script.sh %path" where %path is replaced with the file being rolled:
   # archive_command:
   ## note that enabling this allows anyone with JMX/nodetool access to run local shell commands as the user running cassandra

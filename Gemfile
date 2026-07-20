@@ -7,7 +7,7 @@ gem 'syslog'
 gem 'json', '~> 2.13.0'
 gem 'bigdecimal'
 gem 'ruby-shadow'
-gem 'chef-bin', '~> 18.7.10'
+gem 'chef-bin', '~> 18.0'
 gem 'berkshelf'
 
 # ChefSpec 9.3 requires rspec 3.9
@@ -16,4 +16,7 @@ group :test do
   gem 'rspec-core', '~> 3.9.0'
   gem 'rspec-expectations', '~> 3.9.0'
   gem 'rspec-mocks', '~> 3.9.0'
+  gem 'chefspec', '~> 9.3'
+  gem 'kitchen-docker'
+  gem 'kitchen-inspec'
 end

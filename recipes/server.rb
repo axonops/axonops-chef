@@ -14,9 +14,17 @@ if node['axonops']['server']['cassandra']['install']
   include_recipe 'axonops::cassandra'
 end
 
+# 'opensearch' is the preferred attribute namespace; 'elastic' is kept for
+# backwards compatibility. Merge with opensearch winning key-by-key over
+# elastic so either (or both, mixed) can be set in node config — matches
+# recipes/opensearch.rb's own merge.
+opensearch_config = node['axonops']['server']['elastic'].to_hash.merge(
+  node['axonops']['server']['opensearch'].to_hash.reject { |_, v| v.nil? }
+)
+
 # Install dependencies if needed
-if node['axonops']['server']['elastic']['install']
-  include_recipe 'axonops::elastic'
+if opensearch_config['install']
+  include_recipe 'axonops::opensearch'
 end
 
 # Add AxonOps repository unless offline
@@ -33,11 +41,7 @@ if node['axonops']['offline_install']
     raise('Offline installation requested but axonops.packages.server not specified')
   end
 
-  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['server'])
-
-  unless ::File.exist?(package_path)
-    raise("Offline package not found: #{package_path}")
-  end
+  package_path = AxonOpsOffline.resolve(self, node['axonops']['offline_packages']['server'])
 
   case node['platform_family']
   when 'debian'
@@ -90,8 +94,8 @@ else
     elastic_host = url.host || '127.0.0.1'
     elastic_port = url.port || 9200
   else
-    elastic_host = node['axonops']['server']['elastic']['listen_address'] || '127.0.0.1'
-    elastic_port = node['axonops']['server']['elastic']['listen_port'] || 9200
+    elastic_host = opensearch_config['listen_address'] || '127.0.0.1'
+    elastic_port = opensearch_config['listen_port'] || 9200
   end
 end
 

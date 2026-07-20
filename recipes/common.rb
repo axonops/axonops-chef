@@ -33,7 +33,12 @@ template '/etc/security/limits.d/axonops.conf' do
   action :create
 end
 
-# Ensure sysctl settings for network and memory
+# Ensure sysctl settings for network and memory. /etc/sysctl.d normally
+# ships with procps/systemd, but minimal container base images can lack it.
+directory '/etc/sysctl.d' do
+  recursive true
+end
+
 file '/etc/sysctl.d/99-axonops.conf' do
   sysctl_content = ["# AxonOps recommended settings"]
   sysctl_content << "vm.max_map_count=1048575" unless node['axonops']['skip_vm_max_map_count']
@@ -49,4 +54,14 @@ end
 execute 'sysctl-reload' do
   command 'sysctl -p /etc/sysctl.d/99-axonops.conf'
   action :nothing
+  # sysctl ships with procps, present on any real target but not always on
+  # minimal container base images — don't hard-fail the whole converge over
+  # a reload command that couldn't possibly matter if the kernel-tunable
+  # apply mechanism itself isn't even installed. Even when the binary is
+  # present, an unprivileged container's /proc/sys is read-only, so sysctl -p
+  # exits nonzero with "permission denied" regardless — skip there too,
+  # same reasoning recipes/system_tuning.rb already applies to its own
+  # sysctl execute resource.
+  only_if { ::File.exist?('/usr/sbin/sysctl') || ::File.exist?('/sbin/sysctl') }
+  not_if { ::File.exist?('/.dockerenv') || (::File.exist?('/proc/1/cgroup') && ::File.read('/proc/1/cgroup').match?(/docker|lxc|kubepods/)) }
 end
