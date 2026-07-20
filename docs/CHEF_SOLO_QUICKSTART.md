@@ -238,6 +238,21 @@ not directly under `"axonops"`. Use the *exact* filenames the download script
 (`axonops::offline_download_helper`) printed at the end of its own run — don't
 guess or retype them.
 
+### `An error occurred while installing json (2.21.1), and Bundler cannot continue`
+
+You're running `bundle install`/`berks vendor` on Ubuntu without a C compiler or
+Ruby headers — the `json` gem has a native extension that needs to build. Install
+the build toolchain first, then retry:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential ruby-dev
+bundle install
+```
+
+If it still fails, run `gem install json -v 2.21.1 --verbose` to see the real
+underlying error, and check `ruby -v` — recent `json` releases need Ruby ≥ 3.1.
+
 ### `nothing provides java-1.8.0-headless needed by cassandra-...`
 
 You're installing Cassandra via `install_format: "pkg"` (RPM/deb), but Java was

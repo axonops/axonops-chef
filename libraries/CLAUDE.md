@@ -115,4 +115,3 @@ Template: libraries/axonops_alert_rule.rb
 ```json
 {"type":"general_webhook","params":{"name":"generic","url":"http://some:8080","headers":[{"header":"Auth","value":"blab"},{"header":"Ofher","value":"other"}]}}
 ```
-
