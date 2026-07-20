@@ -22,6 +22,11 @@ default['axonops']['cassandra']['conf_dir'] = nil
 # monitored only — see recipes/agent.rb detection and docs/DSE.md). Normally
 # auto-detected; override only to force a specific edition.
 default['axonops']['cassandra']['edition'] = 'apache'
+# DSE series, used to select the matching axon-dse<series>-agent package
+# (recipes/agent.rb) — DSE version can't be reliably auto-detected the way
+# Apache Cassandra's can, so this must be set explicitly for anything other
+# than the default 5.1. One of: '5.1', '6.7', '6.8', '6.9'.
+default['axonops']['cassandra']['dse_version'] = '5.1'
 default['axonops']['cassandra']['data_root'] = '/var/lib/cassandra'
 default['axonops']['cassandra']['local_jmx'] = 'yes'
 default['axonops']['cassandra']['directories'] = {

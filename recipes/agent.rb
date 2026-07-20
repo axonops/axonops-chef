@@ -150,7 +150,13 @@ elsif node.run_list.include?('recipe[axonops::cassandra]') || cassandra_detected
   # agent build. Derive it from the actual Cassandra version instead, and
   # only fall back to the attribute when it's been explicitly overridden.
   java_agent_package = if node['axonops']['cassandra']['edition'] == 'dse'
-                          node['axonops']['java_agent']['dse']
+                          # There is no generic 'axon-dse-agent' package —
+                          # DSE's java-agent is version-specific
+                          # ('axon-dse5.1-agent', 'axon-dse6.7-agent', ...).
+                          # Explicit override wins (java_agent['dse']),
+                          # otherwise resolve from dse_version.
+                          node['axonops']['java_agent']['dse'] ||
+                            AxonOpsCassandra.dse_java_agent_package(node['axonops']['cassandra']['dse_version'])
                         elsif node['axonops']['java_agent']['package'] != 'axon-cassandra5.0-agent-jdk17'
                           node['axonops']['java_agent']['package']
                         else
@@ -208,15 +214,16 @@ else
   # axon-cassandra3.11-agent` does on its own (pulls axon-agent in as a
   # dependency, single transaction, no conflict).
   #
-  # axon-cassandra3.11-agent specifically also ships stale legacy
-  # digitalis.io-branded x86_64 builds (last published at 1.0.4) alongside
-  # newer axonops.com noarch builds (1.0.14+) under the same package name.
-  # dnf prefers an exact-arch match over a higher-version noarch one, so on
-  # x86_64 it silently picks the older, broken x86_64 build — which is
-  # exactly the one with the /var/lib/axonops conflict; the newer noarch
-  # build doesn't have it. Every other axon-cassandra*-agent package is
+  # axon-cassandra3.11-agent and axon-dse5.1-agent specifically also ship
+  # stale legacy digitalis.io-branded x86_64 builds (up to 1.0.4/1.0.3
+  # respectively) alongside newer axonops.com noarch builds under the same
+  # package name (confirmed via `dnf list --showduplicates`). dnf prefers an
+  # exact-arch match over a higher-version noarch one, so on x86_64 it
+  # silently picks the older, broken x86_64 build — which is exactly the one
+  # with the /var/lib/axonops conflict; the newer noarch build doesn't have
+  # it. Every other axon-cassandra*-agent/axon-dse*-agent package is
   # noarch-only already, so forcing the .noarch arch selector is a no-op
-  # for them and only changes behavior for the one package that needs it.
+  # for them and only changes behavior for the packages that need it.
   agent_package_name = platform_family?('rhel', 'fedora', 'amazon') ? "#{java_agent_package}.noarch" : java_agent_package
   package [agent_package_name, 'axon-agent'] do
     action :install

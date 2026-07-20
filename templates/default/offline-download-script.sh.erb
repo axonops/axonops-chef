@@ -112,8 +112,8 @@ case $OS in
         # ['java_agent'] — not the raw jar, which only the tar/4.1/5.0 sourcing
         # path in cassandra-env.sh uses). Like its RPM counterpart this is a
         # noarch/all package (single java-agent jar, no compiled code), unlike
-        # axon-agent/server/dash above. <%= @monitored_cassandra_series %>
-        # series package: <%= @java_agent_package %>
+        # axon-agent/server/dash above. <%= @edition == 'dse' ? "DSE #{@dse_version}" : "#{@monitored_cassandra_series} series" %>
+        # package: <%= @java_agent_package %>
         download_deb_package "<%= @java_agent_package %>=<%= @java_agent_version %>-1:all"
         extract_jar_from_deb "$DOWNLOAD_DIR/<%= @java_agent_package %>_<%= @java_agent_version %>-1_all.deb"
         ;;
@@ -150,11 +150,12 @@ REPOEOF
         download_rpm_package "axon-server-<%= @server_version %>-1.${RPM_ARCH}"
         download_rpm_package "axon-dash-<%= @dashboard_version %>-1.${RPM_ARCH}"
 
-        # Cassandra java-agent package. axon-cassandra3.11-agent in particular
-        # ships both a stale x86_64 build and the fixed noarch build under the
-        # same name/version — dnf/yum prefer the exact-arch match, so pin
-        # noarch explicitly here too (see recipes/agent.rb for the matching
-        # online-install fix). <%= @monitored_cassandra_series %> series
+        # Cassandra/DSE java-agent package. axon-cassandra3.11-agent and
+        # axon-dse5.1-agent in particular ship a stale x86_64 build alongside
+        # a fixed noarch build under the same name/version — dnf/yum prefer
+        # the exact-arch match, so pin noarch explicitly here too (see
+        # recipes/agent.rb for the matching online-install fix).
+        # <%= @edition == 'dse' ? "DSE #{@dse_version}" : "#{@monitored_cassandra_series} series" %>
         # package: <%= @java_agent_package %>
         download_rpm_package "<%= @java_agent_package %>-<%= @java_agent_version %>-1.noarch"
         # dnf download's saved filename is content-hash-prefixed and
@@ -162,7 +163,7 @@ REPOEOF
         JAVA_AGENT_RPM=$(ls "$DOWNLOAD_DIR"/*"<%= @java_agent_package %>-<%= @java_agent_version %>"*.rpm | head -1)
         extract_jar_from_rpm "$JAVA_AGENT_RPM"
 
-<% if @monitored_cassandra_install_format == 'pkg' -%>
+<% if @edition != 'dse' && @monitored_cassandra_install_format == 'pkg' -%>
         # Monitored Cassandra <%= @monitored_cassandra_version %> itself, as an
         # RPM (install_format 'pkg'). 3.11 dropped off Apache's own RPM repo,
         # so it comes from the JFrog mirror configured via

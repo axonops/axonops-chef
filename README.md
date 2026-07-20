@@ -80,7 +80,7 @@ Supported platforms:
 include_recipe 'axonops::agent'
 ```
 
-Also monitors an existing **DataStax Enterprise (DSE) 5.1** install — auto-detected, never
+Also monitors an existing **DataStax Enterprise (DSE)** install (5.1, 6.7, 6.8, 6.9) — auto-detected, never
 installed or reinstalled. See [docs/DSE.md](docs/DSE.md).
 
 ### Deploy Self-Hosted AxonOps Server
@@ -402,7 +402,7 @@ Detailed documentation for each component:
 - 📘 **[AxonOps Server Guide](docs/SERVER.md)** - Deploy and configure the AxonOps server
 - 📗 **[AxonOps Agent Guide](docs/AGENT.md)** - Install agents on Cassandra, DSE, or Kafka nodes
 - 📙 **[Cassandra Installation](docs/CASSANDRA.md)** - Apache Cassandra deployment options
-- 🗄️ **[DataStax Enterprise Monitoring](docs/DSE.md)** - Monitor an existing DSE 5.1 cluster
+- 🗄️ **[DataStax Enterprise Monitoring](docs/DSE.md)** - Monitor an existing DSE cluster (5.1, 6.7, 6.8, 6.9)
 - 📨 **[Kafka Installation](docs/KAFKA.md)** - Apache Kafka deployment options
 - 📕 **[Elasticsearch Setup](docs/ELASTIC.md)** - Configure Elasticsearch for AxonOps
 - 🔔 **[Alert Rules & Service Checks](docs/ALERTS.md)** - Configure alerts, checks, and notifications via API
@@ -518,7 +518,7 @@ node.override['axonops']['agent']['org_name'] = 'your-org-name'
 include_recipe 'axonops::agent'
 ```
 
-Also monitors an existing DataStax Enterprise (DSE) 5.1 install automatically —
+Also monitors an existing DataStax Enterprise (DSE) install (5.1, 6.7, 6.8, 6.9) automatically —
 see [docs/AGENT.md](docs/AGENT.md) and [docs/DSE.md](docs/DSE.md) for more
 examples (self-hosted mode, TLS/mTLS, Kafka monitoring, offline install).
 

@@ -32,12 +32,23 @@ module AxonOpsCassandra
   }.freeze
 
   # AxonOps Cassandra java-agent RPM/deb package name for each series. DSE
-  # 5.1 isn't listed — recipes/agent.rb selects node['axonops']['java_agent']
-  # ['dse'] for that edition instead of calling java_agent_package.
+  # isn't listed here — recipes/agent.rb calls dse_java_agent_package below
+  # for that edition instead, keyed by node['axonops']['cassandra']
+  # ['dse_version'] rather than the Cassandra version.
   JAVA_AGENT_PACKAGE = {
     '3.11' => 'axon-cassandra3.11-agent',
     '4.1' => 'axon-cassandra4.1-agent',
     '5.0' => 'axon-cassandra5.0-agent-jdk17',
+  }.freeze
+
+  # AxonOps DSE java-agent RPM/deb package name for each DSE series (there is
+  # no single generic 'axon-dse-agent' package — confirmed via `dnf search
+  # dse` against packages.axonops.com).
+  DSE_JAVA_AGENT_PACKAGE = {
+    '5.1' => 'axon-dse5.1-agent',
+    '6.7' => 'axon-dse6.7-agent',
+    '6.8' => 'axon-dse6.8-agent',
+    '6.9' => 'axon-dse6.9-agent',
   }.freeze
 
   # Duration unit -> milliseconds.
@@ -97,6 +108,15 @@ module AxonOpsCassandra
   # AxonOps java-agent package name matching the given Cassandra version.
   def java_agent_package(version)
     JAVA_AGENT_PACKAGE.fetch(series(version))
+  end
+
+  # AxonOps java-agent package name matching the given DSE series
+  # (node['axonops']['cassandra']['dse_version']: '5.1', '6.7', '6.8', '6.9').
+  def dse_java_agent_package(dse_version)
+    DSE_JAVA_AGENT_PACKAGE.fetch(dse_version.to_s) do
+      raise ArgumentError,
+            "Unsupported DSE version '#{dse_version}'. Supported: #{DSE_JAVA_AGENT_PACKAGE.keys.join(', ')}."
+    end
   end
 
   # Parse a "<number><unit>" duration string ("2000ms", "3h", "30m") into an

@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### DSE 6.7/6.8/6.9 java-agent support, offline download included
+- `node['axonops']['cassandra']['dse_version']` attribute (default `'5.1'`) and
+  `AxonOpsCassandra.dse_java_agent_package` (`libraries/cassandra_version.rb`),
+  mapping DSE series to its real package: `axon-dse5.1-agent`,
+  `axon-dse6.7-agent`, `axon-dse6.8-agent`, `axon-dse6.9-agent`. `docs/DSE.md`
+  previously only documented 5.1; DSE version can't be auto-detected, so this
+  must be set explicitly for anything else.
+- `offline_download_helper`/`offline-download-script.sh.erb` now resolve the
+  DSE java-agent package from `dse_version` too, and correctly download only
+  the agent for `edition == 'dse'` — never a Cassandra package, since this
+  cookbook doesn't install/manage DSE.
+
 #### Amazon Linux + package-install correctness, verified end to end on Cassandra 3.11
 - Full test harness: ChefSpec unit specs, InSpec controls, Test Kitchen
   configuration with suites for 3.11/4.1/5.0 tarball, package install, GC
@@ -47,6 +59,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from them, both `axon-agent` and `cassandra` (3.11) services came up.
 
 ### Fixed
+
+#### DSE java-agent package name (continued)
+- `node['axonops']['java_agent']['dse']` defaulted to `'axon-dse-agent'` — a
+  package that doesn't exist on `packages.axonops.com` (confirmed via `dnf
+  search dse`/`dnf list`). Every DSE-monitoring install (online and offline)
+  was resolving to a 404/missing package. Now `nil` by default, resolved
+  dynamically from `dse_version` unless explicitly overridden.
 
 #### Amazon Linux + package-install correctness (continued)
 - `offline_install` auto-vivify bug: `node.override['java']['offline_install']

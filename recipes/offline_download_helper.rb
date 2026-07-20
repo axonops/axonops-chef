@@ -37,12 +37,14 @@ end
 # is only ever fetched as a tarball.
 monitored_cassandra_version = node['axonops']['cassandra']['version']
 
-# Same resolution order as recipes/agent.rb: explicit override wins, DSE gets
-# its own package, otherwise derive from the Cassandra series so 3.11/4.1/5.0
-# each get the right axon-cassandra*-agent package instead of always
-# defaulting to the 5.0/jdk17 build.
+# Same resolution order as recipes/agent.rb: explicit override wins, DSE
+# resolves from dse_version (there is no generic 'axon-dse-agent' package),
+# otherwise derive from the Cassandra series so 3.11/4.1/5.0 each get the
+# right axon-cassandra*-agent package instead of always defaulting to the
+# 5.0/jdk17 build.
 java_agent_package = if node['axonops']['cassandra']['edition'] == 'dse'
-                        node['axonops']['java_agent']['dse']
+                        node['axonops']['java_agent']['dse'] ||
+                          AxonOpsCassandra.dse_java_agent_package(node['axonops']['cassandra']['dse_version'])
                       elsif node['axonops']['java_agent']['package'] != 'axon-cassandra5.0-agent-jdk17'
                         node['axonops']['java_agent']['package']
                       else
@@ -93,8 +95,13 @@ template ::File.join(download_path, 'download-packages.sh') do
     java_agent_package: java_agent_package,
     repository_url: node['axonops']['repository']['url'],
     cassandra_version: node['axonops']['server']['cassandra']['version'],
+    edition: node['axonops']['cassandra']['edition'],
+    dse_version: node['axonops']['cassandra']['dse_version'],
     monitored_cassandra_version: monitored_cassandra_version,
-    monitored_cassandra_series: AxonOpsCassandra.series(monitored_cassandra_version),
+    # DSE only ever downloads the java-agent, never a Cassandra package —
+    # the series is meaningless/possibly unresolvable for a DSE version
+    # string, so skip computing it rather than risk an ArgumentError.
+    monitored_cassandra_series: node['axonops']['cassandra']['edition'] == 'dse' ? nil : AxonOpsCassandra.series(monitored_cassandra_version),
     monitored_cassandra_install_format: node['axonops']['cassandra']['install_format'],
     redhat_repository_url_311x: node['axonops']['cassandra']['redhat_repository_url_311x'],
     elastic_version: node['axonops']['server']['elastic']['version'],
