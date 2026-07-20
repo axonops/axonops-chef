@@ -508,6 +508,18 @@ Containerized/restricted environment setup. Features:
 knife node from file examples/nodes/container-node.json
 ```
 
+## Packer / Image Baking Examples
+
+Bake this cookbook into an AMI (or other image) with Packer's built-in
+`chef-solo` provisioner — no Chef Server required:
+
+- **[examples/packer/cassandra-agent/](examples/packer/cassandra-agent/)** —
+  fresh Apache Cassandra + AxonOps agent baked into one image.
+- **[examples/packer/dse-agent-only/](examples/packer/dse-agent-only/)** —
+  AxonOps agent only, attached to an already-installed DataStax Enterprise
+  base image (this cookbook never installs/manages DSE — see
+  [docs/DSE.md](docs/DSE.md)).
+
 ## Common Use Cases
 
 ### 1. Monitor Existing Cassandra Cluster

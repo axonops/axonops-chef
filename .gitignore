@@ -5,3 +5,6 @@ example/inventory
 .DS_Store
 berks-cookbooks/
 issues.json
+examples/packer/*/cookbooks/
+examples/packer/*/*.box
+packer_cache/

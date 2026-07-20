@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Packer image-baking examples
+- New `examples/packer/cassandra-agent/`: Packer template baking a fresh
+  Apache Cassandra + AxonOps agent install into an AMI via the built-in
+  `chef-solo` provisioner.
+- New `examples/packer/dse-agent-only/`: Packer template attaching the
+  AxonOps agent only to an already-installed DSE base AMI (this cookbook
+  never installs/manages DSE — see docs/DSE.md).
+
 #### DSE cassandra-env.sh JVM-agent path
 - New `node['axonops']['cassandra']['dse_env_file']` attribute and
   `AxonOpsCassandra.dse_env_file` helper (`libraries/cassandra_version.rb`) to
