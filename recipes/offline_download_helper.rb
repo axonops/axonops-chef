@@ -1,77 +1,40 @@
 #
-# Cookbook:: cassandra-ops
+# Cookbook:: axonops
 # Recipe:: offline_download_helper
 #
-# Helper recipe to download AxonOps packages for offline installation
+# Ships the standalone offline-package downloader to a node and prints usage.
 #
-
-# This recipe helps download AxonOps packages for airgapped environments
-# It's meant to be run on a machine with internet access
-
-require 'fileutils'
+# The download logic no longer lives in an ERB template baked from node
+# attributes — it is a static, Chef-free script (files/default/download-packages.sh)
+# driven entirely by CLI flags. This recipe now just copies that script into
+# node['axonops']['offline_packages_path'] and logs a recommended command line
+# derived from the node's current attributes, so existing
+# `include_recipe 'axonops::offline_download_helper'` users keep working.
+#
+# You do NOT need Chef to use the downloader: run
+# files/default/download-packages.sh directly on any internet-connected machine
+# with --components to pick what to fetch. See README / docs/OFFLINE.md.
+#
 
 download_path = node['axonops']['offline_packages_path']
 
-# attributes/agent.rb and attributes/default.rb default these to the literal
-# string 'latest' — meaningful to a `package` resource's `version` property
-# (apt/yum resolve the keyword themselves), but useless once spliced into a
-# download URL/filename, which is all this sample script does with them.
-# Pin known-good fallbacks so the generated script works out of the box;
-# update by re-checking `dnf list --showduplicates axon-agent axon-server
-# axon-dash` against packages.axonops.com.
-LATEST_KNOWN_PACKAGE_VERSIONS = {
-  agent: '2.0.30',
-  server: '2.0.34',
-  dashboard: '2.0.36',
-}.freeze
+# --- Build a recommended command line from the node's current attributes so
+# the logged guidance matches how this node is configured. Purely advisory —
+# the shipped script has its own built-in defaults and 'latest' fallbacks.
+edition = node['axonops']['cassandra']['edition']
+install_format = node['axonops']['cassandra']['install_format']
 
-# Every axon-cassandra*-agent/axon-dse*-agent package has its own
-# independent release history — a single flat "java_agent" version fallback
-# was wrong for anything but 3.11 (confirmed live: axon-dse5.1-agent's
-# actual latest is 1.0.5, not the 3.11 agent's 1.0.14 — download failed
-# with "No package axon-dse5.1-agent-1.0.14-1.noarch available"). Update by
-# re-checking `dnf list --showduplicates axon-cassandra3.11-agent
-# axon-cassandra4.1-agent axon-cassandra5.0-agent-jdk17 axon-dse5.1-agent
-# axon-dse6.7-agent axon-dse6.8-agent axon-dse6.9-agent`.
-LATEST_KNOWN_JAVA_AGENT_VERSIONS = {
-  'axon-cassandra3.11-agent' => '1.0.14',
-  'axon-cassandra4.1-agent' => '1.0.16',
-  'axon-cassandra5.0-agent-jdk17' => '1.0.14',
-  'axon-dse5.1-agent' => '1.0.5',
-  'axon-dse6.7-agent' => '1.0.4',
-  'axon-dse6.8-agent' => '1.0.7',
-  'axon-dse6.9-agent' => '1.0.9',
-}.freeze
+# DSE monitors an existing Cassandra (never downloads/installs it), so the
+# 'cassandra' component is only meaningful for the apache edition.
+components = %w(java agent server dashboard)
+components.unshift('cassandra') if edition != 'dse'
 
-resolve_version = lambda do |attr_version, key|
-  attr_version == 'latest' ? LATEST_KNOWN_PACKAGE_VERSIONS.fetch(key) : attr_version
-end
-
-# node['axonops']['cassandra']['*'] drives java_agent_package and, depending
-# on install_format, either the Cassandra tarball (offline_packages['cassandra'],
-# read by recipes/install_cassandra_tarball.rb) or the Cassandra RPM/deb
-# (offline_packages['cassandra_pkg'], read by recipes/install_cassandra_pkg.rb).
-# There's only ever ONE effective Cassandra config per node — even when
-# axonops::server installs its own metrics-storage Cassandra, recipes/
-# server.rb overrides node['axonops']['cassandra']['*'] from
-# node['axonops']['server']['cassandra']['*'] before calling
-# axonops::cassandra, so both paths end up reading the same attributes.
-cassandra_version = node['axonops']['cassandra']['version']
-cassandra_install_format = node['axonops']['cassandra']['install_format']
-
-# Same resolution order as recipes/agent.rb: explicit override wins, DSE
-# resolves from dse_version (there is no generic 'axon-dse-agent' package),
-# otherwise derive from the Cassandra series so 3.11/4.1/5.0 each get the
-# right axon-cassandra*-agent package instead of always defaulting to the
-# 5.0/jdk17 build.
-java_agent_package = if node['axonops']['cassandra']['edition'] == 'dse'
-                        node['axonops']['java_agent']['dse'] ||
-                          AxonOpsCassandra.dse_java_agent_package(node['axonops']['cassandra']['dse_version'])
-                      elsif node['axonops']['java_agent']['package'] != 'axon-cassandra5.0-agent-jdk17'
-                        node['axonops']['java_agent']['package']
-                      else
-                        AxonOpsCassandra.java_agent_package(cassandra_version)
-                      end
+recommended_args = ["--components #{components.join(',')}"]
+recommended_args << "--edition #{edition}" if edition != 'apache'
+recommended_args << "--dse-version #{node['axonops']['cassandra']['dse_version']}" if edition == 'dse'
+recommended_args << "--cassandra-version #{node['axonops']['cassandra']['version']}" if edition != 'dse'
+recommended_args << "--cassandra-install-format #{install_format}" if edition != 'dse' && install_format != 'tar'
+recommended_args << "--repo-url #{node['axonops']['repository']['url']}"
 
 # Create download directory
 directory download_path do
@@ -79,80 +42,34 @@ directory download_path do
   mode '0755'
 end
 
+# Ship the standalone downloader onto the node.
+cookbook_file ::File.join(download_path, 'download-packages.sh') do
+  source 'download-packages.sh'
+  mode '0755'
+  action :create
+end
+
 # Log instructions
 Chef::Log.info('=' * 80)
 Chef::Log.info('AxonOps Offline Package Download Helper')
 Chef::Log.info('=' * 80)
 Chef::Log.info('')
-Chef::Log.info('For comprehensive offline package downloading, we recommend using:')
-Chef::Log.info('https://github.com/axonops/axonops-installer-packages-downloader')
+Chef::Log.info("A standalone downloader has been installed at: #{download_path}/download-packages.sh")
+Chef::Log.info('It needs NO Chef — run it on any machine with internet access and pick the')
+Chef::Log.info('components to fetch, then copy the results to your airgapped target.')
 Chef::Log.info('')
-Chef::Log.info('This tool will download all necessary AxonOps packages for your platform.')
+Chef::Log.info('Recommended command for this node:')
+Chef::Log.info("  #{download_path}/download-packages.sh #{recommended_args.join(' ')}")
 Chef::Log.info('')
-Chef::Log.info('Usage:')
-Chef::Log.info('1. Clone the repository on a machine with internet access')
-Chef::Log.info('2. Run the download script for your target platform')
-Chef::Log.info("3. Copy the downloaded packages to: #{download_path}")
-Chef::Log.info('4. Configure your Chef attributes for offline installation:')
+Chef::Log.info('Component sets (mix and match with --components):')
+Chef::Log.info('  cassandra                                  # just the Cassandra tarball/pkg')
+Chef::Log.info('  cassandra,java                             # + Azul Zulu JDK')
+Chef::Log.info('  cassandra,java,agent                       # + axon-agent + java-agent')
+Chef::Log.info('  cassandra,java,agent,server,dashboard      # full self-hosted stack')
 Chef::Log.info('')
-Chef::Log.info("  default['axonops']['offline_install'] = true")
-Chef::Log.info("  default['axonops']['offline_packages_path'] = '#{download_path}'")
-Chef::Log.info("  default['axonops']['offline_packages']['agent'] = 'axon-agent_VERSION_ARCH.deb'")
-Chef::Log.info("  default['axonops']['offline_packages']['server'] = 'axon-server_VERSION_ARCH.deb'")
-Chef::Log.info("  default['axonops']['offline_packages']['dashboard'] = 'axon-dash_VERSION_ARCH.deb'")
-Chef::Log.info("  default['axonops']['offline_packages']['java_agent'] = 'axon-cassandraVER-agent-jdkVER.jar'")
-Chef::Log.info("  default['axonops']['offline_packages']['cassandra'] = 'apache-cassandra-VERSION-bin.tar.gz' # install_format 'tar'")
-Chef::Log.info("  default['axonops']['offline_packages']['cassandra_pkg'] = 'cassandra-VERSION-1.noarch.rpm' # install_format 'pkg'")
-Chef::Log.info("  default['axonops']['offline_packages']['opensearch'] = 'opensearch-VERSION-linux-ARCH.rpm' # axonops::server only")
+Chef::Log.info("The script prints the exact node['axonops']['offline_packages'][*]")
+Chef::Log.info('attribute values to set once it finishes.')
 Chef::Log.info('')
-Chef::Log.info('Replace VERSION and ARCH with actual values for your packages. The generated')
-Chef::Log.info('download-packages.sh prints the exact filenames from its own run at the end.')
+Chef::Log.info('For comprehensive downloads AxonOps also publishes:')
+Chef::Log.info('  https://github.com/axonops/axonops-installer-packages-downloader')
 Chef::Log.info('=' * 80)
-
-# Create a sample download script
-template ::File.join(download_path, 'download-packages.sh') do
-  source 'offline-download-script.sh.erb'
-  mode '0755'
-  variables(
-    agent_version: resolve_version.call(node['axonops']['agent']['version'], :agent),
-    server_version: resolve_version.call(node['axonops']['server']['version'], :server),
-    dashboard_version: resolve_version.call(node['axonops']['dashboard']['version'], :dashboard),
-    java_agent_version: if node['axonops']['java_agent']['version'] == 'latest'
-                          LATEST_KNOWN_JAVA_AGENT_VERSIONS.fetch(java_agent_package) do
-                            raise "No known-good version fallback for java_agent_package " \
-                                  "'#{java_agent_package}' — set node['axonops']['java_agent']['version'] " \
-                                  "explicitly, or add it to LATEST_KNOWN_JAVA_AGENT_VERSIONS " \
-                                  "in recipes/offline_download_helper.rb"
-                          end
-                        else
-                          node['axonops']['java_agent']['version']
-                        end,
-    java_agent_package: java_agent_package,
-    repository_url: node['axonops']['repository']['url'],
-    edition: node['axonops']['cassandra']['edition'],
-    dse_version: node['axonops']['cassandra']['dse_version'],
-    cassandra_version: cassandra_version,
-    # DSE only ever downloads the java-agent, never a Cassandra package —
-    # the series is meaningless/possibly unresolvable for a DSE version
-    # string, so skip computing it rather than risk an ArgumentError.
-    cassandra_series: node['axonops']['cassandra']['edition'] == 'dse' ? nil : AxonOpsCassandra.series(cassandra_version),
-    cassandra_install_format: cassandra_install_format,
-    # A Cassandra RPM/deb package needs a real java-X.Y.Z-headless OS
-    # package installed alongside it (see recipes/cassandra.rb/java.rb) —
-    # only relevant when actually downloading a Cassandra package, i.e.
-    # never for DSE (this cookbook doesn't install/manage DSE's Cassandra).
-    java_major: node['axonops']['cassandra']['edition'] == 'dse' ? nil : AxonOpsCassandra.java_major(cassandra_version),
-    zulu_headless_packages: node['java']['zulu_headless_packages'],
-    zulu_pkg_rpm: node['java']['zulu_pkg_rpm'],
-    redhat_repository_url_311x: node['axonops']['cassandra']['redhat_repository_url_311x'],
-    elastic_version: node['axonops']['server']['elastic']['version'],
-    zulu_version: node['java']['zulu_tarball_version'],
-    zulu_build: node['java']['zulu_tarball_build']
-  )
-  action :create
-end
-
-Chef::Log.info('')
-Chef::Log.info("A sample download script has been created at: #{download_path}/download-packages.sh")
-Chef::Log.info('However, we strongly recommend using the official downloader from GitHub.')
-Chef::Log.info('')

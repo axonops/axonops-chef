@@ -578,6 +578,30 @@ node.override['axonops']['offline_packages_path'] = '/path/to/packages'
 include_recipe 'axonops::server'
 ```
 
+**Getting the packages** — use the standalone downloader (no Chef required). Run
+it on any machine with internet access and pick which component set to fetch
+with `--components`, then copy the results to your air-gapped target:
+
+```bash
+# Just the Cassandra tarball
+files/default/download-packages.sh --components cassandra
+
+# Cassandra + Azul Zulu JDK
+files/default/download-packages.sh --components cassandra,java
+
+# Cassandra + Java + AxonOps agent (+ java-agent)
+files/default/download-packages.sh --components cassandra,java,agent
+
+# Full self-hosted stack
+files/default/download-packages.sh --components cassandra,java,agent,server,dashboard
+```
+
+The script prints the exact `node['axonops']['offline_packages'][*]` values to
+set once it finishes. `recipe[axonops::offline_download_helper]` still works —
+it ships this same script to `node['axonops']['offline_packages_path']` and logs
+a recommended command line for the node. See [docs/OFFLINE.md](docs/OFFLINE.md)
+for the full component matrix and flag reference.
+
 Covered by `offline_install`: `axonops::agent`, `axonops::server`, `axonops::cassandra`,
 `axonops::kafka`, `axonops::opensearch`, and their shared `axonops::java` dependency —
 setting the single flag above is enough for all of them.

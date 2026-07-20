@@ -84,9 +84,10 @@ default['java']['java_pkg'] = 'java-17-openjdk-headless' # Generic fallback
 
 default['java']['zulu_pkg_rpm'] = 'https://cdn.azul.com/zulu/bin/zulu-repo-1.0.0-1.noarch.rpm'
 
-# Azul Zulu tarball version/build used only by
-# recipes/offline_download_helper.rb's sample download script (which fetches
-# a raw tarball from cdn.azul.com, unrelated to the zulu_packages/zulu_pkg_rpm
-# repo-based install path recipes/java.rb actually uses).
+# Azul Zulu tarball version/build. Consumed by the standalone
+# files/default/download-packages.sh --java download (which fetches a raw
+# tarball from cdn.azul.com, unrelated to the zulu_packages/zulu_pkg_rpm
+# repo-based install path recipes/java.rb actually uses); the script also
+# accepts --zulu-version/--zulu-build to override these directly.
 default['java']['zulu_tarball_version'] = '17.0.9'
 default['java']['zulu_tarball_build'] = '17.46.19-ca'

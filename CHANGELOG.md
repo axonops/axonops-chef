@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Standalone offline package downloader
+- New `files/default/download-packages.sh`: a static, Chef-free script that
+  downloads offline-install packages, selecting the component set via
+  `--components` (`cassandra`, `java`, `agent`, `server`, `dashboard`). Only the
+  requested packages are fetched and validated — e.g. `--components cassandra`,
+  `--components cassandra,java`, `--components cassandra,java,agent`, or the full
+  `--components cassandra,java,agent,server,dashboard`. All versions, edition,
+  install-format, repo URLs, etc. are overridable via flags or `AXONOPS_*` env
+  vars, defaulting to the same values (and `latest` fallbacks) the cookbook uses.
+- New `docs/OFFLINE.md` documents the component matrix, flags, version
+  derivation, and validation rules.
+
+### Changed
+
+- `recipes/offline_download_helper.rb` no longer generates the download script
+  from an ERB template baked with node attributes. It now ships the standalone
+  `download-packages.sh` (via `cookbook_file`) to
+  `node['axonops']['offline_packages_path']` and logs a recommended, component-
+  based command line derived from the node's attributes. Existing
+  `include_recipe 'axonops::offline_download_helper'` run lists keep working; the
+  download logic is now fully usable without a Chef run.
+- Removed `templates/default/offline-download-script.sh.erb` (superseded by the
+  static script).
+
 #### Switched from Elasticsearch to OpenSearch
 - `axonops::server`'s internal search/config-storage dependency is now
   **OpenSearch**, installed as a real RPM/deb package from OpenSearch's own
