@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://axonops.com">
-    <img src="https://axonops.com/wp-content/uploads/2024/02/logo.svg" alt="AxonOps" width="300">
+    <img src="https://digitalis-marketplace-assets.s3.us-east-1.amazonaws.com/AxonopsDigitalMaster_AxonopsFullLogoBlue.jpg" alt="AxonOps" width="300">
   </a>
 </p>
 
