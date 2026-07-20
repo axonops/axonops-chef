@@ -408,6 +408,7 @@ Detailed documentation for each component:
 - 📨 **[Kafka Installation](docs/KAFKA.md)** - Apache Kafka deployment options
 - 📕 **[OpenSearch Setup](docs/OPENSEARCH.md)** - Configure OpenSearch for AxonOps
 - 🔔 **[Alert Rules & Service Checks](docs/ALERTS.md)** - Configure alerts, checks, and notifications via API
+- 📦 **[Offline Package Downloader](scripts/README.md)** - Mirror AxonOps packages for air-gapped installs (`scripts/download_offline_packages.py`), with per-package and version selection
 
 ## Cookbook Structure
 
@@ -619,6 +620,11 @@ set once it finishes. `recipe[axonops::offline_download_helper]` still works —
 it ships this same script to `node['axonops']['offline_packages_path']` and logs
 a recommended command line for the node. See [docs/OFFLINE.md](docs/OFFLINE.md)
 for the full component matrix and flag reference.
+
+For finer control over *which* AxonOps packages and versions to mirror (e.g.
+just `axon-agent`, a single Cassandra agent, or pinned versions), use
+`scripts/download_offline_packages.py` instead — see
+[scripts/README.md](scripts/README.md).
 
 Covered by `offline_install`: `axonops::agent`, `axonops::server`, `axonops::cassandra`,
 `axonops::kafka`, `axonops::opensearch`, and their shared `axonops::java` dependency —

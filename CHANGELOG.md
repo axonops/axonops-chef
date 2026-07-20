@@ -188,6 +188,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   still fetch the latest. The pin matches an exact version or the upstream
   portion of an RPM `ver-rel` string, so `axon-agent=2.0.30` selects both the
   `2.0.30` DEB and the `2.0.30-1` RPM.
+- New `scripts/README.md` documents `download_offline_packages.py` (quick start,
+  `--packages` filtering/pinning, package-name reference, options, verification)
+  and `create_mock_packages.sh`; linked from the main `README.md` Documentation
+  and offline-install sections.
 - RPM discovery now collapses a package to its `noarch` build when one exists,
   dropping obsolete per-arch (`x86_64`) builds the repo still carries for the
   Cassandra/DSE/Kafka agents. Genuinely per-arch packages (`axon-agent`,
