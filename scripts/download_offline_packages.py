@@ -63,33 +63,24 @@ JAVA_DISTRIBUTIONS = {
     }
 }
 
-# AxonOps packages
-AXONOPS_PACKAGES = {
-    "deb": {
-        "axon-server": ["amd64", "arm64"],
-        "axon-agent": ["amd64", "arm64"],
-        "axon-dash": ["amd64", "arm64"],
-        "axon-cassandra3-agent": ["all"],
-        "axon-cassandra311-agent": ["all"],
-        "axon-cassandra4-agent": ["all"],
-        "axon-cassandra40-agent": ["all"],
-        "axon-cassandra41-agent": ["all"],
-        "axon-cassandra5-agent": ["all"],
-        "axon-cassandra50-agent": ["all"],
-    },
-    "rpm": {
-        "axon-server": ["noarch"],
-        "axon-agent": ["x86_64", "aarch64"],
-        "axon-dash": ["noarch"],
-        "axon-cassandra3-agent": ["noarch"],
-        "axon-cassandra311-agent": ["noarch"],
-        "axon-cassandra4-agent": ["noarch"],
-        "axon-cassandra40-agent": ["noarch"],
-        "axon-cassandra41-agent": ["noarch"],
-        "axon-cassandra5-agent": ["noarch"],
-        "axon-cassandra50-agent": ["noarch"],
-    }
-}
+# AxonOps package selection.
+#
+# The exact package names drift (dotted series, JDK-variant suffixes, new
+# editions such as DSE and Kafka), so instead of hardcoding a list that goes
+# stale we discover every package whose name starts with this prefix directly
+# from the repository metadata (apt Packages / yum primary.xml) and download
+# the latest version of each. "axon-" cleanly matches the agent/server/dash/
+# cassandra/dse/kafka packages while excluding axonops-workbench,
+# axonops-schema-registry, cqlai, etc.
+AXONOPS_PACKAGE_PREFIX = "axon-"
+
+# apt repository layout (verified against packages.axonops.com/apt):
+#   suite/codename: axonops-apt   component: main   architectures: all amd64 arm64
+# The per-arch index is served as a plain (uncompressed) "Packages" file — there
+# is no "Packages.gz".
+AXONOPS_APT_SUITE = "axonops-apt"
+AXONOPS_APT_COMPONENT = "main"
+AXONOPS_APT_ARCHITECTURES = ["all", "amd64", "arm64"]
 
 class PackageDownloader:
     def __init__(self, download_dir=DOWNLOAD_DIR):
@@ -249,8 +240,17 @@ class PackageDownloader:
             # Return hardcoded fallback
             return ELASTICSEARCH_VERSIONS
 
-    def download_file(self, url, dest_path=None, expected_checksum=None):
-        """Download a file with progress indication."""
+    def download_file(self, url, dest_path=None, expected_checksum=None, max_retries=3):
+        """Download a file with progress indication.
+
+        The CDN in front of packages.axonops.com occasionally drops the
+        connection mid-transfer (urllib raises http.client.IncompleteRead, or
+        the socket simply returns short). A naive read loop treats the short
+        read as EOF and writes a truncated file, which then fails checksum
+        verification (or, for unchecked files, is silently corrupt). We guard
+        against that by comparing the bytes written to the advertised
+        Content-Length and retrying the whole download on any failure.
+        """
         if dest_path is None:
             dest_path = self.download_dir / os.path.basename(url)
 
@@ -265,45 +265,65 @@ class PackageDownloader:
         print(f"  → {dest_path}")
 
         headers = {"User-Agent": USER_AGENT}
-        request = urllib.request.Request(url, headers=headers)
 
-        try:
-            with urllib.request.urlopen(request) as response:
-                total_size = int(response.headers.get('Content-Length', 0))
-                downloaded = 0
-                block_size = 8192
+        last_error = None
+        for attempt in range(1, max_retries + 1):
+            request = urllib.request.Request(url, headers=headers)
+            try:
+                with urllib.request.urlopen(request) as response:
+                    total_size = int(response.headers.get('Content-Length', 0))
+                    downloaded = 0
+                    block_size = 8192
 
-                with open(dest_path, 'wb') as f:
-                    while True:
-                        buffer = response.read(block_size)
-                        if not buffer:
-                            break
-                        downloaded += len(buffer)
-                        f.write(buffer)
+                    with open(dest_path, 'wb') as f:
+                        while True:
+                            buffer = response.read(block_size)
+                            if not buffer:
+                                break
+                            downloaded += len(buffer)
+                            f.write(buffer)
 
-                        if total_size > 0:
-                            percent = (downloaded / total_size) * 100
-                            bars = int(percent / 2)
-                            print(f"\r  Progress: [{'=' * bars}{' ' * (50-bars)}] {percent:.1f}%", end='', flush=True)
-                print()  # New line after progress
+                            if total_size > 0:
+                                percent = (downloaded / total_size) * 100
+                                bars = int(percent / 2)
+                                print(f"\r  Progress: [{'=' * bars}{' ' * (50-bars)}] {percent:.1f}%", end='', flush=True)
+                    print()  # New line after progress
+
+                # Detect a truncated transfer: fewer bytes than advertised.
+                if total_size > 0 and downloaded != total_size:
+                    raise IOError(
+                        f"Incomplete download: got {downloaded} of {total_size} bytes"
+                    )
 
                 # Verify checksum if provided
                 if expected_checksum:
                     print("  Verifying checksum...")
                     actual_checksum = self.calculate_checksum(dest_path)
                     if actual_checksum.lower() != expected_checksum.lower():
-                        os.remove(dest_path)
-                        raise ValueError(f"Checksum mismatch! Expected: {expected_checksum}, Got: {actual_checksum}")
+                        raise ValueError(
+                            f"Checksum mismatch! Expected: {expected_checksum}, Got: {actual_checksum}"
+                        )
                     print("  ✓ Checksum verified")
 
-        except urllib.error.HTTPError as e:
-            print(f"  ✗ HTTP Error {e.code}: {e.reason}")
-            raise
-        except Exception as e:
-            print(f"  ✗ Error: {e}")
-            raise
+                return dest_path
 
-        return dest_path
+            except urllib.error.HTTPError as e:
+                # HTTP errors (404 etc.) will not fix themselves on retry.
+                print(f"  ✗ HTTP Error {e.code}: {e.reason}")
+                if dest_path.exists():
+                    os.remove(dest_path)
+                raise
+            except Exception as e:
+                last_error = e
+                if dest_path.exists():
+                    os.remove(dest_path)
+                if attempt < max_retries:
+                    print(f"  ⚠ Attempt {attempt}/{max_retries} failed: {e} — retrying...")
+                    time.sleep(2 * attempt)
+                else:
+                    print(f"  ✗ Error after {max_retries} attempts: {e}")
+
+        raise last_error
 
     def calculate_checksum(self, file_path, algorithm='sha256'):
         """Calculate checksum of a file."""
@@ -483,63 +503,72 @@ class PackageDownloader:
                 self._download_axonops_rpm()
 
     def _download_axonops_deb(self):
-        """Download AxonOps Debian packages."""
+        """Download AxonOps Debian packages.
+
+        Discovers every ``axon-*`` package present in the apt repository (across
+        the ``all``, ``amd64`` and ``arm64`` binary indexes) and downloads the
+        latest version of each. The apt index is a plain, uncompressed
+        ``Packages`` file — there is no ``Packages.gz``.
+        """
         print("\nDownloading AxonOps DEB packages...")
         base_url = "https://packages.axonops.com/apt"
 
-        for package_name, architectures in AXONOPS_PACKAGES["deb"].items():
-            for arch in architectures:
-                # Download Packages.gz
-                packages_url = f"{base_url}/dists/axonops/main/binary-{arch}/Packages.gz"
-                packages_gz_path = self.download_dir / f"Packages_{arch}.gz"
-                packages_path = self.download_dir / f"Packages_{arch}"
+        # package_name -> (version, filename, sha256) for the newest version seen
+        latest = {}
 
-                try:
-                    self.download_file(packages_url, packages_gz_path)
+        for arch in AXONOPS_APT_ARCHITECTURES:
+            packages_url = (
+                f"{base_url}/dists/{AXONOPS_APT_SUITE}/{AXONOPS_APT_COMPONENT}"
+                f"/binary-{arch}/Packages"
+            )
+            packages_path = self.download_dir / f"Packages_{arch}"
 
-                    # Extract Packages.gz
-                    with gzip.open(packages_gz_path, 'rb') as f_in:
-                        with open(packages_path, 'wb') as f_out:
-                            shutil.copyfileobj(f_in, f_out)
+            try:
+                self.download_file(packages_url, packages_path)
 
-                    # Parse packages and find latest version
-                    with open(packages_path, 'r') as f:
-                        content = f.read()
-                        packages = content.split('\n\n')
+                with open(packages_path, 'r') as f:
+                    stanzas = f.read().split('\n\n')
 
-                        latest_version = None
-                        latest_filename = None
-                        latest_sha256 = None
+                for pkg in stanzas:
+                    name_match = re.search(r'^Package: (.+)$', pkg, re.MULTILINE)
+                    if not name_match:
+                        continue
+                    package_name = name_match.group(1).strip()
+                    if not package_name.startswith(AXONOPS_PACKAGE_PREFIX):
+                        continue
 
-                        for pkg in packages:
-                            if f"Package: {package_name}\n" in pkg:
-                                version_match = re.search(r'Version: (.+)', pkg)
-                                filename_match = re.search(r'Filename: (.+)', pkg)
-                                sha256_match = re.search(r'SHA256: (.+)', pkg)
+                    version_match = re.search(r'^Version: (.+)$', pkg, re.MULTILINE)
+                    filename_match = re.search(r'^Filename: (.+)$', pkg, re.MULTILINE)
+                    sha256_match = re.search(r'^SHA256: (.+)$', pkg, re.MULTILINE)
+                    if not (version_match and filename_match):
+                        continue
 
-                                if version_match and filename_match:
-                                    version = version_match.group(1)
-                                    filename = filename_match.group(1)
-                                    sha256 = sha256_match.group(1) if sha256_match else None
+                    version = version_match.group(1).strip()
+                    filename = filename_match.group(1).strip()
+                    sha256 = sha256_match.group(1).strip() if sha256_match else None
 
-                                    if not latest_version or self._compare_versions(version, latest_version) > 0:
-                                        latest_version = version
-                                        latest_filename = filename
-                                        latest_sha256 = sha256
+                    current = latest.get(package_name)
+                    if current is None or self._compare_versions(version, current[0]) > 0:
+                        latest[package_name] = (version, filename, sha256)
 
-                        if latest_filename:
-                            # Download the package
-                            package_url = f"{base_url}/{latest_filename}"
-                            package_file = self.download_dir / os.path.basename(latest_filename)
-                            self.download_file(package_url, package_file, latest_sha256)
-                            print(f"  ✓ Downloaded {package_name} {latest_version} for {arch}")
+                os.remove(packages_path)
 
-                    # Cleanup
-                    os.remove(packages_gz_path)
-                    os.remove(packages_path)
+            except Exception as e:
+                print(f"  ✗ Error reading apt index for {arch}: {e}")
 
-                except Exception as e:
-                    print(f"  ✗ Error downloading {package_name} for {arch}: {e}")
+        if not latest:
+            print("  ✗ No axon-* packages found in the apt repository")
+            return
+
+        for package_name in sorted(latest):
+            version, filename, sha256 = latest[package_name]
+            try:
+                package_url = f"{base_url}/{filename}"
+                package_file = self.download_dir / os.path.basename(filename)
+                self.download_file(package_url, package_file, sha256)
+                print(f"  ✓ Downloaded {package_name} {version}")
+            except Exception as e:
+                print(f"  ✗ Error downloading {package_name} {version}: {e}")
 
     def _download_axonops_rpm(self):
         """Download AxonOps RPM packages."""
@@ -586,41 +615,59 @@ class PackageDownloader:
             root = tree.getroot()
             ns = {'common': 'http://linux.duke.edu/metadata/common'}
 
-            for package_name, architectures in AXONOPS_PACKAGES["rpm"].items():
-                latest_version = None
-                latest_location = None
-                latest_checksum = None
+            # Discover the newest version of every axon-* package, keyed by
+            # (name, arch) so x86_64 and aarch64 builds are both kept.
+            latest = {}
 
-                for package in root.findall('common:package', ns):
-                    name_elem = package.find('common:name', ns)
-                    if name_elem is not None and name_elem.text == package_name:
-                        arch_elem = package.find('common:arch', ns)
-                        if arch_elem is not None and arch_elem.text in architectures:
-                            version_elem = package.find('common:version', ns)
-                            location_elem = package.find('common:location', ns)
-                            checksum_elem = package.find('common:checksum', ns)
+            for package in root.findall('common:package', ns):
+                name_elem = package.find('common:name', ns)
+                if name_elem is None or name_elem.text is None:
+                    continue
+                package_name = name_elem.text
+                if not package_name.startswith(AXONOPS_PACKAGE_PREFIX):
+                    continue
 
-                            if version_elem is not None and location_elem is not None:
-                                version = f"{version_elem.get('ver')}-{version_elem.get('rel')}"
-                                location = location_elem.get('href')
-                                checksum = checksum_elem.text if checksum_elem is not None and checksum_elem.get('type') == 'sha256' else None
+                arch_elem = package.find('common:arch', ns)
+                version_elem = package.find('common:version', ns)
+                location_elem = package.find('common:location', ns)
+                checksum_elem = package.find('common:checksum', ns)
 
-                                if not latest_version or self._compare_versions(version, latest_version) > 0:
-                                    latest_version = version
-                                    latest_location = location
-                                    latest_checksum = checksum
+                if version_elem is None or location_elem is None:
+                    continue
 
-                if latest_location:
-                    # Download the package
-                    package_url = f"{base_url}/{latest_location}"
-                    package_file = self.download_dir / os.path.basename(latest_location)
-                    self.download_file(package_url, package_file, latest_checksum)
-                    print(f"  ✓ Downloaded {package_name} {latest_version}")
+                arch = arch_elem.text if arch_elem is not None else 'noarch'
+                version = f"{version_elem.get('ver')}-{version_elem.get('rel')}"
+                location = location_elem.get('href')
+                checksum = (
+                    checksum_elem.text
+                    if checksum_elem is not None and checksum_elem.get('type') == 'sha256'
+                    else None
+                )
 
-            # Cleanup
+                key = (package_name, arch)
+                current = latest.get(key)
+                if current is None or self._compare_versions(version, current[0]) > 0:
+                    latest[key] = (version, location, checksum)
+
+            # Cleanup metadata before downloading packages so a package-download
+            # failure doesn't leave metadata behind.
             os.remove(repomd_path)
             os.remove(primary_gz_path)
             os.remove(primary_path)
+
+            if not latest:
+                print("  ✗ No axon-* packages found in the yum repository")
+                return
+
+            for (package_name, arch) in sorted(latest):
+                version, location, checksum = latest[(package_name, arch)]
+                try:
+                    package_url = f"{base_url}/{location}"
+                    package_file = self.download_dir / os.path.basename(location)
+                    self.download_file(package_url, package_file, checksum)
+                    print(f"  ✓ Downloaded {package_name} {version} ({arch})")
+                except Exception as e:
+                    print(f"  ✗ Error downloading {package_name} {version} ({arch}): {e}")
 
         except Exception as e:
             print(f"  ✗ Error downloading RPM packages: {e}")
@@ -695,9 +742,13 @@ def main():
 
     try:
         if args.all:
-            # Download everything
-            downloader.download_axonops("deb")
-            downloader.download_axonops("rpm")
+            # Download everything. Honour --package-type when given so
+            # `--all --package-type rpm` mirrors only RPMs; default is both.
+            if args.package_type:
+                downloader.download_axonops(args.package_type)
+            else:
+                downloader.download_axonops("deb")
+                downloader.download_axonops("rpm")
             downloader.download_cassandra(non_interactive=True)
             downloader.download_elasticsearch(non_interactive=True)
             downloader.download_java(args.java_arch)

@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Offline installation from http(s):// URLs
+- `node['axonops']['offline_packages_path']` now accepts an `http(s)://` base
+  URL in addition to a local directory. New `libraries/axonops_offline.rb`
+  (`AxonOpsOffline.resolve`) downloads the named package/tarball via
+  `remote_file` into Chef's file cache and returns the cached local path.
+  Applies to `axonops::agent`, `axonops::server`, `axonops::dashboard`,
+  `axonops::opensearch`, `axonops::kafka`, and Cassandra's tarball/pkg install
+  recipes. `axonops::java`'s package-chain/tarball auto-discovery still
+  requires a local directory since it globs for dependent files by pattern.
+
 #### Packer image-baking examples
 - New `examples/packer/cassandra-agent/`: Packer template baking a fresh
   Apache Cassandra + AxonOps agent install into an AMI via the built-in
@@ -165,6 +175,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from them, both `axon-agent` and `cassandra` (3.11) services came up.
 
 ### Fixed
+
+#### `scripts/download_offline_packages.py` could not download any AxonOps packages
+- `--all` ignored `--package-type`, always running both the deb and rpm paths;
+  `--all --package-type rpm` now mirrors only RPMs (default remains both).
+- The apt path used the wrong suite (`axonops` → real suite is `axonops-apt`)
+  and fetched a non-existent `Packages.gz`; the repo serves a plain,
+  uncompressed `Packages` index. Both caused every deb URL to 404.
+- The hardcoded package names (`axon-cassandra5-agent`, `axon-cassandra50-agent`,
+  …) no longer exist upstream (real names are dotted with JDK-variant suffixes,
+  e.g. `axon-cassandra5.0-agent-jdk17`, plus new `axon-dse*`/`axon-kafka*`
+  editions). Package selection now discovers every `axon-*` package from the
+  live repo metadata (apt `Packages` / yum `primary.xml`) and fetches the latest
+  of each, so the list can no longer drift.
+- `download_file` treated a dropped/short CDN response as a normal EOF, silently
+  writing a truncated file (which then failed sha256 verification, or was
+  silently corrupt for unchecked files). It now compares bytes written against
+  `Content-Length` and retries the whole transfer up to 3 times.
 
 #### `axonops::agent` crashed when run standalone against an existing Cassandra/DSE/Kafka (continued)
 - `notifies` resolves its target against the compiled resource collection
