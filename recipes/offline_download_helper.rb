@@ -18,12 +18,29 @@ download_path = node['axonops']['offline_packages_path']
 # download URL/filename, which is all this sample script does with them.
 # Pin known-good fallbacks so the generated script works out of the box;
 # update by re-checking `dnf list --showduplicates axon-agent axon-server
-# axon-dash axon-cassandra3.11-agent` against packages.axonops.com.
+# axon-dash` against packages.axonops.com.
 LATEST_KNOWN_PACKAGE_VERSIONS = {
   agent: '2.0.30',
   server: '2.0.34',
   dashboard: '2.0.36',
-  java_agent: '1.0.14',
+}.freeze
+
+# Every axon-cassandra*-agent/axon-dse*-agent package has its own
+# independent release history — a single flat "java_agent" version fallback
+# was wrong for anything but 3.11 (confirmed live: axon-dse5.1-agent's
+# actual latest is 1.0.5, not the 3.11 agent's 1.0.14 — download failed
+# with "No package axon-dse5.1-agent-1.0.14-1.noarch available"). Update by
+# re-checking `dnf list --showduplicates axon-cassandra3.11-agent
+# axon-cassandra4.1-agent axon-cassandra5.0-agent-jdk17 axon-dse5.1-agent
+# axon-dse6.7-agent axon-dse6.8-agent axon-dse6.9-agent`.
+LATEST_KNOWN_JAVA_AGENT_VERSIONS = {
+  'axon-cassandra3.11-agent' => '1.0.14',
+  'axon-cassandra4.1-agent' => '1.0.16',
+  'axon-cassandra5.0-agent-jdk17' => '1.0.14',
+  'axon-dse5.1-agent' => '1.0.5',
+  'axon-dse6.7-agent' => '1.0.4',
+  'axon-dse6.8-agent' => '1.0.7',
+  'axon-dse6.9-agent' => '1.0.9',
 }.freeze
 
 resolve_version = lambda do |attr_version, key|
@@ -99,7 +116,16 @@ template ::File.join(download_path, 'download-packages.sh') do
     agent_version: resolve_version.call(node['axonops']['agent']['version'], :agent),
     server_version: resolve_version.call(node['axonops']['server']['version'], :server),
     dashboard_version: resolve_version.call(node['axonops']['dashboard']['version'], :dashboard),
-    java_agent_version: resolve_version.call(node['axonops']['java_agent']['version'], :java_agent),
+    java_agent_version: if node['axonops']['java_agent']['version'] == 'latest'
+                          LATEST_KNOWN_JAVA_AGENT_VERSIONS.fetch(java_agent_package) do
+                            raise "No known-good version fallback for java_agent_package " \
+                                  "'#{java_agent_package}' — set node['axonops']['java_agent']['version'] " \
+                                  "explicitly, or add it to LATEST_KNOWN_JAVA_AGENT_VERSIONS " \
+                                  "in recipes/offline_download_helper.rb"
+                          end
+                        else
+                          node['axonops']['java_agent']['version']
+                        end,
     java_agent_package: java_agent_package,
     repository_url: node['axonops']['repository']['url'],
     edition: node['axonops']['cassandra']['edition'],

@@ -60,6 +60,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### Wrong java-agent version fallback for DSE and non-3.11 series (continued)
+- The `'latest'` → real-version fallback for `java_agent_version` was a
+  single flat constant (`1.0.14`, `axon-cassandra3.11-agent`'s own latest)
+  reused for every `axon-cassandra*-agent`/`axon-dse*-agent` package
+  regardless of series — each has an independent release history. Verified
+  live: downloading a DSE agent with the 3.11 agent's version failed with
+  "No package axon-dse5.1-agent-1.0.14-1.noarch available". Replaced with
+  a per-package version map
+  (`LATEST_KNOWN_JAVA_AGENT_VERSIONS`) covering all 3.11/4.1/5.0/DSE
+  5.1/6.7/6.8/6.9 packages, keyed by the already-resolved
+  `java_agent_package` name; raises a clear error naming the missing
+  package if a future/custom one isn't in the map, instead of silently
+  guessing wrong.
+
 #### Post-download summary printed the java-agent jar instead of the RPM/deb (continued)
 - `offline_packages['java_agent']` printed the *extracted jar* filename
   (`axon-cassandra3.11-agent-1.0.14.jar`) — but `recipes/agent.rb`'s
