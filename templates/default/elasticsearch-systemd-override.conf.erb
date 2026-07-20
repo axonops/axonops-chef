@@ -1,7 +1,0 @@
-[Service]
-# Resource limits
-LimitNOFILE=<%= @limit_nofile %>
-LimitMEMLOCK=<%= @limit_memlock %>
-
-# Allow elasticsearch to access /proc/sys/vm/max_map_count
-AmbientCapabilities=CAP_SYS_RESOURCE

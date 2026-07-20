@@ -103,6 +103,7 @@ Chef::Log.info("  default['axonops']['offline_packages']['dashboard'] = 'axon-da
 Chef::Log.info("  default['axonops']['offline_packages']['java_agent'] = 'axon-cassandraVER-agent-jdkVER.jar'")
 Chef::Log.info("  default['axonops']['offline_packages']['cassandra'] = 'apache-cassandra-VERSION-bin.tar.gz' # install_format 'tar'")
 Chef::Log.info("  default['axonops']['offline_packages']['cassandra_pkg'] = 'cassandra-VERSION-1.noarch.rpm' # install_format 'pkg'")
+Chef::Log.info("  default['axonops']['offline_packages']['opensearch'] = 'opensearch-VERSION-linux-ARCH.rpm' # axonops::server only")
 Chef::Log.info('')
 Chef::Log.info('Replace VERSION and ARCH with actual values for your packages. The generated')
 Chef::Log.info('download-packages.sh prints the exact filenames from its own run at the end.')

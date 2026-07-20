@@ -15,7 +15,7 @@ monitoring and management platform. It supports:
 - AxonOps Server installation (self-hosted)
 - AxonOps Dashboard installation
 - Apache Cassandra installation (optional)
-- Elasticsearch installation for metrics storage (optional)
+- OpenSearch installation for AxonOps Server's own configuration storage (optional)
 - API-based configuration management
 - Support for both SaaS and self-hosted deployments
 - Airgapped/offline installation support
@@ -42,7 +42,7 @@ recipe 'axonops::agent', 'Installs and configures AxonOps agent on Cassandra nod
 recipe 'axonops::server', 'Installs and configures AxonOps server (self-hosted)'
 recipe 'axonops::dashboard', 'Installs and configures AxonOps dashboard'
 recipe 'axonops::cassandra', 'Installs Apache Cassandra'
-recipe 'axonops::elasticsearch', 'Installs Elasticsearch for metrics storage'
+recipe 'axonops::opensearch', "Installs OpenSearch for AxonOps Server's own configuration storage"
 recipe 'axonops::java', 'Installs Java/Zulu JDK'
 recipe 'axonops::configure', 'Configures AxonOps via API'
 recipe 'axonops::system_tuning', 'Applies system tuning for Cassandra'
@@ -81,8 +81,8 @@ attribute 'axonops/java/install',
   type: 'boolean',
   default: 'true'
 
-attribute 'axonops/elasticsearch/install',
-  display_name: 'Install Elasticsearch',
-  description: 'Whether to install Elasticsearch for metrics storage',
+attribute 'axonops/server/elastic/install',
+  display_name: 'Install OpenSearch',
+  description: "Whether to install OpenSearch for AxonOps Server's own configuration storage",
   type: 'boolean',
-  default: 'false'
+  default: 'true'

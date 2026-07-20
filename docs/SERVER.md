@@ -9,7 +9,7 @@ This guide covers the installation and configuration of AxonOps Server for self-
 - [Installation Methods](#installation-methods)
 - [Configuration Options](#configuration-options)
   - [Server Configuration](#server-configuration)
-  - [Elasticsearch Configuration](#elasticsearch-configuration)
+  - [OpenSearch Configuration](#opensearch-configuration)
   - [Cassandra Configuration](#cassandra-configuration)
   - [TLS/SSL Configuration](#tlsssl-configuration)
   - [Authentication Configuration](#authentication-configuration)
@@ -24,7 +24,7 @@ This guide covers the installation and configuration of AxonOps Server for self-
 
 The AxonOps Server is the central component of a self-hosted AxonOps deployment. It:
 - Collects metrics and logs from AxonOps agents
-- Stores data in Elasticsearch (logs/events) and Cassandra (metrics)
+- Stores data in OpenSearch (logs/events) and Cassandra (metrics)
 - Provides APIs for configuration and data access
 - Serves the web dashboard for monitoring and management
 
@@ -43,7 +43,7 @@ The AxonOps Server deployment consists of:
 │  └──────┬───────┘  └──────────────┘            │
 │         │                                        │
 │  ┌──────┴───────┐  ┌──────────────┐            │
-│  │Elasticsearch │  │  Cassandra   │            │
+│  │OpenSearch │  │  Cassandra   │            │
 │  │ (port 9200)  │  │ (port 9042)  │            │
 │  └──────────────┘  └──────────────┘            │
 └─────────────────────────────────────────────────┘
@@ -65,7 +65,7 @@ The AxonOps Server deployment consists of:
 
 ### Method 1: Full Stack Installation (Recommended)
 
-Installs AxonOps Server with embedded Elasticsearch and Cassandra:
+Installs AxonOps Server with embedded OpenSearch and Cassandra:
 
 ```ruby
 include_recipe 'axonops::server'
@@ -74,12 +74,12 @@ include_recipe 'axonops::dashboard'
 
 ### Method 2: Using External Dependencies
 
-Use existing Elasticsearch and/or Cassandra installations:
+Use existing OpenSearch and/or Cassandra installations:
 
 ```ruby
-# Use external Elasticsearch
+# Use external OpenSearch
 node.override['axonops']['server']['elastic']['install'] = false
-node.override['axonops']['server']['search_db']['hosts'] = ['http://elastic.example.com:9200/']
+node.override['axonops']['server']['search_db']['hosts'] = ['http://opensearch.example.com:9200/']
 
 # Use external Cassandra
 node.override['axonops']['server']['cassandra']['install'] = false
@@ -119,33 +119,38 @@ Core AxonOps Server settings:
 | `['axonops']['server']['package']` | `axon-server` | Package name (use full filename for offline) |
 | `['axonops']['server']['version']` | `latest` | Version to install (online mode) |
 
-### Elasticsearch Configuration
+### OpenSearch Configuration
 
-Settings for embedded Elasticsearch:
+Settings for embedded OpenSearch:
 
 | Attribute | Default | Description |
 |-----------|---------|-------------|
-| `['axonops']['server']['elastic']['install']` | `true` | Install embedded Elasticsearch |
-| `['axonops']['server']['elastic']['version']` | `7.17.26` | Elasticsearch version |
+| `['axonops']['server']['elastic']['install']` | `true` | Install embedded OpenSearch |
+| `['axonops']['server']['elastic']['version']` | `2.19.6` | OpenSearch version |
 | `['axonops']['server']['elastic']['heap_size']` | `512m` | JVM heap size |
 | `['axonops']['server']['elastic']['cluster_name']` | `axonops-cluster` | Cluster name |
 | `['axonops']['server']['elastic']['listen_address']` | `127.0.0.1` | Listen address |
 | `['axonops']['server']['elastic']['listen_port']` | `9200` | Listen port |
-| `['axonops']['server']['elastic']['data_dir']` | `/var/lib/axonops-search/data` | Data directory |
-| `['axonops']['server']['elastic']['logs_dir']` | `/var/log/axonops-search` | Logs directory |
+| `['axonops']['server']['elastic']['data_dir']` | `/var/lib/opensearch` | Data directory |
+| `['axonops']['server']['elastic']['logs_dir']` | `/var/log/opensearch` | Logs directory |
+| `['axonops']['server']['elastic']['security_plugin_enabled']` | `false` | Enable OpenSearch's built-in auth/TLS plugin — see [docs/OPENSEARCH.md](OPENSEARCH.md#security) |
+
+The `['axonops']['server']['elastic']['*']` namespace is unchanged from when this
+cookbook used Elasticsearch — see [docs/OPENSEARCH.md](OPENSEARCH.md) for the full
+picture of the OpenSearch switch.
 
 ### Search Database Configuration (New Format)
 
-Settings for Elasticsearch connection (new `search_db` format):
+Settings for OpenSearch connection (new `search_db` format):
 
 **Note:** The new `search_db` format is only supported in axon-server version 2.0.4 and above. For older versions, the cookbook automatically uses the legacy `elastic_host` and `elastic_port` format.
 
 | Attribute | Default | Description |
 |-----------|---------|-------------|
-| `['axonops']['server']['search_db']['hosts']` | `['http://localhost:9200/']` | Array of Elasticsearch hosts |
+| `['axonops']['server']['search_db']['hosts']` | `['http://localhost:9200/']` | Array of OpenSearch hosts |
 | `['axonops']['server']['search_db']['username']` | `nil` | Username for authentication |
 | `['axonops']['server']['search_db']['password']` | `nil` | Password for authentication |
-| `['axonops']['server']['search_db']['skip_verify']` | `false` | Skip SSL/TLS verification |
+| `['axonops']['server']['search_db']['skip_verify']` | `true` | Skip SSL/TLS verification |
 | `['axonops']['server']['search_db']['replicas']` | `0` | Number of replicas per shard |
 | `['axonops']['server']['search_db']['shards']` | `1` | Number of shards per index |
 
@@ -370,11 +375,11 @@ include_recipe 'axonops::dashboard'
 Production-ready configuration with increased resources:
 
 ```ruby
-# Increase Elasticsearch heap for production
+# Increase OpenSearch heap for production
 node.override['axonops']['server']['elastic']['heap_size'] = '4g'
 
 # Configure data directories on dedicated disks
-node.override['axonops']['server']['elastic']['data_dir'] = '/data/elasticsearch'
+node.override['axonops']['server']['elastic']['data_dir'] = '/data/opensearch'
 node.override['axonops']['server']['cassandra']['data_dir'] = '/data/cassandra'
 
 # Set retention policies
@@ -392,7 +397,7 @@ include_recipe 'axonops::dashboard'
 
 ### Example 3: External Dependencies
 
-Using existing Elasticsearch and Cassandra clusters:
+Using existing OpenSearch and Cassandra clusters:
 
 ```ruby
 # Don't install embedded services
@@ -401,10 +406,10 @@ node.override['axonops']['server']['cassandra']['install'] = false
 
 # Point to external services using new search_db format
 node.override['axonops']['server']['search_db']['hosts'] = [
-  'http://elastic-cluster.internal:9200/',
-  'http://elastic-cluster2.internal:9200/'
+  'http://opensearch-cluster.internal:9200/',
+  'http://opensearch-cluster2.internal:9200/'
 ]
-node.override['axonops']['server']['search_db']['username'] = 'elastic'
+node.override['axonops']['server']['search_db']['username'] = 'opensearch'
 node.override['axonops']['server']['search_db']['password'] = 'secure_password'
 node.override['axonops']['server']['search_db']['skip_verify'] = true  # For self-signed certs
 
@@ -431,7 +436,7 @@ node.override['axonops']['server']['listen_address'] = '10.0.1.10'
 # Use shared external storage
 node.override['axonops']['server']['elastic']['install'] = false
 node.override['axonops']['server']['cassandra']['install'] = false
-node.override['axonops']['server']['search_db']['hosts'] = ['http://elastic-vip:9200/']
+node.override['axonops']['server']['search_db']['hosts'] = ['http://opensearch-vip:9200/']
 node.override['axonops']['server']['cassandra']['hosts'] = ['cassandra-vip']
 
 # Enable mTLS for inter-service communication
@@ -498,8 +503,8 @@ systemctl status axon-server
 # Dashboard
 systemctl status axon-dash
 
-# Elasticsearch (if embedded)
-systemctl status axonops-search
+# OpenSearch (if embedded)
+systemctl status opensearch
 
 # Cassandra (if embedded)
 systemctl status cassandra
@@ -509,7 +514,7 @@ systemctl status cassandra
 
 - **AxonOps Server**: `/var/log/axonops/axon-server.log`
 - **Dashboard**: `/var/log/axonops/axon-dash.log`
-- **Elasticsearch**: `/var/log/axonops-search/`
+- **OpenSearch**: `/var/log/opensearch/`
 - **Cassandra**: `/var/log/cassandra/`
 
 ### Common Issues
@@ -520,12 +525,12 @@ systemctl status cassandra
    - Check server endpoint configuration
 
 2. **Server fails to start**
-   - Verify Elasticsearch and Cassandra are accessible
+   - Verify OpenSearch and Cassandra are accessible
    - Check TLS certificate paths if TLS is enabled
    - Review server logs for specific errors
 
 3. **High memory usage**
-   - Adjust Elasticsearch heap size
+   - Adjust OpenSearch heap size
    - Review retention policies
    - Consider using external storage services
 
@@ -542,7 +547,7 @@ Verify server health:
 # Check API health
 curl -X GET "http://localhost:8080/health"
 
-# Check Elasticsearch
+# Check OpenSearch
 curl -X GET "http://localhost:9200/_cluster/health?pretty"
 
 # Check Cassandra
@@ -560,7 +565,7 @@ nodetool -h localhost status
    ```
 
 2. **Data backup**:
-   - Elasticsearch: Use snapshot API
+   - OpenSearch: Use snapshot API
    - Cassandra: Use nodetool snapshot or AxonOps backup feature
 
 ### Updates
@@ -585,7 +590,7 @@ Monitor these key metrics:
 ### Scaling Considerations
 
 As your deployment grows:
-1. Consider external Elasticsearch/Cassandra clusters
+1. Consider external OpenSearch/Cassandra clusters
 2. Implement load balancing for multiple servers
 3. Adjust retention policies based on storage capacity
 4. Monitor and tune JVM heap sizes

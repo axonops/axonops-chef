@@ -31,10 +31,10 @@
       },
       "elastic": {
         "install": true,
-        "url": "http://localhost:9200",
+        "listen_address": "127.0.0.1",
+        "listen_port": 9200,
         "heap_size": "2g",
-        "cluster_name": "axonops-dev",
-        "node_name": "es-dev-01"
+        "cluster_name": "axonops-dev"
       },
       "cassandra": {
         "install": true,
@@ -194,7 +194,7 @@
   "run_list": [
     "recipe[axonops::java]",
     "recipe[axonops::system_tuning]",
-    "recipe[axonops::elasticsearch]",
+    "recipe[axonops::opensearch]",
     "recipe[axonops::cassandra]",
     "recipe[axonops::server]",
     "recipe[axonops::dashboard]",

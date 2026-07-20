@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Switched from Elasticsearch to OpenSearch
+- `axonops::server`'s internal search/config-storage dependency is now
+  **OpenSearch**, installed as a real RPM/deb package from OpenSearch's own
+  repo (`recipes/opensearch.rb`), replacing the old Elasticsearch tarball
+  install (`recipes/elasticsearch.rb`, deleted). All download URLs (direct
+  release artifacts, yum repo metadata, apt repo, GPG key) verified live.
+  `opensearch.yml.erb` deliberately does **not** set `bootstrap.memory_lock`
+  (the old Elasticsearch template did, backed by a systemd `LimitMEMLOCK`
+  override this recipe intentionally doesn't reinvent — setting the yml key
+  alone without the ulimit fails OpenSearch's bootstrap check on anything
+  but pure loopback). `wait-for-opensearch` uses the same bounded-retry
+  pattern as the existing `wait-for-axon-server` (not `Timeout.timeout`,
+  which can interrupt mid-`Net::HTTP` call rather than unwind cleanly).
+- New `docs/OPENSEARCH.md` (replaces `docs/ELASTIC.md`).
+- The `node['axonops']['server']['elastic']['*']` attribute namespace is
+  unchanged to minimize disruption to existing node configs — it now
+  configures OpenSearch. Removed the now-meaningless `install_dir`/
+  `tarball_url`/`tarball_checksum`/`ssl.*` sub-attributes (package installs
+  don't have a configurable install dir, and OpenSearch's security plugin
+  isn't configured via manually-generated certs the way the old tarball
+  install's `ssl.self_signed` was); added `security_plugin_enabled`
+  (default `false`, matching the old install's no-auth behavior) — see
+  docs/OPENSEARCH.md#security.
+- `axonops::elastic` is kept as a backwards-compatible wrapper recipe (now
+  pointing at `axonops::opensearch`) so existing run_lists referencing it
+  keep working; `recipe[axonops::elasticsearch]` run_list entries need
+  updating to `recipe[axonops::opensearch]` (updated in this repo's own
+  `examples/nodes/*.json`).
+- New `offline_packages['opensearch']` key (replaces `offline_packages`
+  `['elasticsearch']`) — `offline_download_helper`/
+  `offline-download-script.sh.erb` download the real OpenSearch RPM/deb
+  (verified live) instead of an Elasticsearch tarball.
+- Removed the dead, unused `node['axonops']['server']['elasticsearch']`
+  attribute namespace (`attributes/default.rb`) — a stray duplicate of
+  `server.elastic.*` never referenced by any recipe.
+
 #### Chef Solo Quickstart guide for beginners
 - New `docs/CHEF_SOLO_QUICKSTART.md`: a beginner-friendly, no-prior-Chef-knowledge
   walkthrough covering three scenarios — Cassandra only, Cassandra + AxonOps

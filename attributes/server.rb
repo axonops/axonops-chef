@@ -8,29 +8,34 @@
 default['axonops']['server']['version'] = 'latest' # Default to latest version
 default['axonops']['server']['package'] = 'axon-server'
 
-# Internal Elasticsearch for AxonOps Server
-default['axonops']['server']['elastic']['version'] = '7.17.29'
+# Internal OpenSearch for AxonOps Server (previously Elasticsearch — switched
+# to OpenSearch, installed as a real RPM/deb package from OpenSearch's own
+# repo rather than a manually-extracted tarball; see recipes/opensearch.rb
+# and docs/OPENSEARCH.md). The 'elastic' attribute namespace is kept as-is
+# to minimize disruption for existing node configs — it now configures
+# OpenSearch, not Elasticsearch.
+default['axonops']['server']['elastic']['version'] = '2.19.6'
 default['axonops']['server']['elastic']['heap_size'] = '512m'
 default['axonops']['server']['elastic']['cluster_name'] = 'axonops-cluster'
-default['axonops']['server']['elastic']['install_dir'] = '/opt/axonops-search'
-default['axonops']['server']['elastic']['data_dir'] = '/var/lib/axonops-search/data'
-default['axonops']['server']['elastic']['logs_dir'] = '/var/log/axonops-search'
-default['axonops']['server']['elastic']['tarball_url'] = nil
-default['axonops']['server']['elastic']['tarball_checksum'] = nil
+default['axonops']['server']['elastic']['data_dir'] = '/var/lib/opensearch'
+default['axonops']['server']['elastic']['logs_dir'] = '/var/log/opensearch'
 default['axonops']['server']['elastic']['listen_address'] = '127.0.0.1'
 default['axonops']['server']['elastic']['listen_port'] = 9200
-default['axonops']['server']['elastic']['tarball_url'] = 'https://artifacts.elastic.co/downloads/elasticsearch'
 default['axonops']['server']['elastic']['install'] = true
-default['axonops']['server']['elastic']['ssl']['enabled'] = true
-default['axonops']['server']['elastic']['ssl']['self_signed'] = true
-# this would contain server-cert.pem, server-key.pem and ca-cert.pem
-default['axonops']['server']['elastic']['ssl']['path'] = '/opt/axonops-search/config/certs'
+# OpenSearch's security plugin (auth + TLS) is enabled by default upstream and
+# needs its own certs/admin password setup, unrelated to the manual
+# self-signed-cert approach the old Elasticsearch tarball install used —
+# disabled by default here to match that install's previous no-auth
+# behavior. Set true and configure plugins.security.* yourself (see
+# docs/OPENSEARCH.md) for a production-hardened setup.
+default['axonops']['server']['elastic']['security_plugin_enabled'] = false
 
-# Search DB configuration (new format)
-default['axonops']['server']['search_db']['hosts'] = ['https://localhost:9200/']
+# Search DB configuration (new format) — axon-server's own connection to
+# OpenSearch. http:// by default to match security_plugin_enabled = false
+# above; switch to https:// if you enable the security plugin.
+default['axonops']['server']['search_db']['hosts'] = ['http://localhost:9200/']
 default['axonops']['server']['search_db']['username'] = nil
 default['axonops']['server']['search_db']['password'] = nil
-# change to false if you're not using the self-signed certs provided with this recipe
 default['axonops']['server']['search_db']['skip_verify'] = true
 default['axonops']['server']['search_db']['replicas'] = 0
 default['axonops']['server']['search_db']['shards'] = 1

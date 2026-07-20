@@ -21,12 +21,12 @@
       },
       "elastic": {
         "install": true,
-        "url": "http://localhost:9200",
+        "listen_address": "127.0.0.1",
+        "listen_port": 9200,
         "heap_size": "4g",
         "cluster_name": "axonops-metrics",
-        "node_name": "es-node-01",
-        "data_path": "/var/lib/elasticsearch",
-        "log_path": "/var/log/elasticsearch"
+        "data_dir": "/var/lib/opensearch",
+        "logs_dir": "/var/log/opensearch"
       },
       "cassandra": {
         "install": false,
@@ -71,11 +71,11 @@
   },
   "name": "axonops-server-01",
   "cookbook_version": "0.2.0",
-  "description": "AxonOps Server node with dashboard and Elasticsearch",
+  "description": "AxonOps Server node with dashboard and OpenSearch",
   "chef_environment": "production",
   "run_list": [
     "recipe[axonops::java]",
-    "recipe[axonops::elasticsearch]",
+    "recipe[axonops::opensearch]",
     "recipe[axonops::server]",
     "recipe[axonops::dashboard]",
     "recipe[axonops::dashboard_nginx]"

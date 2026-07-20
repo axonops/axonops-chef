@@ -7,6 +7,9 @@
   "axonops": {
     "offline_install": true,
     "offline_packages_path": "/opt/axonops/packages",
+    "offline_packages": {
+      "opensearch": "opensearch-2.19.6-linux-x64.rpm"
+    },
     "repository": {
       "enabled": false
     },
@@ -17,7 +20,6 @@
       "package": "axon-server-2.0.3-1.x86_64.rpm",
       "elastic": {
         "install": true,
-        "tarball_url": "file:///opt/axonops/packages/elasticsearch-7.17.26-linux-x86_64.tar.gz",
         "heap_size": "4g",
         "cluster_name": "axonops-prod"
       },

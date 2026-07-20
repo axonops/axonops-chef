@@ -2,7 +2,7 @@
 
 ## Project Context
 
-The AxonOps Chef Cookbook is a comprehensive automation solution for deploying and managing AxonOps, an advanced operations platform for Apache Cassandra. This cookbook provides modular recipes for installing and configuring all AxonOps components including the server, agents, dashboard, and supporting infrastructure like Elasticsearch and Cassandra itself.
+The AxonOps Chef Cookbook is a comprehensive automation solution for deploying and managing AxonOps, an advanced operations platform for Apache Cassandra. This cookbook provides modular recipes for installing and configuring all AxonOps components including the server, agents, dashboard, and supporting infrastructure like OpenSearch and Cassandra itself.
 
 ## Session Overview
 
@@ -69,7 +69,7 @@ This development session focused on enhancing the cookbook's Chef Server deploym
 
 **Implementation**:
 - New attribute: `node['axonops']['skip_vm_max_map_count']`
-- Updated recipes: common.rb, system_tuning.rb, elasticsearch.rb
+- Updated recipes: common.rb, system_tuning.rb, opensearch.rb
 - Conditional logic to skip setting when true
 - Updated all example files
 

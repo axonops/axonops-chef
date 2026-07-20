@@ -36,8 +36,10 @@
       },
       "elastic": {
         "install": false,
-        "url": "http://elasticsearch.elastic.svc.cluster.local:9200",
         "heap_size": "2g"
+      },
+      "search_db": {
+        "hosts": ["http://opensearch.opensearch.svc.cluster.local:9200/"]
       },
       "cassandra": {
         "install": false,
@@ -109,7 +111,7 @@
     "notes": [
       "1. System tuning is disabled (containers have limited kernel access)",
       "2. vm.max_map_count setting is skipped (managed by container orchestrator)",
-      "3. External Elasticsearch and Cassandra are used (running in separate containers)",
+      "3. External OpenSearch and Cassandra are used (running in separate containers)",
       "4. Service discovery uses Kubernetes DNS names",
       "5. Minimal run_list as most components run in separate containers"
     ]

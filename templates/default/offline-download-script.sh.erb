@@ -61,7 +61,7 @@ extract_jar_from_deb() {
     rm -rf "$extract_dir"
 }
 
-# Download function for real, static URLs (Cassandra/Elasticsearch/Zulu
+# Download function for real, static URLs (Cassandra/OpenSearch/Zulu
 # upstream tarballs and RPMs) — NOT for AxonOps' own axon-agent/server/dash/
 # java-agent packages below, which come from a flat, repodata-driven yum/apt
 # repo with content-hashed filenames (confirmed via `dnf download --url`
@@ -272,14 +272,27 @@ download_package \
 CASSANDRA_TAR_FILE="apache-cassandra-${CASSANDRA_VERSION}-bin.tar.gz"
 <% end -%>
 
-# Elasticsearch tarball for AxonOps configuration storage. Upstream uses
-# uname-style arch names (x86_64/aarch64), not Debian's (amd64/arm64) —
-# verified via direct HEAD request; the latter 404s.
-ELASTIC_VERSION="<%= @elastic_version || '7.17.16' %>"
+# OpenSearch package for AxonOps configuration storage (previously an
+# Elasticsearch tarball). OpenSearch publishes direct-downloadable RPM/deb
+# release artifacts at a predictable per-version URL — no repo/dnf/apt
+# needed, same reasoning as the Cassandra RPM download above. Arch names:
+# "x64" (not x86_64/amd64) and "arm64" (not aarch64) — OpenSearch's own
+# naming, distinct from every other download in this script.
+OPENSEARCH_VERSION="<%= @elastic_version || '2.19.6' %>"
+if [ "$UNAME_ARCH" = "x86_64" ]; then
+    OPENSEARCH_ARCH="x64"
+else
+    OPENSEARCH_ARCH="arm64"
+fi
+if [ "$OS" = "ubuntu" ] || [ "$OS" = "debian" ]; then
+    OPENSEARCH_EXT="deb"
+else
+    OPENSEARCH_EXT="rpm"
+fi
 download_package \
-    "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELASTIC_VERSION}-linux-${UNAME_ARCH}.tar.gz" \
-    "elasticsearch-${ELASTIC_VERSION}-linux-${UNAME_ARCH}.tar.gz"
-ELASTIC_PKG_FILE="elasticsearch-${ELASTIC_VERSION}-linux-${UNAME_ARCH}.tar.gz"
+    "https://artifacts.opensearch.org/releases/bundle/opensearch/${OPENSEARCH_VERSION}/opensearch-${OPENSEARCH_VERSION}-linux-${OPENSEARCH_ARCH}.${OPENSEARCH_EXT}" \
+    "opensearch-${OPENSEARCH_VERSION}-linux-${OPENSEARCH_ARCH}.${OPENSEARCH_EXT}"
+OPENSEARCH_PKG_FILE="opensearch-${OPENSEARCH_VERSION}-linux-${OPENSEARCH_ARCH}.${OPENSEARCH_EXT}"
 
 # Zulu JDK tarball. Also uname-style arch (aarch64, not arm64) on ARM —
 # verified via direct HEAD request; x86_64 is "x64" per Azul's own naming.
@@ -314,4 +327,4 @@ echo "  node['axonops']['offline_packages']['cassandra_pkg'] = '$CASSANDRA_PKG_F
 echo "  node['axonops']['offline_packages']['java'] = '$JAVA_PKG_FILE' # required: Cassandra's RPM/deb depends on java-<%= @java_major %>*-headless"
 echo "  # (recipes/cassandra.rb sets node['java']['package'] = true automatically for install_format 'pkg')"
 <% end -%>
-echo "  node['axonops']['offline_packages']['elasticsearch'] = '$ELASTIC_PKG_FILE'"
+echo "  node['axonops']['offline_packages']['opensearch'] = '$OPENSEARCH_PKG_FILE'"
