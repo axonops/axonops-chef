@@ -110,6 +110,13 @@ template ::File.join(download_path, 'download-packages.sh') do
     # string, so skip computing it rather than risk an ArgumentError.
     cassandra_series: node['axonops']['cassandra']['edition'] == 'dse' ? nil : AxonOpsCassandra.series(cassandra_version),
     cassandra_install_format: cassandra_install_format,
+    # A Cassandra RPM/deb package needs a real java-X.Y.Z-headless OS
+    # package installed alongside it (see recipes/cassandra.rb/java.rb) —
+    # only relevant when actually downloading a Cassandra package, i.e.
+    # never for DSE (this cookbook doesn't install/manage DSE's Cassandra).
+    java_major: node['axonops']['cassandra']['edition'] == 'dse' ? nil : AxonOpsCassandra.java_major(cassandra_version),
+    zulu_headless_packages: node['java']['zulu_headless_packages'],
+    zulu_pkg_rpm: node['java']['zulu_pkg_rpm'],
     redhat_repository_url_311x: node['axonops']['cassandra']['redhat_repository_url_311x'],
     elastic_version: node['axonops']['server']['elastic']['version'],
     zulu_version: node['java']['zulu_tarball_version'],

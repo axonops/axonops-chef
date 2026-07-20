@@ -134,6 +134,24 @@ case $OS in
         apt-get update
         (cd "$DOWNLOAD_DIR" && apt-get download "cassandra=<%= @cassandra_version %>")
         CASSANDRA_PKG_FILE=$(basename "$(ls "$DOWNLOAD_DIR"/cassandra_<%= @cassandra_version %>*.deb | head -1)")
+
+        # The Cassandra .deb declares a real java-<%= @java_major %>*-headless
+        # dependency — a tarball-extracted JDK never registers that with
+        # dpkg, even though `java` itself works via alternatives (see
+        # recipes/cassandra.rb/java.rb for the matching install-time fix).
+        curl -s https://repos.azul.com/azul-repo.key | gpg --dearmor -o /usr/share/keyrings/azul.gpg
+        echo "deb [signed-by=/usr/share/keyrings/azul.gpg] https://repos.azul.com/zulu/deb stable main" \
+            > /etc/apt/sources.list.d/zulu.list
+        apt-get update
+        # apt-get download (unlike --download-only below) doesn't resolve
+        # dependencies — <%= @zulu_headless_packages[@java_major] %> itself
+        # depends on further zulu*-headless packages that a single .deb
+        # can't satisfy offline (same reasoning as dnf --resolve in the RPM
+        # branch). --download-only resolves the full chain into apt's cache
+        # without installing.
+        apt-get install -y --download-only "<%= @zulu_headless_packages[@java_major] %>"
+        cp /var/cache/apt/archives/*.deb "$DOWNLOAD_DIR/"
+        JAVA_PKG_FILE=$(basename "$(ls "$DOWNLOAD_DIR"/<%= @zulu_headless_packages[@java_major] %>_*.deb | head -1)")
 <% end -%>
         ;;
 
@@ -208,6 +226,23 @@ REPOEOF
             "${CASSANDRA_RPM_BASEURL}cassandra-<%= @cassandra_version %>-1.noarch.rpm" \
             "cassandra-<%= @cassandra_version %>-1.noarch.rpm"
         CASSANDRA_PKG_FILE="cassandra-<%= @cassandra_version %>-1.noarch.rpm"
+
+        # The Cassandra RPM declares a real java-<%= @java_major %>*-headless
+        # dependency — a tarball-extracted JDK never registers that with
+        # rpm/dnf, even though `java` itself works via alternatives (see
+        # recipes/cassandra.rb/java.rb for the matching install-time fix).
+        # Verified live: `dnf install cassandra-...rpm` alone fails with
+        # "nothing provides java-1.8.0-headless" against a tarball-only Java.
+        dnf -y install <%= @zulu_pkg_rpm %> > /dev/null 2>&1 || true
+        # --resolve pulls the whole dependency chain too (zulu8-jdk-headless
+        # itself depends on zulu8-jre-headless/zulu8-ca-jdk-headless, which a
+        # single-file `rpm -i` can't resolve offline — verified live: without
+        # --resolve, install fails with "Failed dependencies"). name.arch (no
+        # version) resolves to the latest single-arch build, same reasoning
+        # as axon-agent above.
+        echo "Downloading (dnf download --resolve): <%= @zulu_headless_packages[@java_major] %>.$(uname -m)"
+        dnf download --resolve --destdir "$DOWNLOAD_DIR" "<%= @zulu_headless_packages[@java_major] %>.$(uname -m)"
+        JAVA_PKG_FILE=$(basename "$(ls "$DOWNLOAD_DIR"/<%= @zulu_headless_packages[@java_major] %>-*.rpm 2>/dev/null | head -1)")
 <% end -%>
         ;;
 
@@ -274,5 +309,7 @@ echo "  node['axonops']['offline_packages']['java_agent'] = '<%= @java_agent_pac
 echo "  node['axonops']['offline_packages']['cassandra'] = '$CASSANDRA_TAR_FILE'"
 <% elsif @edition != 'dse' && @cassandra_install_format == 'pkg' -%>
 echo "  node['axonops']['offline_packages']['cassandra_pkg'] = '$CASSANDRA_PKG_FILE'"
+echo "  node['axonops']['offline_packages']['java'] = '$JAVA_PKG_FILE' # required: Cassandra's RPM/deb depends on java-<%= @java_major %>*-headless"
+echo "  # (recipes/cassandra.rb sets node['java']['package'] = true automatically for install_format 'pkg')"
 <% end -%>
 echo "  node['axonops']['offline_packages']['elasticsearch'] = '$ELASTIC_PKG_FILE'"

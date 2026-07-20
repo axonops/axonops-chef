@@ -60,6 +60,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### Cassandra package installs never installed Java from a package (continued)
+- A Cassandra RPM/deb declares a real `java-X.Y.Z-headless` dependency —
+  verified live: `dnf install cassandra-3.11.19-....rpm` alone fails with
+  "nothing provides java-1.8.0-headless" against a tarball-only Java
+  install, since a manually-extracted tarball JDK is invisible to rpm/dnf/
+  dpkg dependency resolution even though `java` itself works fine via
+  `alternatives`. `recipes/java.rb`'s offline branch only ever supported
+  tarball installs, so any offline `install_format: 'pkg'` Cassandra
+  install was broken by construction.
+  - `recipes/cassandra.rb` now forces `node['java']['package'] = true`
+    whenever `install_format == 'pkg'`, activating `java.rb`'s
+    package-based install path instead of tarball (online installs were
+    already unaffected, package-based either way).
+  - New `node['java']['zulu_headless_packages']` attribute (major → package
+    name, e.g. `zulu8-jdk-headless`) — the offline branch now globs for it
+    by `java_major` instead of relying solely on a single, non-major-aware
+    `offline_packages['java']` filename.
+  - The headless JDK package itself has further dependencies (e.g.
+    `zulu8-jdk-headless` needs `zulu8-jre-headless` and
+    `zulu8-ca-jdk-headless`) that a single-file `rpm -i`/`dpkg -i` can't
+    resolve offline — verified live. Installs every matching file in
+    `offline_packages_path` together in one `rpm -Uvh`/`dpkg -i`
+    transaction, same pattern already used for axon-agent.
+  - After install, forces `alternatives --auto java` — the package's own
+    postinstall registers a correctly higher-priority alternatives entry,
+    but doesn't override a stale *manual* selection left over from a prior
+    tarball install on the same box (verified live: `alternatives --list`
+    showed both entries, manual one still active until forced).
+  - `offline-download-script.sh.erb` downloads the whole dependency chain
+    via `dnf download --resolve` (RPM) / `apt-get install
+    --download-only` (deb) whenever `install_format == 'pkg'` — a bare
+    `dnf download`/`apt-get download` doesn't resolve dependencies at all.
+    Verified live end to end: downloaded packages, then
+    `recipe[axonops::cassandra]` installed both Cassandra and its Java
+    dependency from them with no network access needed.
+
 #### Offline download script never downloaded the actual Cassandra package (continued)
 - The false premise from earlier in this branch that `axonops::server`'s own
   metrics-storage Cassandra and the *monitored* Cassandra

@@ -40,22 +40,51 @@ install_from_tarball = node['java']['install_from_package'] == false || node['ja
 install_zulu = node['java']['zulu'] != false
 
 if node['java']['offline_install'] && node['java']['package']
-  # Install from specified package path
-  package_path = ::File.join(node['axonops']['offline_packages_path'], node['axonops']['offline_packages']['java'])
+  # Explicit offline_packages['java'] filename selects just the top-level
+  # package; otherwise glob for every major-appropriate headless package
+  # (recipes/cassandra.rb sets node['java']['package'] = true specifically
+  # when install_format == 'pkg', keyed by java_major — offline_packages
+  # ['java'] is a single flat attribute, not major-aware, so most callers
+  # rely on the glob). Either way, install ALL matching files together in
+  # one transaction: the headless JDK package itself depends on further
+  # zulu*-headless packages (e.g. zulu8-jdk-headless needs zulu8-jre-headless
+  # and zulu8-ca-jdk-headless) that a single-file `rpm -i`/`dpkg -i` can't
+  # resolve offline — verified live: installing just the one named file
+  # fails with "Failed dependencies" / unmet deps. The download script's
+  # `dnf download --resolve` / `apt-get install --download-only` already
+  # stage the whole chain in offline_packages_path for this to glob up.
+  offline_dir = node['axonops']['offline_packages_path']
+  ext = platform_family?('debian') ? 'deb' : 'rpm'
+  headless_pkg_name = node['java']['zulu_headless_packages'][java_major]
 
-  unless ::File.exist?(package_path)
-    raise Chef::Exceptions::FileNotFound, "Java package not found at specified path: #{package_path}"
+  package_paths = if node['axonops']['offline_packages']['java'] &&
+                      ::File.exist?(::File.join(offline_dir, node['axonops']['offline_packages']['java']))
+                     [::File.join(offline_dir, node['axonops']['offline_packages']['java'])]
+                   else
+                     Dir.glob("#{offline_dir}/#{headless_pkg_name}*.#{ext}") +
+                       Dir.glob("#{offline_dir}/zulu#{java_major}*.#{ext}")
+                   end.uniq
+
+  if package_paths.empty?
+    raise Chef::Exceptions::FileNotFound,
+          "No offline Java package(s) found for major #{java_major} — looked for " \
+          "#{headless_pkg_name}*.#{ext} / zulu#{java_major}*.#{ext} in #{offline_dir} " \
+          "(or set node['axonops']['offline_packages']['java'] explicitly)"
   end
 
-  case node['platform_family']
-  when 'debian'
-    dpkg_package package_path do
-      action :install
-    end
-  when 'rhel', 'fedora', 'amazon'
-    rpm_package package_path do
-      action :install
-    end
+  execute 'install-offline-java-packages' do
+    command "#{platform_family?('debian') ? 'dpkg -i' : 'rpm -Uvh'} #{package_paths.join(' ')}"
+    not_if { ::Dir.glob('/usr/lib/jvm/*zulu*').any? }
+  end
+
+  # The package's own postinstall registers alternatives at a version-
+  # derived priority, but that doesn't override a *manually* pinned
+  # selection (e.g. left over from a prior tarball install on the same
+  # box) — force it back to auto so the newly-installed, highest-priority
+  # entry actually wins.
+  execute 'select-offline-java-package' do
+    command "#{platform_family?('debian') ? 'update-alternatives' : 'alternatives'} --auto java"
+    action :run
   end
 
   java_home = node['java']['java_home'] || node['java']['zulu_home'] || node['java']['openjdk_home']
