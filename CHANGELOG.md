@@ -60,6 +60,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### Offline download script's post-download summary (continued)
+- The final "Set the following Chef attributes" summary printed
+  `node['axonops']['packages'][...]` — the wrong attribute key throughout
+  (real one is `offline_packages`, per `attributes/default.rb`); it also
+  used `<%= File.dirname(__FILE__) %>` for the install path, which resolves
+  to the `.erb` *template source's* location on the Chef workstation/server
+  (e.g. `/var/chef/cache/cookbooks/axonops/templates/default`), not wherever
+  the rendered script was actually run from. And it guessed `.deb`-style
+  `name_VERSION_ARCH.deb` filenames unconditionally, wrong for the RHEL/
+  Amazon branch's real, unpredictable content-hash-prefixed `.rpm` names.
+  Now uses `$DOWNLOAD_DIR` (the directory the script is actually running
+  from) and captures the real downloaded filename per package via the same
+  glob approach already used for the java-agent jar extraction, so the
+  summary reflects what's actually on disk.
+
 #### DSE java-agent package name (continued)
 - `node['axonops']['java_agent']['dse']` defaulted to `'axon-dse-agent'` — a
   package that doesn't exist on `packages.axonops.com` (confirmed via `dnf

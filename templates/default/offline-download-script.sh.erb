@@ -104,8 +104,11 @@ case $OS in
         # above (a version-only spec can otherwise resolve ambiguously on a
         # multi-arch repo).
         download_deb_package "axon-agent=<%= @agent_version %>-1:${ARCH}"
+        AGENT_PKG_FILE=$(basename "$(ls "$DOWNLOAD_DIR"/axon-agent_*.deb | head -1)")
         download_deb_package "axon-server=<%= @server_version %>-1:${ARCH}"
+        SERVER_PKG_FILE=$(basename "$(ls "$DOWNLOAD_DIR"/axon-server_*.deb | head -1)")
         download_deb_package "axon-dash=<%= @dashboard_version %>-1:${ARCH}"
+        DASHBOARD_PKG_FILE=$(basename "$(ls "$DOWNLOAD_DIR"/axon-dash_*.deb | head -1)")
 
         # Cassandra java-agent package (axonops::agent's offline install expects
         # an actual .deb here, matching node['axonops']['offline_packages']
@@ -146,9 +149,16 @@ REPOEOF
             dnf download --destdir "$DOWNLOAD_DIR" "$pkg_spec"
         }
 
+        # dnf download's saved filename is content-hash-prefixed and
+        # unpredictable — glob for the one just downloaded, same as
+        # JAVA_AGENT_RPM below, so the final summary reports what's
+        # actually on disk instead of a guessed name.
         download_rpm_package "axon-agent-<%= @agent_version %>-1.${RPM_ARCH}"
+        AGENT_PKG_FILE=$(basename "$(ls "$DOWNLOAD_DIR"/*axon-agent-<%= @agent_version %>*.rpm | head -1)")
         download_rpm_package "axon-server-<%= @server_version %>-1.${RPM_ARCH}"
+        SERVER_PKG_FILE=$(basename "$(ls "$DOWNLOAD_DIR"/*axon-server-<%= @server_version %>*.rpm | head -1)")
         download_rpm_package "axon-dash-<%= @dashboard_version %>-1.${RPM_ARCH}"
+        DASHBOARD_PKG_FILE=$(basename "$(ls "$DOWNLOAD_DIR"/*axon-dash-<%= @dashboard_version %>*.rpm | head -1)")
 
         # Cassandra/DSE java-agent package. axon-cassandra3.11-agent and
         # axon-dse5.1-agent in particular ship a stale x86_64 build alongside
@@ -225,12 +235,12 @@ echo ""
 echo "Download complete!"
 echo ""
 echo "To use these packages with Chef:"
-echo "1. Copy all downloaded files to the target system at: <%= File.dirname(__FILE__) %>"
-echo "2. Set the following Chef attributes:"
+echo "1. Copy all downloaded files to the target system at: $DOWNLOAD_DIR"
+echo "2. Set the following Chef attributes (actual filenames from this run):"
 echo ""
 echo "  node['axonops']['offline_install'] = true"
-echo "  node['axonops']['offline_packages_path'] = '<%= File.dirname(__FILE__) %>'"
-echo "  node['axonops']['packages']['agent'] = 'axon-agent_<%= @agent_version %>_${ARCH}.deb'"
-echo "  node['axonops']['packages']['server'] = 'axon-server_<%= @server_version %>_${ARCH}.deb'"
-echo "  node['axonops']['packages']['dashboard'] = 'axon-dash_<%= @dashboard_version %>_${ARCH}.deb'"
-echo "  node['axonops']['packages']['java_agent'] = '<%= @java_agent_package %>-<%= @java_agent_version %>.jar'"
+echo "  node['axonops']['offline_packages_path'] = '$DOWNLOAD_DIR'"
+echo "  node['axonops']['offline_packages']['agent'] = '$AGENT_PKG_FILE'"
+echo "  node['axonops']['offline_packages']['server'] = '$SERVER_PKG_FILE'"
+echo "  node['axonops']['offline_packages']['dashboard'] = '$DASHBOARD_PKG_FILE'"
+echo "  node['axonops']['offline_packages']['java_agent'] = '<%= @java_agent_package %>-<%= @java_agent_version %>.jar'"
