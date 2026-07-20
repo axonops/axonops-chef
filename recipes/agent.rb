@@ -139,7 +139,16 @@ if node.run_list.include?('recipe[axonops::kafka]') || kafka_detected
   java_agent_package = node['axonops']['java_agent']['kafka']
   java_agent_env_file = "#{kafka_home}/bin/kafka-server-start.sh"
   service = "kafka"
-elsif node.run_list.include?('recipe[axonops::cassandra]') || cassandra_detected
+elsif node.run_list.include?('recipe[axonops::cassandra]') || cassandra_detected ||
+      node['axonops']['cassandra']['edition'] == 'dse'
+  # DSE is force-selectable via node['axonops']['cassandra']['edition'] =
+  # 'dse' (see docs/DSE.md) precisely for cases where path-based
+  # auto-detection (cassandra_search_paths above) might miss a real,
+  # non-standard DSE install — an explicitly forced edition must be enough
+  # on its own to reach this branch, or the whole point of forcing it is
+  # defeated. Verified live: without this, edition: 'dse' alone still fell
+  # through to the "Could not detect Cassandra or Kafka" bail-out below and
+  # never installed anything.
   # BUG FIX: this previously read node['axonops']['java_agent']['cassandra'],
   # an attribute that is never defined anywhere, so java_agent_package always
   # resolved to nil for online (non-offline) Cassandra-monitoring installs.

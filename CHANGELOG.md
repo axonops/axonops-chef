@@ -60,6 +60,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### Force-selecting DSE edition alone never actually installed anything (continued)
+- `docs/DSE.md` documents forcing DSE monitoring explicitly via
+  `node.override['axonops']['cassandra']['edition'] = 'dse'` — precisely
+  for cases where path-based auto-detection might miss a real,
+  non-standard DSE install. But `recipes/agent.rb`'s Cassandra/Kafka
+  dispatch `elsif` only ever checked `run_list.include?
+  ('recipe[axonops::cassandra]') || cassandra_detected` — an explicitly
+  forced `edition: 'dse'` satisfied neither, so it always fell through to
+  the `else` branch's `Chef::Log.error("Could not detect Cassandra or
+  Kafka"); return` and silently installed nothing. Verified live: a
+  DSE-only offline install (`run_list: ["recipe[axonops::agent]"]`,
+  `edition: 'dse'`, no real DSE present on the test box) converged with
+  "2/22 resources updated" — only the two detection `ruby_block`s ran, no
+  package install was even attempted. Added `edition == 'dse'` as a third,
+  independently-sufficient condition on that `elsif`.
+
 #### Wrong java-agent version fallback for DSE and non-3.11 series (continued)
 - The `'latest'` → real-version fallback for `java_agent_version` was a
   single flat constant (`1.0.14`, `axon-cassandra3.11-agent`'s own latest)
