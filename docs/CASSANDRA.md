@@ -20,6 +20,7 @@ This guide covers installation and configuration of Apache Cassandra using the A
   - [Logging Configuration](#logging-configuration)
   - [System Tuning](#system-tuning)
 - [Advanced Configurations](#advanced-configurations)
+- [cqlsh on Python 3.12+ hosts](#cqlsh-on-python-312-hosts)
 - [SSL Caveat](#ssl-caveat)
 - [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
@@ -342,6 +343,55 @@ node.override['axonops']['cassandra']['cdc_enabled']      = true
 node.override['axonops']['cassandra']['cdc_raw_directory'] = '/var/lib/cassandra/cdc_raw'
 node.override['axonops']['cassandra']['cdc_total_space']  = '4096MiB'
 ```
+
+---
+
+## cqlsh on Python 3.12+ hosts
+
+The `cqlsh` shipped inside the Cassandra tarball and the distro package relies on
+a Python driver that imports stdlib modules removed in Python 3.12 (`asyncore`,
+`imp`). On hosts whose **system Python is >= 3.12 — Ubuntu 24.04+, Debian 13 —
+the bundled cqlsh aborts at startup** with an `ImportError`, on both `tar` and
+`pkg` installs.
+
+`axonops::cassandra` fixes this automatically: `recipes/cqlsh_venv.rb` provisions
+an isolated Python virtualenv with the maintained standalone
+[`cqlsh`](https://pypi.org/project/cqlsh/) package (which supports modern Python)
+and installs a wrapper at `/usr/local/bin/cqlsh`. Because `/usr/local/bin`
+precedes both `$CASSANDRA_HOME/bin` and `/usr/bin` on `PATH`, a plain `cqlsh`
+call transparently uses the venv version — the system Python and the bundled
+cqlsh are left untouched. This is harmless on Python <= 3.11 (the venv cqlsh
+works there too), so it is enabled on all platforms by default.
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `cqlsh_venv.enabled` | Boolean | `true` | Provision the cqlsh venv and wrapper |
+| `cqlsh_venv.path` | String | `'/opt/cassandra-cqlsh-venv'` | Absolute venv path |
+| `cqlsh_venv.python` | String | `'python3'` | Host interpreter used to create the venv |
+| `cqlsh_venv.packages` | Array | `['cqlsh']` | pip packages installed into the venv; pin for reproducibility, e.g. `['cqlsh==6.2.0']` |
+| `cqlsh_venv.wrapper_path` | String | `'/usr/local/bin/cqlsh'` | Wrapper path; shadows the bundled cqlsh on PATH |
+
+Disable it on Python <= 3.11 distros where you don't want the extra venv:
+
+```ruby
+node.override['axonops']['cassandra']['cqlsh_venv']['enabled'] = false
+```
+
+**Airgapped / offline installs:** the standalone `cqlsh` package is installed
+from PyPI, which needs network access at converge time. When
+`node['axonops']['offline_install']` is set the recipe **skips** provisioning
+(logs a warning and leaves the bundled cqlsh in place) rather than failing the
+converge. Provision cqlsh manually, mirror it internally, or set
+`cqlsh_venv.enabled = false` to silence the warning.
+
+The wrapper also fixes the cqlsh-based cluster health probe in
+`attributes/alerts.rb` on Python 3.12+ hosts, since it too resolves `cqlsh` from
+`PATH`.
+
+> **Upgrading cqlsh:** the pip install is idempotent (it skips once
+> `<venv>/bin/cqlsh` exists), so it never auto-upgrades. Run
+> `<venv>/bin/pip install --upgrade cqlsh` manually, or bump `cqlsh_venv.packages`
+> to a pinned version and remove the venv, to move to a newer release.
 
 ---
 

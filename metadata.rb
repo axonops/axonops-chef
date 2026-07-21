@@ -42,6 +42,7 @@ recipe 'axonops::agent', 'Installs and configures AxonOps agent on Cassandra nod
 recipe 'axonops::server', 'Installs and configures AxonOps server (self-hosted)'
 recipe 'axonops::dashboard', 'Installs and configures AxonOps dashboard'
 recipe 'axonops::cassandra', 'Installs Apache Cassandra'
+recipe 'axonops::cqlsh_venv', 'Provisions cqlsh in a Python virtualenv for Python 3.12+ hosts'
 recipe 'axonops::opensearch', "Installs OpenSearch for AxonOps Server's own configuration storage"
 recipe 'axonops::java', 'Installs Java/Zulu JDK'
 recipe 'axonops::configure', 'Configures AxonOps via API'
