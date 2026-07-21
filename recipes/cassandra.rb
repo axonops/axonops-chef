@@ -103,6 +103,11 @@ end
 # Configure Cassandra
 include_recipe 'axonops::configure_cassandra'
 
+# Provision cqlsh in a dedicated Python virtualenv so it works on hosts whose
+# system Python is >= 3.12 (Ubuntu 24.04+, Debian 13), where the bundled cqlsh
+# aborts importing removed stdlib modules (asyncore, imp). See docs/CASSANDRA.md.
+include_recipe 'axonops::cqlsh_venv' if node['axonops']['cassandra']['cqlsh_venv']['enabled']
+
 # The systemd unit itself (tar installs only) is created by
 # axonops::configure_cassandra's template resource — creating it here too
 # used to duplicate that file with different content, whichever recipe ran

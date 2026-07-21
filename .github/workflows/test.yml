@@ -77,3 +77,25 @@ jobs:
       - run: KITCHEN_DRIVER=docker bundle exec kitchen converge cassandra-311-tar
       - run: KITCHEN_DRIVER=docker bundle exec kitchen destroy cassandra-311-tar
         if: always()
+
+  kitchen-cqlsh-venv-2404:
+    runs-on: ubuntu-latest
+    env:
+      CHEF_LICENSE: accept-no-persist
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+      # Ubuntu 24.04 ships Python 3.12, which breaks the bundled cqlsh — this
+      # job proves recipes/cqlsh_venv.rb applies there: the converge fails hard
+      # if `pip install cqlsh` can't produce a working venv on Python 3.12. As
+      # with the other kitchen jobs, we converge only (not `kitchen test`): the
+      # InSpec cqlsh_venv controls that actually run `cqlsh --version` are
+      # license-gated and run locally with a real Chef Workstation license.
+      - name: Build systemd-enabled kitchen-docker base image
+        run: docker build -t axonops-systemd-ubuntu-2404 -f test/docker/Dockerfile.systemd-ubuntu-2404 .
+      - run: KITCHEN_DRIVER=docker bundle exec kitchen converge cassandra-50-cqlsh-venv-ubuntu-2404
+      - run: KITCHEN_DRIVER=docker bundle exec kitchen destroy cassandra-50-cqlsh-venv-ubuntu-2404
+        if: always()

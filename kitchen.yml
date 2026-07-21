@@ -27,6 +27,14 @@ platforms:
       privileged: true
       run_options: --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup:rw --tmpfs /run --tmpfs /run/lock
       <% end %>
+  - name: ubuntu-24.04
+    driver:
+      <% if ENV.fetch('KITCHEN_DRIVER', 'vagrant') == 'docker' %>
+      image: axonops-systemd-ubuntu-2404
+      run_command: /sbin/init
+      privileged: true
+      run_options: --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup:rw --tmpfs /run --tmpfs /run/lock
+      <% end %>
   - name: rockylinux-9
     driver:
       <% if ENV.fetch('KITCHEN_DRIVER', 'vagrant') == 'docker' %>
@@ -108,6 +116,24 @@ suites:
         cassandra:
           version: '5.0.5'
           install_format: 'pkg'
+          start_on_install: false
+          wait_for_start: false
+
+  # Exercises the cqlsh virtualenv on the distro that actually breaks the
+  # bundled cqlsh — Ubuntu 24.04 ships Python 3.12, which removed asyncore/imp.
+  - name: cassandra-50-cqlsh-venv-ubuntu-2404
+    run_list:
+      - recipe[axonops::cassandra]
+    verifier:
+      inspec_tests:
+        - test/integration/cassandra
+    includes:
+      - ubuntu-24.04
+    attributes:
+      axonops:
+        cassandra:
+          version: '5.0.5'
+          install_format: 'tar'
           start_on_install: false
           wait_for_start: false
 

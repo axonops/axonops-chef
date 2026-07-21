@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### cqlsh Python virtualenv for Python 3.12+ hosts
+- New `recipes/cqlsh_venv.rb` provisions cqlsh in a dedicated Python virtualenv
+  (`/opt/cassandra-cqlsh-venv`) with the maintained standalone `cqlsh` PyPI
+  package, and installs a wrapper at `/usr/local/bin/cqlsh` that shadows the
+  bundled cqlsh on PATH. This fixes cqlsh on hosts whose system Python is
+  >= 3.12 (Ubuntu 24.04+, Debian 13), where the bundled cqlsh aborts importing
+  stdlib modules removed in 3.12 (`asyncore`, `imp`). Ported from the
+  axonops-ansible-collection cassandra role.
+- Included automatically from `axonops::cassandra`; gate with
+  `node['axonops']['cassandra']['cqlsh_venv']['enabled']` (default `true`).
+  New attributes: `cqlsh_venv.enabled`, `.path`, `.python`, `.packages`,
+  `.wrapper_path` under `node['axonops']['cassandra']`.
+- Skipped automatically when `node['axonops']['offline_install']` is set (pip
+  cannot reach PyPI on airgapped hosts) — logs a warning and leaves the bundled
+  cqlsh in place. Also fixes the cqlsh-based health probe in
+  `attributes/alerts.rb` on Python 3.12+ hosts.
+- New Kitchen suite `cassandra-50-cqlsh-venv-ubuntu-2404` (+ `ubuntu-24.04`
+  platform and `test/docker/Dockerfile.systemd-ubuntu-2404`) exercises it on
+  the distro that actually breaks the bundled cqlsh. ChefSpec, InSpec, and BDD
+  coverage added.
+
 #### Offline installation from http(s):// URLs
 - `node['axonops']['offline_packages_path']` now accepts an `http(s)://` base
   URL in addition to a local directory. New `libraries/axonops_offline.rb`

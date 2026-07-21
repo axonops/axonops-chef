@@ -1,0 +1,16 @@
+# Ubuntu 24.04 variant of Dockerfile.systemd-ubuntu. Ubuntu 24.04 ships Python
+# 3.12, which removed the asyncore/imp stdlib modules the bundled cqlsh depends
+# on — this image is what the cassandra-50-cqlsh-venv-ubuntu-2404 suite boots to
+# prove recipes/cqlsh_venv.rb makes cqlsh work there. See the 22.04 Dockerfile
+# and kitchen.yml for why systemd-as-PID-1 is needed for kitchen-docker.
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y systemd systemd-sysv \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV CHEF_LICENSE=accept-no-persist
+
+STOPSIGNAL SIGRTMIN+3

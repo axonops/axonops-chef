@@ -36,6 +36,28 @@ default['axonops']['cassandra']['dse_version'] = '5.1'
 default['axonops']['cassandra']['dse_env_file'] = nil
 default['axonops']['cassandra']['data_root'] = '/var/lib/cassandra'
 default['axonops']['cassandra']['local_jmx'] = 'yes'
+
+# cqlsh virtual environment (recipes/cqlsh_venv.rb).
+# The cqlsh bundled with Cassandra fails on hosts whose system Python is >= 3.12
+# (Ubuntu 24.04+, Debian 13) because its driver imports stdlib modules removed
+# in 3.12 (asyncore, imp). When enabled, axonops::cassandra provisions an
+# isolated venv with the maintained standalone `cqlsh` package and exposes it
+# via a wrapper on PATH, so cqlsh works regardless of the host Python version.
+# Harmless on Python <= 3.11 (the venv cqlsh works there too). Skipped
+# automatically when offline_install is set, since pip cannot reach PyPI.
+default['axonops']['cassandra']['cqlsh_venv']['enabled'] = true
+# Absolute path of the cqlsh virtual environment.
+default['axonops']['cassandra']['cqlsh_venv']['path'] = '/opt/cassandra-cqlsh-venv'
+# Host interpreter used to create the venv.
+default['axonops']['cassandra']['cqlsh_venv']['python'] = 'python3'
+# Packages pip-installed into the venv. `cqlsh` pulls in a compatible driver
+# transitively. Pin for reproducibility, e.g. ['cqlsh==6.2.0'].
+default['axonops']['cassandra']['cqlsh_venv']['packages'] = ['cqlsh']
+# Path of the wrapper that execs cqlsh from the venv. Defaults to
+# /usr/local/bin/cqlsh, which shadows the broken bundled cqlsh on PATH
+# (/usr/local/bin precedes $CASSANDRA_HOME/bin and /usr/bin). Set to e.g.
+# /usr/local/bin/cqlsh-venv to install side-by-side instead.
+default['axonops']['cassandra']['cqlsh_venv']['wrapper_path'] = '/usr/local/bin/cqlsh'
 default['axonops']['cassandra']['directories'] = {
   'logs' => '/var/log/cassandra',
   'gc_logs' => '/var/log/cassandra',
