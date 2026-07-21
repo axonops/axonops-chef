@@ -9,3 +9,6 @@ examples/packer/*/cookbooks/
 examples/packer/*/*.box
 packer_cache/
 offline_packages/
+
+# Editor swap files
+*.swp
