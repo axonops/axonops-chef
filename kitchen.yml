@@ -46,6 +46,10 @@ platforms:
 
 suites:
   - name: cassandra-311-tar
+    # ubuntu-24.04 exists only for the cqlsh-venv suite; keep this suite on the
+    # 22.04/rocky images the tar/311 CI jobs build.
+    excludes:
+      - ubuntu-24.04
     run_list:
       - recipe[axonops::cassandra]
     verifier:
@@ -76,6 +80,10 @@ suites:
           wait_for_start: false
 
   - name: cassandra-41-tar
+    # ubuntu-24.04 exists only for the cqlsh-venv suite; keep this suite on the
+    # 22.04/rocky images the tar/311 CI jobs build.
+    excludes:
+      - ubuntu-24.04
     run_list:
       - recipe[axonops::cassandra]
     verifier:
@@ -90,6 +98,10 @@ suites:
           wait_for_start: false
 
   - name: cassandra-50-default
+    # ubuntu-24.04 exists only for the cqlsh-venv suite; keep this suite on the
+    # 22.04/rocky images the tar/311 CI jobs build.
+    excludes:
+      - ubuntu-24.04
     run_list:
       - recipe[axonops::cassandra]
     verifier:
@@ -138,6 +150,10 @@ suites:
           wait_for_start: false
 
   - name: cassandra-50-g1gc
+    # ubuntu-24.04 exists only for the cqlsh-venv suite; keep this suite on the
+    # 22.04/rocky images the tar/311 CI jobs build.
+    excludes:
+      - ubuntu-24.04
     run_list:
       - recipe[axonops::cassandra]
     verifier:
@@ -153,6 +169,10 @@ suites:
           wait_for_start: false
 
   - name: cassandra-50-shenandoah
+    # ubuntu-24.04 exists only for the cqlsh-venv suite; keep this suite on the
+    # 22.04/rocky images the tar/311 CI jobs build.
+    excludes:
+      - ubuntu-24.04
     run_list:
       - recipe[axonops::cassandra]
     verifier:
@@ -168,6 +188,10 @@ suites:
           wait_for_start: false
 
   - name: cassandra-41-pem-tls
+    # ubuntu-24.04 exists only for the cqlsh-venv suite; keep this suite on the
+    # 22.04/rocky images the tar/311 CI jobs build.
+    excludes:
+      - ubuntu-24.04
     run_list:
       - recipe[axonops::cassandra]
     verifier:
@@ -185,6 +209,10 @@ suites:
           wait_for_start: false
 
   - name: cassandra-50-jks-tls
+    # ubuntu-24.04 exists only for the cqlsh-venv suite; keep this suite on the
+    # 22.04/rocky images the tar/311 CI jobs build.
+    excludes:
+      - ubuntu-24.04
     run_list:
       - recipe[axonops::cassandra]
     verifier:
