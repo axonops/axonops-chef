@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Automated publish to Chef Infra Server
+- New `.github/workflows/publish.yml` publishes the cookbook and its Berksfile
+  dependencies to the Chef Infra Server org
+  (`https://api.chef.io/organizations/axonops`) via `berks upload`. Triggers on
+  a `v*` tag push (with a guard that `metadata.rb` version must equal the tag)
+  or manual dispatch (optional `force` input for `--force --no-freeze`).
+  Requires two repository **secrets**: `KNIFE_CLIENT_CONFIG` (base64 `config.rb`)
+  and `KNIFE_CLIENT_KEY` (base64 client `.pem`).
+
 #### cqlsh Python virtualenv for Python 3.12+ hosts
 - New `recipes/cqlsh_venv.rb` provisions cqlsh in a dedicated Python virtualenv
   (`/opt/cassandra-cqlsh-venv`) with the maintained standalone `cqlsh` PyPI

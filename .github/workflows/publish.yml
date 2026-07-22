@@ -1,0 +1,96 @@
+name: Publish
+
+# Publishes the axonops cookbook (and its Berksfile dependencies) to the
+# Chef Infra Server org at https://api.chef.io/organizations/axonops using
+# `berks upload`.
+#
+# Triggers:
+#   - push of a tag matching v*      -> release publish, version-guarded
+#   - manual "Run workflow" dispatch -> publish current metadata.rb version
+#
+# Auth comes from two repository SECRETS (never variables — the key is private):
+#   KNIFE_CLIENT_CONFIG  base64 of config.rb  (references sergrua.pem alongside it)
+#   KNIFE_CLIENT_KEY     base64 of sergrua.pem (the client private key)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Overwrite an already-published version (berks upload --force --no-freeze)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-chef-server
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      CHEF_LICENSE: accept-silent
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail early if publish secrets are missing
+        env:
+          KNIFE_CLIENT_CONFIG: ${{ secrets.KNIFE_CLIENT_CONFIG }}
+          KNIFE_CLIENT_KEY: ${{ secrets.KNIFE_CLIENT_KEY }}
+        run: |
+          set -euo pipefail
+          : "${KNIFE_CLIENT_CONFIG:?missing secret KNIFE_CLIENT_CONFIG}"
+          : "${KNIFE_CLIENT_KEY:?missing secret KNIFE_CLIENT_KEY}"
+
+      - name: Guard — metadata.rb version must match the tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME#v}"
+          meta="$(ruby -e 'puts File.read("metadata.rb")[/^version\s+[\x27"]([^\x27"]+)/, 1]')"
+          echo "tag=${tag} metadata.rb=${meta}"
+          if [ "${tag}" != "${meta}" ]; then
+            echo "::error::Tag v${tag} does not match metadata.rb version ${meta}. Bump metadata.rb (and CHANGELOG) before tagging."
+            exit 1
+          fi
+
+      - name: Install Chef Workstation (provides berks)
+        run: curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -P chef-workstation -c stable
+
+      - name: Materialise knife config and client key from secrets
+        env:
+          KNIFE_CLIENT_CONFIG: ${{ secrets.KNIFE_CLIENT_CONFIG }}
+          KNIFE_CLIENT_KEY: ${{ secrets.KNIFE_CLIENT_KEY }}
+        run: |
+          set -euo pipefail
+          chefdir="${RUNNER_TEMP}/chef"
+          mkdir -p "${chefdir}"
+          chmod 700 "${chefdir}"
+          # config.rb references its key as "#{current_dir}/sergrua.pem", so the
+          # key MUST sit next to config.rb and be named sergrua.pem.
+          umask 077
+          printf '%s' "${KNIFE_CLIENT_CONFIG}" | base64 --decode > "${chefdir}/config.rb"
+          printf '%s' "${KNIFE_CLIENT_KEY}"    | base64 --decode > "${chefdir}/sergrua.pem"
+          chmod 600 "${chefdir}/config.rb" "${chefdir}/sergrua.pem"
+          echo "BERKSHELF_CHEF_CONFIG=${chefdir}/config.rb" >> "${GITHUB_ENV}"
+
+      - name: Resolve dependencies
+        run: chef exec berks install
+
+      - name: Upload cookbook to Chef Infra Server
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.force }}" = "true" ]; then
+            chef exec berks upload --force --no-freeze
+          else
+            chef exec berks upload
+          fi
+
+      - name: Scrub credentials
+        if: always()
+        run: rm -rf "${RUNNER_TEMP}/chef"
