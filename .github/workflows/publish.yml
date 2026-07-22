@@ -79,6 +79,18 @@ jobs:
           chmod 600 "${chefdir}/config.rb" "${chefdir}/sergrua.pem"
           echo "BERKSHELF_CHEF_CONFIG=${chefdir}/config.rb" >> "${GITHUB_ENV}"
 
+      - name: Preflight — identity and cookbook ACL (diagnostic, non-fatal)
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          cfg="${BERKSHELF_CHEF_CONFIG}"
+          echo "== whoami (client the CI key authenticates as) =="
+          chef exec knife user list -c "$cfg" || true
+          echo "== admins group members =="
+          chef exec knife group show admins -c "$cfg" || true
+          echo "== ACL on the cookbooks container (need create/update) =="
+          chef exec knife acl show containers cookbooks -c "$cfg" || true
+
       - name: Resolve dependencies
         run: chef exec berks install
 
