@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 #### Cassandra OS and JVM tuning aligned with current guidance (#43)
+> **BREAKING (host behaviour):** `system_tuning` is included from
+> `axonops::common`, so the new THP and swap changes apply to every host that
+> converges an AxonOps component, not only Cassandra nodes. An unattended
+> `chef-client` run will turn swap off on such hosts. Set
+> `node['axonops']['disable_swap'] = false`,
+> `node['axonops']['disable_transparent_hugepages'] = false`, or
+> `node['axonops']['skip_system_tuning'] = true` to opt out. Ship this in a
+> major version bump.
 - **Transparent Huge Pages are now disabled.** `recipes/system_tuning.rb` writes
   `never` to `/sys/kernel/mm/transparent_hugepage/{enabled,defrag}` for the
   running kernel and installs a `disable-transparent-hugepages.service` systemd

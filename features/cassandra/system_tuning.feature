@@ -19,6 +19,12 @@ Feature: Cassandra system tuning
     Then "swapon --show" reports no active swap devices
     And "/etc/fstab" has no active swap entry
 
+  Scenario: second converge changes nothing
+    Given I have a non-container node with THP already "never" and swap already off
+    When I converge the axonops::cassandra recipe
+    Then no transparent huge pages resource is applied
+    And no swap resource is applied
+
   Scenario: operator keeps swap
     Given I have a non-container node with "disable_swap" set to false
     When I converge the axonops::cassandra recipe

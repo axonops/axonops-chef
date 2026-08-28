@@ -294,6 +294,11 @@ node.override['axonops']['cassandra']['sysctl'] = {
 }
 ```
 
+> **Scope:** `recipes/system_tuning.rb` is included from `axonops::common`, so
+> the THP and swap settings below apply to **any** host converging an AxonOps
+> component, not only Cassandra nodes. Opt out per host with the attributes
+> shown, or with `node['axonops']['skip_system_tuning'] = true`.
+
 #### Transparent Huge Pages
 
 THP is disabled. `recipes/system_tuning.rb` writes `never` to

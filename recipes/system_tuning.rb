@@ -53,6 +53,11 @@ end
 # ---------------------------------------------------------------------------
 # Transparent Huge Pages
 #
+# NOTE ON SCOPE: this recipe is included from axonops::common, so everything
+# below applies to any host converging an AxonOps component, not only Cassandra
+# nodes. Opt out per host with node['axonops']['disable_transparent_hugepages']
+# / node['axonops']['disable_swap'], or with node['axonops']['skip_system_tuning'].
+#
 # THP is not a sysctl — it lives in /sys/kernel/mm/transparent_hugepage. Set it
 # now for the running kernel and install a systemd unit so it survives reboot.
 # A systemd unit is used rather than a GRUB kernel argument or a tuned profile
@@ -83,6 +88,8 @@ execute 'disable transparent hugepages (running kernel)' do
   not_if(&thp_already_never)
 end
 
+# Every platform in metadata.rb (Ubuntu >= 18.04, Debian >= 9, CentOS/RHEL >= 7,
+# Amazon Linux >= 2) is systemd-based, so no non-systemd fallback is needed.
 systemd_unit 'disable-transparent-hugepages.service' do
   content(
     'Unit' => {
@@ -135,7 +142,14 @@ ruby_block 'comment out swap entries in /etc/fstab' do
     updated = lines.map do |line|
       line.match?(fstab_swap_line) ? "# Disabled by axonops::system_tuning: #{line}" : line
     end
-    ::File.write('/etc/fstab', updated.join)
+    # /etc/fstab is boot-critical: keep a backup, then swap the new file in with
+    # an atomic rename (same filesystem) so an interrupted converge can never
+    # leave a truncated fstab behind.
+    ::FileUtils.cp('/etc/fstab', '/etc/fstab.axonops.bak') unless ::File.exist?('/etc/fstab.axonops.bak')
+    tmp = '/etc/fstab.axonops.tmp'
+    ::File.write(tmp, updated.join)
+    ::FileUtils.chmod(0o644, tmp)
+    ::File.rename(tmp, '/etc/fstab')
   end
   only_if { manage_swap }
   only_if do
