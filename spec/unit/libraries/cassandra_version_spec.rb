@@ -12,7 +12,7 @@ RSpec.describe AxonOpsCassandra do
     it 'maps full versions to the supported series' do
       expect(described_class.series('3.11.17')).to eq('3.11')
       expect(described_class.series('4.1.5')).to eq('4.1')
-      expect(described_class.series('5.0.5')).to eq('5.0')
+      expect(described_class.series('5.0.9')).to eq('5.0')
       expect(described_class.series('5.0.8')).to eq('5.0')
     end
 
@@ -31,7 +31,7 @@ RSpec.describe AxonOpsCassandra do
     it 'returns the Java major required by each series' do
       expect(described_class.java_major('3.11.17')).to eq(8)
       expect(described_class.java_major('4.1.5')).to eq(11)
-      expect(described_class.java_major('5.0.5')).to eq(17)
+      expect(described_class.java_major('5.0.9')).to eq(17)
       expect(described_class.java_major('5.1.17')).to eq(8)
     end
   end
@@ -87,7 +87,7 @@ RSpec.describe AxonOpsCassandra do
     it 'is true only for 3.11' do
       expect(described_class.legacy_schema?('3.11.17')).to be(true)
       expect(described_class.legacy_schema?('4.1.5')).to be(false)
-      expect(described_class.legacy_schema?('5.0.5')).to be(false)
+      expect(described_class.legacy_schema?('5.0.9')).to be(false)
     end
   end
 
@@ -95,7 +95,7 @@ RSpec.describe AxonOpsCassandra do
     it 'returns the version-specific template subdirectory' do
       expect(described_class.template_dir('3.11.17')).to eq('3.11')
       expect(described_class.template_dir('4.1.5')).to eq('4.1')
-      expect(described_class.template_dir('5.0.5')).to eq('5.0')
+      expect(described_class.template_dir('5.0.9')).to eq('5.0')
     end
   end
 

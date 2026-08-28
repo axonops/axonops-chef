@@ -58,7 +58,7 @@ describe 'axonops::cassandra' do
   context 'TestCassandraRecipe_Java17ForVersion5_0' do
     let(:chef_run) do
       ChefSpec::SoloRunner.new(platform: 'ubuntu', version: '22.04') do |node|
-        node.override['axonops']['cassandra']['version'] = '5.0.5'
+        node.override['axonops']['cassandra']['version'] = '5.0.9'
       end.converge(described_recipe)
     end
     it 'installs java 17' do

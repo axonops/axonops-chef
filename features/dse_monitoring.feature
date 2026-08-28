@@ -60,7 +60,7 @@ Feature: DataStax Enterprise (DSE) 5.1 monitoring
 
     Examples:
       | version | java |
-      | 5.0.5   | 17   |
+      | 5.0.9   | 17   |
       | 5.1.17  | 8    |
 
   Scenario: An unsupported version still fails fast (edge case, not confused with DSE)

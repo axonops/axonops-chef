@@ -157,8 +157,8 @@ jobs:
           sudo mkdir -p "$STAGE_DIR"
 
           # Apache Cassandra tarball — same URL axonops::cassandra builds online.
-          sudo curl -fL "https://archive.apache.org/dist/cassandra/5.0.5/apache-cassandra-5.0.5-bin.tar.gz" \
-            -o "$STAGE_DIR/apache-cassandra-5.0.5-bin.tar.gz"
+          sudo curl -fL "https://archive.apache.org/dist/cassandra/5.0.9/apache-cassandra-5.0.9-bin.tar.gz" \
+            -o "$STAGE_DIR/apache-cassandra-5.0.9-bin.tar.gz"
 
           # Latest standard (non-CRaC) Zulu JDK 17 tarball, resolved via Azul's
           # metadata API so we never hardcode a filename/version that goes

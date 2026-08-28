@@ -9,14 +9,14 @@ Feature: Cassandra installation
     And the file "/opt/cassandra/conf/jvm-server.options" does not exist
 
   Scenario: Package install of Cassandra 5.0 on Debian
-    Given I have a node with attribute cassandra.version set to "5.0.5"
+    Given I have a node with attribute cassandra.version set to "5.0.9"
     And the install_format is "pkg"
     When I converge the axonops::cassandra recipe
     Then the apt sources file "/etc/apt/sources.list.d/cassandra.list" exists
     And the cassandra package is installed and held
 
   Scenario: cqlsh works on hosts with Python 3.12 or newer
-    Given I have a node with attribute cassandra.version set to "5.0.5"
+    Given I have a node with attribute cassandra.version set to "5.0.9"
     And the install_format is "tar"
     When I converge the axonops::cassandra recipe
     Then the cqlsh virtualenv binary exists at "/opt/cassandra-cqlsh-venv/bin/cqlsh"

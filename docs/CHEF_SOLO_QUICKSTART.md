@@ -87,7 +87,7 @@ the cookbook out, or as a base you'll attach monitoring to later (Scenario C).
   "name": "cassandra-node-01",
   "axonops": {
     "cassandra": {
-      "version": "5.0.5",
+      "version": "5.0.9",
       "install_format": "tar",
       "start_on_install": true
     }
@@ -130,7 +130,7 @@ difference:
   "name": "cassandra-node-01",
   "axonops": {
     "cassandra": {
-      "version": "5.0.5",
+      "version": "5.0.9",
       "install_format": "tar",
       "start_on_install": true
     },
@@ -220,7 +220,7 @@ sudo chef-solo -j node.json -c solo.rb
 
 These are real errors people hit, verbatim, and what actually caused them.
 
-### `Offline package not found: /opt/.../cassandra-5.0.5-1.noarch.rpm`
+### `Offline package not found: /opt/.../cassandra-5.0.9-1.noarch.rpm`
 
 You're doing an [offline/airgapped install](CASSANDRA.md#offline-airgapped-install)
 and a filename under `node['axonops']['offline_packages']` doesn't match a real
