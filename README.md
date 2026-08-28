@@ -94,7 +94,7 @@ include_recipe 'axonops::dashboard'
 ### Install Apache Cassandra
 
 ```ruby
-# Fresh Cassandra 5.0.5 installation (default)
+# Fresh Cassandra 5.0.9 installation (default)
 include_recipe 'axonops::cassandra'
 ```
 
@@ -106,7 +106,7 @@ node.override['axonops']['cassandra']['version'] = '3.11.17'
 include_recipe 'axonops::cassandra'
 
 # Cassandra 5.0 → Java 17 (default)
-node.override['axonops']['cassandra']['version'] = '5.0.5'
+node.override['axonops']['cassandra']['version'] = '5.0.9'
 include_recipe 'axonops::cassandra'
 ```
 
@@ -350,7 +350,7 @@ knife node delete NODE_NAME -y && knife client delete NODE_NAME -y
 
 ## Cassandra Version Support
 
-The cookbook supports Apache Cassandra **3.11.x, 4.1.x, and 5.0.x**. Set the version with `node['axonops']['cassandra']['version']` (default: `5.0.5`).
+The cookbook supports Apache Cassandra **3.11.x, 4.1.x, and 5.0.x**. Set the version with `node['axonops']['cassandra']['version']` (default: `5.0.9`).
 
 ### Version matrix
 
@@ -379,7 +379,7 @@ include_recipe 'axonops::cassandra'
 ### Cassandra 5.0 example
 
 ```ruby
-node.override['axonops']['cassandra']['version']      = '5.0.5'
+node.override['axonops']['cassandra']['version']      = '5.0.9'
 node.override['axonops']['cassandra']['cluster_name'] = 'Production Cluster'
 node.override['axonops']['cassandra']['heap_size']    = '8G'
 node.override['axonops']['cassandra']['gc_type']      = 'Shenandoah'
@@ -584,9 +584,9 @@ node.override['axonops']['offline_packages_path'] = '/path/to/packages'
 # Cassandra, which is always tar); 'cassandra_pkg' is the separate RPM/deb
 # used by axonops::cassandra's pkg install_format — never the same file.
 # default['axonops']['offline_packages'] = {
-#   'opensearch' => 'opensearch-3.6.0-linux-x64.rpm',
-#   'cassandra' => 'apache-cassandra-5.0.5-bin.tar.gz',
-#   'cassandra_pkg' => 'cassandra-5.0.5-1.noarch.rpm',
+#   'opensearch' => 'opensearch-3.8.0-linux-x64.rpm',
+#   'cassandra' => 'apache-cassandra-5.0.9-bin.tar.gz',
+#   'cassandra_pkg' => 'cassandra-5.0.9-1.noarch.rpm',
 #   'java' => 'zulu17-ca-jdk-headless-17.0.16-1.x86_64.rpm',
 #   'agent' => 'axon-agent-2.0.6-1.x86_64.rpm',
 #   'server' => 'axon-server-2.0.5-1.x86_64.rpm',
@@ -704,7 +704,7 @@ default['axonops']['server']['listen_address'] = '0.0.0.0'
 default['axonops']['server']['listen_port'] = 8080
 
 # Cassandra settings
-default['axonops']['cassandra']['version']         = '5.0.5'  # 3.11.x / 4.1.x / 5.0.x
+default['axonops']['cassandra']['version']         = '5.0.9'  # 3.11.x / 4.1.x / 5.0.x
 default['axonops']['cassandra']['cluster_name']    = 'AxonOps Cluster'
 default['axonops']['cassandra']['heap_size']       = '2G'
 default['axonops']['cassandra']['gc_type']         = 'Shenandoah'  # or 'G1GC' (required for 3.11)
@@ -774,8 +774,8 @@ Linux 2, and Amazon Linux 2023:
 | Suite | Cassandra version | Notes |
 |-------|-------------------|-------|
 | `cassandra-3-11` | 3.11.17 | |
-| `cassandra-default` | 5.0.5 | |
-| `cassandra-offline` | 5.0.5 | `offline_install: true`, agent disabled — see [docs/CASSANDRA.md](docs/CASSANDRA.md) |
+| `cassandra-default` | 5.0.9 | |
+| `cassandra-offline` | 5.0.9 | `offline_install: true`, agent disabled — see [docs/CASSANDRA.md](docs/CASSANDRA.md) |
 
 ```bash
 # Converge and verify Cassandra 3.11 on Ubuntu

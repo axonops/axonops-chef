@@ -36,7 +36,7 @@ This guide covers installation and configuration of Apache Cassandra using the A
 | 4.1.x | 11 (Zulu/OpenJDK) | Modern: string-unit values (`32MiB`, `5000ms`, …) | `jvm-server.options` + `jvm11-server.options` |
 | 5.0.x | 17 (Zulu/OpenJDK) | Modern (same as 4.1) | `jvm-server.options` + `jvm17-server.options` |
 
-The version is selected via the `node['axonops']['cassandra']['version']` attribute (default: `5.0.5`).
+The version is selected via the `node['axonops']['cassandra']['version']` attribute (default: `5.0.9`).
 
 ### Java version selection
 
@@ -71,7 +71,7 @@ Cassandra is installed from a **tarball** downloaded from `https://archive.apach
 ## Quick Start
 
 ```ruby
-# Install Cassandra 5.0.5 (default) with Java 17
+# Install Cassandra 5.0.9 (default) with Java 17
 include_recipe 'axonops::cassandra'
 ```
 
@@ -109,7 +109,7 @@ What happens:
 ### Install Cassandra 5.0.x (default)
 
 ```ruby
-node.override['axonops']['cassandra']['version']      = '5.0.5'
+node.override['axonops']['cassandra']['version']      = '5.0.9'
 node.override['axonops']['cassandra']['cluster_name'] = 'Production Cluster'
 node.override['axonops']['cassandra']['heap_size']    = '8G'
 node.override['axonops']['cassandra']['gc_type']      = 'Shenandoah'
@@ -147,7 +147,7 @@ All attributes live under `node['axonops']['cassandra']`.
 
 | Attribute | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `version` | String | `'5.0.5'` | Cassandra version to install, e.g. `'3.11.17'`, `'4.1.5'`, `'5.0.5'` |
+| `version` | String | `'5.0.9'` | Cassandra version to install, e.g. `'3.11.17'`, `'4.1.5'`, `'5.0.9'` |
 | `skip_java_install` | Boolean | `false` | Skip Java installation when you manage Java yourself |
 | `start_on_boot` | Boolean | `true` | Enable the Cassandra service at boot |
 | `wait_for_start` | Boolean | `true` | Block until Cassandra is accepting connections after install |
@@ -507,7 +507,7 @@ Two suites are defined in `kitchen.yml`, using the Dokken driver (systemd in Doc
 | Suite | Cassandra version | Platforms |
 |-------|-------------------|-----------|
 | `cassandra-3-11` | 3.11.17 | ubuntu-22.04, rockylinux-9 |
-| `cassandra-default` | 5.0.5 | ubuntu-22.04, rockylinux-9 |
+| `cassandra-default` | 5.0.9 | ubuntu-22.04, rockylinux-9 |
 
 ```bash
 # Converge and verify Cassandra 3.11 on Ubuntu

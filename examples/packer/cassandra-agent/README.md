@@ -32,7 +32,7 @@ packer build \
 |----------|---------|-------|
 | `region` | `eu-west-1` | AWS region to build in |
 | `source_ami_filter` | `Rocky-9-EC2-Base-9*.x86_64` | Base image; swap for your distro |
-| `cassandra_version` | `5.0.5` | See README.md's Cassandra version matrix |
+| `cassandra_version` | `5.0.9` | See README.md's Cassandra version matrix |
 | `axonops_org_key` / `axonops_org_name` | `""` | Required for SaaS mode — see docs/AGENT.md |
 
 `start_on_install = false` / `start_on_boot = true` in the template: Chef

@@ -26,7 +26,7 @@ variable "instance_type" {
 
 variable "cassandra_version" {
   type    = string
-  default = "5.0.5"
+  default = "5.0.9"
 }
 
 variable "axonops_org_key" {

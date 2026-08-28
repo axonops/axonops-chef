@@ -8,7 +8,7 @@
     "offline_install": true,
     "offline_packages_path": "/opt/axonops/packages",
     "offline_packages": {
-      "opensearch": "opensearch-3.6.0-linux-x64.rpm"
+      "opensearch": "opensearch-3.8.0-linux-x64.rpm"
     },
     "repository": {
       "enabled": false
@@ -25,7 +25,7 @@
       },
       "cassandra": {
         "install": true,
-        "tarball_url": "file:///opt/axonops/packages/apache-cassandra-5.0.4-bin.tar.gz",
+        "tarball_url": "file:///opt/axonops/packages/apache-cassandra-5.0.9-bin.tar.gz",
         "cluster_name": "AxonOpsMetrics",
         "dc": "datacenter1",
         "heap_size": "8G",

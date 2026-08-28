@@ -12,3 +12,4 @@ offline_packages/
 
 # Editor swap files
 *.swp
+.claude/settings.local.json

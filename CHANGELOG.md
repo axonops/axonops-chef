@@ -52,6 +52,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docs: `docs/CASSANDRA.md` tuning section rewritten (THP, swap, read-ahead),
   README attribute reference updated, and `docs/KAFKA.md` scoped its
   `vm.swappiness=1` statement explicitly to Kafka.
+#### Default component versions bumped
+- Default Apache Cassandra version bumped to `5.0.9` (was `5.0.5`) across
+  `attributes/cassandra.rb`, `attributes/server.rb`, the offline package
+  manifest in `attributes/default.rb`, `files/default/download-packages.sh`,
+  the Test Kitchen suites, docs and examples.
+- Default OpenSearch version bumped to `3.8.0` (was `3.6.0`) in
+  `attributes/server.rb`, the offline package manifest and
+  `files/default/download-packages.sh`.
+- The AxonOps Java agent package (`axon-cassandra5.0-agent-jdk17`) is unchanged
+  — it covers the whole Cassandra 5.0 series.
 
 ### Added
 
