@@ -25,7 +25,7 @@
       },
       "cassandra": {
         "install": true,
-        "tarball_url": "file:///opt/axonops/packages/apache-cassandra-5.0.4-bin.tar.gz",
+        "tarball_url": "file:///opt/axonops/packages/apache-cassandra-5.0.9-bin.tar.gz",
         "cluster_name": "AxonOpsMetrics",
         "dc": "datacenter1",
         "heap_size": "8G",

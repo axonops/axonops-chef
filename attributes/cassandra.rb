@@ -1,4 +1,4 @@
-# Cassandra 5.0.4 configuration attributes
+# Cassandra 5.0.x configuration attributes
 # Based on cassandra_latest.yaml for optimal performance and features
 
 # Recipe:: options
