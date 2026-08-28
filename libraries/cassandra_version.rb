@@ -71,7 +71,7 @@ module AxonOpsCassandra
 
   module_function
 
-  # Normalise a full version (e.g. "3.11.17", "4.1.5", "5.0.5") to its
+  # Normalise a full version (e.g. "3.11.17", "4.1.5", "5.0.9") to its
   # supported series ("3.11", "4.1", "5.0"). Raises on unsupported versions.
   def series(version)
     v = version.to_s

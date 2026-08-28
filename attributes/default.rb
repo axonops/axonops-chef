@@ -63,9 +63,9 @@ default['axonops']['offline_packages_path'] = '/opt/axonops/offline'
 # separate RPM/deb used by axonops::cassandra's pkg install_format
 # (recipes/install_cassandra_pkg.rb) — the two are never the same file.
 default['axonops']['offline_packages'] = {
-  'opensearch' => 'opensearch-3.6.0-linux-x64.rpm',
-  'cassandra' => 'apache-cassandra-5.0.5-bin.tar.gz',
-  'cassandra_pkg' => 'cassandra-5.0.5-1.noarch.rpm',
+  'opensearch' => 'opensearch-3.8.0-linux-x64.rpm',
+  'cassandra' => 'apache-cassandra-5.0.9-bin.tar.gz',
+  'cassandra_pkg' => 'cassandra-5.0.9-1.noarch.rpm',
   'java' => 'zulu17-ca-jdk-headless-17.0.16-1.x86_64.rpm',
   'agent' => 'axon-agent-2.0.6-1.x86_64.rpm',
   'server' => 'axon-server-2.0.5-1.x86_64.rpm',

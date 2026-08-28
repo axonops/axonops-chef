@@ -110,7 +110,7 @@ suites:
     attributes:
       axonops:
         cassandra:
-          version: '5.0.5'
+          version: '5.0.9'
           install_format: 'tar'
           start_on_install: false
           wait_for_start: false
@@ -126,7 +126,7 @@ suites:
     attributes:
       axonops:
         cassandra:
-          version: '5.0.5'
+          version: '5.0.9'
           install_format: 'pkg'
           start_on_install: false
           wait_for_start: false
@@ -144,7 +144,7 @@ suites:
     attributes:
       axonops:
         cassandra:
-          version: '5.0.5'
+          version: '5.0.9'
           install_format: 'tar'
           start_on_install: false
           wait_for_start: false
@@ -162,7 +162,7 @@ suites:
     attributes:
       axonops:
         cassandra:
-          version: '5.0.5'
+          version: '5.0.9'
           install_format: 'tar'
           gc_type: 'G1GC'
           start_on_install: false
@@ -181,7 +181,7 @@ suites:
     attributes:
       axonops:
         cassandra:
-          version: '5.0.5'
+          version: '5.0.9'
           install_format: 'tar'
           gc_type: 'Shenandoah'
           start_on_install: false
@@ -221,7 +221,7 @@ suites:
     attributes:
       axonops:
         cassandra:
-          version: '5.0.5'
+          version: '5.0.9'
           install_format: 'tar'
           tls:
             internode_encryption: 'all'

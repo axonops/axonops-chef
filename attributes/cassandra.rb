@@ -11,7 +11,7 @@ default['axonops']['cassandra']['start_on_install'] = false
 default['axonops']['cassandra']['base_url'] = 'https://archive.apache.org/dist/cassandra'
 default['axonops']['cassandra']['user'] = 'cassandra'
 default['axonops']['cassandra']['group'] = 'cassandra'
-default['axonops']['cassandra']['version'] = '5.0.5'
+default['axonops']['cassandra']['version'] = '5.0.9'
 default['axonops']['cassandra']['install_format'] = 'tar'
 # Apache dropped 3.11 from its own RPM repo; this JFrog mirror is what the
 # Ansible role uses instead. No 3.11 apt channel exists anywhere, so

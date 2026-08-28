@@ -29,7 +29,7 @@ Feature: Installing the AxonOps stack on Amazon Linux
       | amazonlinux-2023   |
 
   Scenario: A fresh Apache Cassandra install converges on Amazon Linux
-    Given a node converged with axonops::cassandra and version "5.0.5" on Amazon Linux
+    Given a node converged with axonops::cassandra and version "5.0.9" on Amazon Linux
     Then Java 17 is installed and is the default java
     And the file "/opt/cassandra/conf/cassandra.yaml" exists and is valid YAML
     And the "cassandra" service is enabled and running

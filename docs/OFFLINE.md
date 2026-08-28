@@ -78,11 +78,11 @@ to pinned known-good fallbacks baked into the script.
 | `--dashboard-version VER` | `AXONOPS_DASHBOARD_VERSION` | `latest` | `axon-dash` version |
 | `--java-agent-version VER` | `AXONOPS_JAVA_AGENT_VERSION` | `latest` | java-agent version |
 | `--java-agent-package NAME` | `AXONOPS_JAVA_AGENT_PACKAGE` | auto-derived | Override the java-agent package |
-| `--cassandra-version VER` | `AXONOPS_CASSANDRA_VERSION` | `5.0.5` | Apache Cassandra version |
+| `--cassandra-version VER` | `AXONOPS_CASSANDRA_VERSION` | `5.0.9` | Apache Cassandra version |
 | `--cassandra-install-format F` | `AXONOPS_CASSANDRA_INSTALL_FORMAT` | `tar` | `tar` or `pkg` |
 | `--edition E` | `AXONOPS_EDITION` | `apache` | `apache` or `dse` |
 | `--dse-version VER` | `AXONOPS_DSE_VERSION` | `5.1` | DSE series: `5.1`, `6.7`, `6.8`, `6.9` |
-| `--opensearch-version VER` | `AXONOPS_OPENSEARCH_VERSION` | `3.6.0` | OpenSearch version |
+| `--opensearch-version VER` | `AXONOPS_OPENSEARCH_VERSION` | `3.8.0` | OpenSearch version |
 | `--zulu-version VER` | `AXONOPS_ZULU_VERSION` | `17.0.9` | Zulu JDK tarball version |
 | `--zulu-build BUILD` | `AXONOPS_ZULU_BUILD` | `17.46.19-ca` | Zulu JDK tarball build |
 | `--redhat-repo-311x URL` | `AXONOPS_REDHAT_REPO_311X` | JFrog mirror | Cassandra 3.11 RPM mirror |

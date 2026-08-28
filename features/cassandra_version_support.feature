@@ -23,7 +23,7 @@ Feature: Version-aware Apache Cassandra installation
       | version | java |
       | 3.11.17 | 8    |
       | 4.1.5   | 11   |
-      | 5.0.5   | 17   |
+      | 5.0.9   | 17   |
 
   Scenario Outline: The cassandra.yaml schema follows the Cassandra version
     Given node['axonops']['cassandra']['version'] is "<version>"
@@ -34,7 +34,7 @@ Feature: Version-aware Apache Cassandra installation
       | version | schema           |
       | 3.11.17 | 3.11 legacy      |
       | 4.1.5   | modern           |
-      | 5.0.5   | modern           |
+      | 5.0.9   | modern           |
 
   Scenario: Cassandra 3.11 renders the legacy integer-unit schema
     Given node['axonops']['cassandra']['version'] is "3.11.17"
@@ -52,7 +52,7 @@ Feature: Version-aware Apache Cassandra installation
     And the file "jvm11-server.options" exists
 
   Scenario: Cassandra 5.0 renders the Java 17 JVM option files
-    Given node['axonops']['cassandra']['version'] is "5.0.5"
+    Given node['axonops']['cassandra']['version'] is "5.0.9"
     When configure_cassandra renders the JVM options
     Then the file "jvm-server.options" exists
     And the file "jvm17-server.options" exists
