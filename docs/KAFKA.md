@@ -205,7 +205,8 @@ node.override['axonops']['kafka']['data_dir'] = '/data1/kafka,/data2/kafka,/data
 ### Operating System Settings
 
 The recipe automatically configures:
-- `vm.swappiness=1` for better performance
+- `vm.swappiness=1` for better performance (Kafka only — the Cassandra recipe
+  disables swap entirely instead; see [CASSANDRA.md](CASSANDRA.md#system-tuning))
 - File descriptor limits (default: 1048576)
 - Process limits
 
