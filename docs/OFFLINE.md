@@ -8,6 +8,10 @@ with no internet access on the target node. This has two parts:
 2. **Install** from those packages — set `node['axonops']['offline_install']`
    and the `offline_packages` filenames, then run the recipes as normal.
 
+Supported platform families: `debian` (Debian, Ubuntu), `rhel` (RHEL, CentOS,
+Rocky, AlmaLinux), `fedora`, and `amazon` (Amazon Linux 2 and 2023). Any other
+platform family raises at converge rather than silently installing nothing.
+
 This page covers part 1. For the install-side attributes see the
 [Offline/Air-gapped Installation example in the README](../README.md#4-offlineair-gapped-installation).
 

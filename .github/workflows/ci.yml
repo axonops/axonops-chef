@@ -69,6 +69,7 @@ jobs:
             spec/unit/libraries/cassandra_version_spec.rb \
             spec/unit/templates/cassandra_3_11_yaml_spec.rb \
             spec/unit/templates/cassandra_jvm_options_spec.rb \
+            spec/unit/recipes/offline_platform_family_spec.rb \
             --format documentation --color
 
   # ChefSpec recipe specs. Requires a full Chef + cookbook dependency resolve;

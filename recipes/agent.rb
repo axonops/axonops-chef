@@ -218,6 +218,8 @@ if node['axonops']['offline_install']
       not_if 'rpm -q axon-agent'
       notifies :restart, 'service[axon-agent]', :delayed
     end
+  else
+    AxonOpsOffline.unsupported_platform!(node, 'axon-agent')
   end
 else
   # axon-cassandra*-agent packages depend on axon-agent, but two separate

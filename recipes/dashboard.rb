@@ -9,7 +9,7 @@ include_recipe 'axonops::common'
 
 # Install fuse package for RedHat family
 package 'fuse' do
-  only_if { platform_family?('rhel', 'fedora') }
+  only_if { platform_family?('rhel', 'fedora', 'amazon') }
 end
 
 
@@ -29,12 +29,14 @@ if node['axonops']['offline_install']
       action :install
       notifies :restart, 'service[axon-dash]', :delayed
     end
-  when 'rhel', 'fedora'
+  when 'rhel', 'fedora', 'amazon'
     rpm_package node['axonops']['dashboard']['package'] do
       source package_path
       action :install
       notifies :restart, 'service[axon-dash]', :delayed
     end
+  else
+    AxonOpsOffline.unsupported_platform!(node, 'axon-dash')
   end
 else
   include_recipe 'axonops::repo'
