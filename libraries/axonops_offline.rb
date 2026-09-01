@@ -46,4 +46,14 @@ module AxonOpsOffline
       local_path
     end
   end
+
+  # Amazon Linux 2/2023 report platform_family 'amazon', not 'rhel'. A `case`
+  # that only lists the families it knows about declares no install resource
+  # at all on anything else, so the converge "succeeds" having installed
+  # nothing. Every offline branch calls this from its `else` so an unsupported
+  # platform fails loudly at compile time instead.
+  def self.unsupported_platform!(node, component)
+    raise 'Offline installation is not supported on platform_family ' \
+          "'#{node['platform_family']}' -- no package provider for #{component}"
+  end
 end

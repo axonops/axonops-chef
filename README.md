@@ -568,6 +568,11 @@ include_recipe 'axonops::cassandra'
 
 ### 4. Offline/Air-gapped Installation
 
+Supported platform families for offline installs: `debian` (Debian, Ubuntu),
+`rhel` (RHEL, CentOS, Rocky, AlmaLinux), `fedora`, and `amazon` (Amazon Linux
+2 and 2023). Any other platform family raises at converge rather than silently
+installing nothing.
+
 ```ruby
 # Configure for offline installation
 node.override['axonops']['offline_install'] = true

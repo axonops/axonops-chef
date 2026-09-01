@@ -50,12 +50,14 @@ if node['axonops']['offline_install']
       action :install
       notifies :restart, 'service[axon-server]', :delayed
     end
-  when 'rhel', 'fedora'
+  when 'rhel', 'fedora', 'amazon'
     rpm_package node['axonops']['server']['package'] do
       source package_path
       action :install
       notifies :restart, 'service[axon-server]', :delayed
     end
+  else
+    AxonOpsOffline.unsupported_platform!(node, 'axon-server')
   end
 else
   # Online installation from repository

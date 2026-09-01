@@ -60,6 +60,8 @@ if node['axonops']['offline_install']
       action :install
       notifies :restart, 'service[opensearch]', :delayed
     end
+  else
+    AxonOpsOffline.unsupported_platform!(node, 'opensearch')
   end
 else
   case node['platform_family']

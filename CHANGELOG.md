@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+#### Offline install silently did nothing on Amazon Linux
+- `recipes/server.rb` and `recipes/dashboard.rb` matched only
+  `platform_family` `rhel`/`fedora` in their `offline_install` branch. Amazon
+  Linux 2 and 2023 report `amazon`, so no `rpm_package` resource was declared
+  at all and the converge succeeded having installed neither `axon-server` nor
+  `axon-dash`. Both now match `amazon`.
+- All four offline branches (`server`, `dashboard`, `agent`, `opensearch`) now
+  `raise` on an unhandled `platform_family` instead of skipping silently.
+- `fuse` is now installed on Amazon Linux for the dashboard, as it already was
+  on RHEL/Fedora.
+
 ### Changed
 
 #### Cassandra OS and JVM tuning aligned with current guidance (#43)
