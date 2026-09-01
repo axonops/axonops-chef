@@ -205,7 +205,15 @@ node.override['axonops']['kafka']['data_dir'] = '/data1/kafka,/data2/kafka,/data
 ### Operating System Settings
 
 The recipe automatically configures:
-- `vm.swappiness=1` for better performance
+- **Swap is disabled entirely** (`swapoff -a` plus commented-out swap entries in
+  `/etc/fstab`). The `system_tuning` recipe is shared by all AxonOps components
+  via `axonops::common`, so this applies to Kafka hosts too, not just Cassandra
+  nodes — see [CASSANDRA.md](CASSANDRA.md#swap) for the rationale. Set
+  `node['axonops']['disable_swap'] = false` to keep swap on a host;
+  `vm.swappiness=1` is then written instead.
+- **Transparent Huge Pages are disabled** (`never`, made persistent with a
+  systemd unit). Opt out with
+  `node['axonops']['disable_transparent_hugepages'] = false`.
 - File descriptor limits (default: 1048576)
 - Process limits
 

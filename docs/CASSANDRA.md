@@ -294,6 +294,70 @@ node.override['axonops']['cassandra']['sysctl'] = {
 }
 ```
 
+> **Scope:** `recipes/system_tuning.rb` is included from `axonops::common`, so
+> the THP and swap settings below apply to **any** host converging an AxonOps
+> component, not only Cassandra nodes. Opt out per host with the attributes
+> shown, or with `node['axonops']['skip_system_tuning'] = true`.
+
+#### Transparent Huge Pages
+
+THP is disabled. `recipes/system_tuning.rb` writes `never` to
+`/sys/kernel/mm/transparent_hugepage/enabled` and `.../defrag` for the running
+kernel, and installs a `disable-transparent-hugepages.service` systemd unit so
+the setting survives a reboot. A systemd unit was chosen over a GRUB
+`transparent_hugepage=never` kernel argument or a tuned profile because it needs
+no bootloader rewrite, takes effect without rebooting, and adds no `tuned`
+dependency on the minimal images this cookbook targets.
+
+Because THP is off at the OS level, the JVM flag that would ask for it is off
+too: `gc_use_transparent_huge_pages` defaults to `false`, so
+`-XX:+UseTransparentHugePages` is not emitted on the Shenandoah path. Set it to
+`true` only if you also set
+`node['axonops']['disable_transparent_hugepages'] = false`.
+
+```ruby
+# Leave THP alone (not recommended)
+node.override['axonops']['disable_transparent_hugepages'] = false
+```
+
+#### Swap
+
+Swap is disabled outright, not merely discouraged: the recipe runs `swapoff -a`
+and comments out swap entries in `/etc/fstab`. A Cassandra node that starts
+swapping stays in the ring while its latency collapses, which is worse for the
+cluster than the node being down — `vm.swappiness=1` only makes that unlikely.
+
+`vm.swappiness=1` is therefore no longer written by default; it is written only
+when swap management is opted out of, as a fallback for hosts that keep swap.
+
+```ruby
+# Keep swap on this host (writes vm.swappiness=1 instead)
+node.override['axonops']['disable_swap'] = false
+```
+
+`node['axonops']['skip_vm_swappiness']` is **deprecated**. It is still honoured
+and now means "do not touch swap at all" (identical to `disable_swap = false`),
+logging a deprecation warning at converge. It will be removed in a future major
+release — migrate to `disable_swap`.
+
+#### Read-ahead
+
+**Not configured by this cookbook, by design.** Cassandra data directories are
+frequently backed by LVM volumes, software RAID, NVMe namespaces, or cloud block
+devices, and resolving a data directory back to the block device (or devices)
+whose read-ahead should change is fragile enough that getting it wrong is worse
+than leaving the default. Set read-ahead at the storage layer instead — a udev
+rule or your image build — sizing it in 512-byte sectors: an 8 KiB target is
+**16** sectors, not 8.
+
+```
+# Example udev rule to place in your own image, not shipped by this cookbook:
+ACTION=="add|change", KERNEL=="nvme0n1", ATTR{bdi/read_ahead_kb}="8"
+```
+
+All of the above is skipped inside containers (Docker/LXC/Kubernetes), where
+`/sys` is read-only and shared with the host.
+
 ---
 
 ## Advanced Configurations

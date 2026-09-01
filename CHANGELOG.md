@@ -9,6 +9,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+#### Cassandra OS and JVM tuning aligned with current guidance (#43)
+> **BREAKING (host behaviour):** `system_tuning` is included from
+> `axonops::common`, so the new THP and swap changes apply to every host that
+> converges an AxonOps component, not only Cassandra nodes. An unattended
+> `chef-client` run will turn swap off on such hosts. Set
+> `node['axonops']['disable_swap'] = false`,
+> `node['axonops']['disable_transparent_hugepages'] = false`, or
+> `node['axonops']['skip_system_tuning'] = true` to opt out. Ship this in a
+> major version bump.
+- **Transparent Huge Pages are now disabled.** `recipes/system_tuning.rb` writes
+  `never` to `/sys/kernel/mm/transparent_hugepage/{enabled,defrag}` for the
+  running kernel and installs a `disable-transparent-hugepages.service` systemd
+  unit so it survives a reboot. Gate with the new
+  `node['axonops']['disable_transparent_hugepages']` (default `true`). Skipped
+  inside containers.
+- **`default['axonops']['cassandra']['gc_use_transparent_huge_pages']` now
+  defaults to `false`**, so `-XX:+UseTransparentHugePages` is no longer emitted
+  from `cassandra-jvm17-server.options.erb` on the Shenandoah path. Set it back
+  to `true` to opt in deliberately.
+- **Swap is now disabled outright** rather than relying on `vm.swappiness=1`:
+  the recipe runs `swapoff -a` and comments out swap entries in `/etc/fstab`.
+  New `node['axonops']['disable_swap']` (default `true`) controls it; skipped
+  inside containers. `vm.swappiness=1` is written to
+  `/etc/sysctl.d/99-cassandra.conf` only when swap management is opted out of.
+- **`node['axonops']['skip_vm_swappiness']` is deprecated.** It is still
+  honoured and now means "do not touch swap on this host" (equivalent to
+  `disable_swap = false`), logging a deprecation warning at converge. It will be
+  removed in a future major release.
+- Read-ahead is **not** configured by the cookbook — decision recorded in
+  `docs/CASSANDRA.md`; resolving Cassandra data directories to the underlying
+  block devices is too fragile across LVM/RAID/NVMe/cloud volumes. Set it at the
+  storage layer (8 KiB = 16 512-byte sectors).
+- Confirmed and covered by tests: the Shenandoah heuristic stays `adaptive`,
+  `compact` is never set by default, and neither the JVM 11 nor the JVM 17
+  template emits a fixed young generation (`-Xmn`).
+- Tests: new pure-Ruby render spec `spec/unit/templates/cassandra_jvm_options_spec.rb`
+  (now part of the blocking CI unit job), real ChefSpec examples in
+  `spec/unit/recipes/system_tuning_spec.rb`, updated InSpec controls in
+  `test/integration/cassandra/controls/system_tuning.rb`, and updated
+  `features/cassandra/system_tuning.feature`.
+- Docs: `docs/CASSANDRA.md` tuning section rewritten (THP, swap, read-ahead),
+  README attribute reference updated, and `docs/KAFKA.md` scoped its
+  `vm.swappiness=1` statement explicitly to Kafka.
 #### Default component versions bumped
 - Default Apache Cassandra version bumped to `5.0.9` (was `5.0.5`) across
   `attributes/cassandra.rb`, `attributes/server.rb`, the offline package

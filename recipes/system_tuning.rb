@@ -10,9 +10,13 @@
 running_in_container = ::File.exist?('/.dockerenv') ||
   (::File.exist?('/proc/1/cgroup') && ::File.read('/proc/1/cgroup').match?(/docker|lxc|kubepods/))
 
+# Swap is disabled outright (swapoff + /etc/fstab) further down unless the
+# operator opts out, so vm.swappiness is only meaningful on hosts that keep
+# swap. Write it only there, rather than implying swappiness is the mechanism.
+disable_swap = node['axonops']['disable_swap'] && !node['axonops']['skip_vm_swappiness']
+
 sysctl_content = <<~SYSCTL
-  vm.swappiness=1
-  vm.overcommit_memory=1
+  #{disable_swap ? '' : "vm.swappiness=1\n"}vm.overcommit_memory=1
   vm.max_map_count=1048575
   net.ipv4.tcp_keepalive_time=300
   net.core.rmem_max=16777216
@@ -44,6 +48,113 @@ execute 'sysctl -p /etc/sysctl.d/99-cassandra.conf' do
   command 'sysctl -p /etc/sysctl.d/99-cassandra.conf'
   action :nothing
   not_if { running_in_container }
+end
+
+# ---------------------------------------------------------------------------
+# Transparent Huge Pages
+#
+# NOTE ON SCOPE: this recipe is included from axonops::common, so everything
+# below applies to any host converging an AxonOps component, not only Cassandra
+# nodes. Opt out per host with node['axonops']['disable_transparent_hugepages']
+# / node['axonops']['disable_swap'], or with node['axonops']['skip_system_tuning'].
+#
+# THP is not a sysctl — it lives in /sys/kernel/mm/transparent_hugepage. Set it
+# now for the running kernel and install a systemd unit so it survives reboot.
+# A systemd unit is used rather than a GRUB kernel argument or a tuned profile
+# because it needs no bootloader rewrite, no reboot to take effect, and no
+# tuned dependency on the minimal images this cookbook targets.
+# ---------------------------------------------------------------------------
+thp_enabled_path = '/sys/kernel/mm/transparent_hugepage/enabled'
+thp_defrag_path = '/sys/kernel/mm/transparent_hugepage/defrag'
+manage_thp = node['axonops']['disable_transparent_hugepages'] && !running_in_container
+
+# The knobs render as e.g. "always madvise [never]" — the bracketed value is
+# the active one, so this is a true idempotency guard, not a file-exists check.
+thp_already_never = lambda do
+  [thp_enabled_path, thp_defrag_path].all? do |path|
+    !::File.exist?(path) || ::File.read(path).include?('[never]')
+  end
+end
+
+# Plain redirections, no shell variables: the identical command string is
+# reused as the systemd ExecStart below, where a `$var` would be eaten by
+# systemd's own variable expansion.
+thp_command = "echo never > #{thp_enabled_path} 2>/dev/null; " \
+              "echo never > #{thp_defrag_path} 2>/dev/null; true"
+
+execute 'disable transparent hugepages (running kernel)' do
+  command thp_command
+  only_if { manage_thp && ::File.exist?(thp_enabled_path) }
+  not_if(&thp_already_never)
+end
+
+# Every platform in metadata.rb (Ubuntu >= 18.04, Debian >= 9, CentOS/RHEL >= 7,
+# Amazon Linux >= 2) is systemd-based, so no non-systemd fallback is needed.
+systemd_unit 'disable-transparent-hugepages.service' do
+  content(
+    'Unit' => {
+      'Description' => 'Disable Transparent Huge Pages (Cassandra tuning)',
+      'DefaultDependencies' => 'no',
+      'After' => 'sysinit.target local-fs.target',
+      'Before' => 'basic.target',
+    },
+    'Service' => {
+      'Type' => 'oneshot',
+      'RemainAfterExit' => 'yes',
+      'ExecStart' => "/bin/sh -c \"#{thp_command}\"",
+    },
+    'Install' => { 'WantedBy' => 'basic.target' }
+  )
+  action %i(create enable)
+  only_if { manage_thp }
+end
+
+# ---------------------------------------------------------------------------
+# Swap
+#
+# Cassandra must never swap: a swapped-out node stays in the ring while its
+# latency collapses, which is worse than the node being down. vm.swappiness=1
+# only makes swapping unlikely — turn it off instead, and keep it off across
+# reboots by commenting out the swap entries in /etc/fstab.
+# ---------------------------------------------------------------------------
+manage_swap = disable_swap && !running_in_container
+
+log 'skip_vm_swappiness_deprecated' do
+  message 'node["axonops"]["skip_vm_swappiness"] is deprecated: swap is now ' \
+          'disabled entirely. Use node["axonops"]["disable_swap"] = false ' \
+          'instead; skip_vm_swappiness will be removed in a future release.'
+  level :warn
+  only_if { node['axonops']['skip_vm_swappiness'] }
+end
+
+execute 'swapoff -a' do
+  command 'swapoff -a'
+  only_if { manage_swap }
+  # /proc/swaps always carries a header line; a second line means swap is on.
+  only_if { ::File.exist?('/proc/swaps') && ::File.readlines('/proc/swaps').length > 1 }
+end
+
+fstab_swap_line = /^\s*[^#\s]\S*\s+\S+\s+swap\s/
+
+ruby_block 'comment out swap entries in /etc/fstab' do
+  block do
+    lines = ::File.readlines('/etc/fstab')
+    updated = lines.map do |line|
+      line.match?(fstab_swap_line) ? "# Disabled by axonops::system_tuning: #{line}" : line
+    end
+    # /etc/fstab is boot-critical: keep a backup, then swap the new file in with
+    # an atomic rename (same filesystem) so an interrupted converge can never
+    # leave a truncated fstab behind.
+    ::FileUtils.cp('/etc/fstab', '/etc/fstab.axonops.bak') unless ::File.exist?('/etc/fstab.axonops.bak')
+    tmp = '/etc/fstab.axonops.tmp'
+    ::File.write(tmp, updated.join)
+    ::FileUtils.chmod(0o644, tmp)
+    ::File.rename(tmp, '/etc/fstab')
+  end
+  only_if { manage_swap }
+  only_if do
+    ::File.exist?('/etc/fstab') && ::File.readlines('/etc/fstab').any? { |l| l.match?(fstab_swap_line) }
+  end
 end
 
 # /etc/security/limits.d normally ships with pam/shadow-utils, but minimal

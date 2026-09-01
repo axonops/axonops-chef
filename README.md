@@ -663,7 +663,15 @@ knife node run_list add chef-management-01 'recipe[axonops::chef_workstation]'
 # Skip vm.max_map_count setting (e.g., in containers or managed environments)
 node.override['axonops']['skip_vm_max_map_count'] = true
 
-# Skip vm.swappiness setting (e.g., in containers or managed environments)
+# Leave swap alone (e.g., managed elsewhere, or a host that must keep swap).
+# By default the cookbook runs `swapoff -a` and comments out swap entries in
+# /etc/fstab; with this set to false it writes vm.swappiness=1 instead.
+node.override['axonops']['disable_swap'] = false
+
+# Leave Transparent Huge Pages alone (default: disabled via a systemd unit)
+node.override['axonops']['disable_transparent_hugepages'] = false
+
+# DEPRECATED alias of disable_swap = false — still honoured, logs a warning
 node.override['axonops']['skip_vm_swappiness'] = true
 
 # Skip all system tuning
@@ -716,7 +724,14 @@ default['axonops']['chef_workstation']['install_additional_gems'] = true
 # System tuning options
 default['axonops']['skip_system_tuning'] = false
 default['axonops']['skip_vm_max_map_count'] = false
-default['axonops']['skip_vm_swappiness'] = false
+default['axonops']['disable_swap'] = true                 # swapoff -a + /etc/fstab
+default['axonops']['disable_transparent_hugepages'] = true # THP -> never, systemd unit
+default['axonops']['skip_vm_swappiness'] = false           # DEPRECATED, see disable_swap
+
+# Cassandra JVM tuning
+# THP is disabled at the OS level, so the JVM flag is off by default; set it to
+# true only if you also set disable_transparent_hugepages = false.
+default['axonops']['cassandra']['gc_use_transparent_huge_pages'] = false
 ```
 
 See individual documentation files for complete attribute references.

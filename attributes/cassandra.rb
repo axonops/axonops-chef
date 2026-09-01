@@ -423,7 +423,10 @@ default['axonops']['cassandra']['gc_shenandoah_heuristics'] = 'adaptive' # Optio
 default['axonops']['cassandra']['gc_shenandoah_parallel_gc_threads'] = nil # Will use number of cores
 default['axonops']['cassandra']['gc_shenandoah_conc_gc_threads'] = nil # Will use number of cores
 default['axonops']['cassandra']['gc_use_numa'] = true # NUMA support for Shenandoah
-default['axonops']['cassandra']['gc_use_transparent_huge_pages'] = true # THP support for Shenandoah
+# Transparent Huge Pages are disabled at the OS level by recipes/system_tuning.rb
+# (see docs/CASSANDRA.md); emitting -XX:+UseTransparentHugePages would contradict
+# that. Left as an attribute so operators can opt back in deliberately.
+default['axonops']['cassandra']['gc_use_transparent_huge_pages'] = false
 
 # Logging Configuration
 default['axonops']['cassandra']['log_level'] = 'INFO'
