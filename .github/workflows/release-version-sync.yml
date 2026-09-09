@@ -1,0 +1,138 @@
+name: Release Version Sync
+
+# Keeps the cookbook version in step with the released tag.
+#
+# When a GitHub release is published for tag vX.Y.Z, this workflow checks
+# metadata.rb. If it already says X.Y.Z there is nothing to do. Otherwise it
+# rewrites metadata.rb and the `cookbook_version` fields in examples/, then
+# opens a pull request against main so a human reviews and merges the bump.
+#
+# It never pushes to main directly, and it never edits the released tag — the
+# tag keeps pointing at whatever was released. Releases cut from the GitHub UI
+# (which bypass the version guard in publish.yml) are the main case this
+# catches.
+#
+# Repo setting required: Settings -> Actions -> General -> "Allow GitHub Actions
+# to create and approve pull requests". Note that PRs opened with the default
+# GITHUB_TOKEN do not trigger other workflows, so re-run CI on the sync PR (or
+# push an empty commit to it) if a green CI run is required before merge.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to sync the cookbook version to (e.g. v0.2.3)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-version-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Resolve the target version from the tag
+        id: target
+        env:
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          if ! printf '%s' "${version}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Tag ${TAG} is not a vX.Y.Z release tag; nothing to sync."
+            exit 1
+          fi
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Compare metadata.rb with the tag
+        id: compare
+        env:
+          VERSION: ${{ steps.target.outputs.version }}
+        run: |
+          set -euo pipefail
+          meta="$(ruby -e 'puts File.read("metadata.rb")[/^version\s+[\x27"]([^\x27"]+)/, 1]')"
+          echo "metadata.rb=${meta} tag=${VERSION}"
+          echo "current=${meta}" >> "${GITHUB_OUTPUT}"
+          if [ "${meta}" = "${VERSION}" ]; then
+            echo "match=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "match=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Already in sync
+        if: steps.compare.outputs.match == 'true'
+        run: echo "metadata.rb already at ${{ steps.target.outputs.version }} — nothing to do."
+
+      - name: Rewrite metadata.rb and example cookbook_version fields
+        if: steps.compare.outputs.match == 'false'
+        env:
+          VERSION: ${{ steps.target.outputs.version }}
+        run: |
+          set -euo pipefail
+          ruby -e '
+            version = ENV.fetch("VERSION")
+
+            meta = File.read("metadata.rb")
+            meta = meta.sub(/^version\s+([\x27"])[^\x27"]+\1/) { "version #{$1}#{version}#{$1}" }
+            File.write("metadata.rb", meta)
+
+            Dir.glob("examples/**/*.json").each do |path|
+              body = File.read(path)
+              updated = body.gsub(/"cookbook_version":\s*"[^"]*"/, %{"cookbook_version": "#{version}"})
+              File.write(path, updated) unless updated == body
+            end
+          '
+          git diff --stat
+
+      - name: Open a pull request with the bump
+        if: steps.compare.outputs.match == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.target.outputs.version }}
+          CURRENT: ${{ steps.compare.outputs.current }}
+          TAG: ${{ steps.target.outputs.tag }}
+        run: |
+          set -euo pipefail
+          branch="chore/sync-version-${VERSION}"
+
+          if git ls-remote --exit-code --heads origin "${branch}" >/dev/null 2>&1; then
+            echo "::notice::Branch ${branch} already exists on origin; assuming a sync PR is already open."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "${branch}"
+          git add -A
+          git commit \
+            -m "chore(release): sync cookbook version to ${VERSION}" \
+            -m "Release ${TAG} was published while metadata.rb still said ${CURRENT}. Bring metadata.rb and the example cookbook_version fields in line with the released tag."
+          git push origin "${branch}"
+
+          release_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
+          body_file="${RUNNER_TEMP}/pr-body.md"
+          {
+            printf 'Release [`%s`](%s) was published while `metadata.rb` still said `%s`.\n\n' "${TAG}" "${release_url}" "${CURRENT}"
+            printf 'This PR bumps `metadata.rb` to `%s` and updates the `cookbook_version` fields under `examples/` to match, so the next `berks upload` publishes the version that was actually released.\n\n' "${VERSION}"
+            printf 'Opened automatically by `.github/workflows/release-version-sync.yml`. Review the diff, update `CHANGELOG.md` if the release notes are not yet reflected there, then merge.\n'
+          } > "${body_file}"
+
+          gh pr create \
+            --base main \
+            --head "${branch}" \
+            --title "chore(release): sync cookbook version to ${VERSION}" \
+            --body-file "${body_file}"
