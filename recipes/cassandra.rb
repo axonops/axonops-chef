@@ -76,6 +76,23 @@ include_recipe 'axonops::users'
   end
 end
 
+# JVM / JNA / Netty temporary directories. Only created when moved off /tmp —
+# /tmp itself is owned by the OS and must not be re-owned or re-moded here.
+# Mode 1777 (sticky, like /tmp) so any co-located process can still use it.
+[
+  node['axonops']['cassandra']['java_tmp_dir'],
+  node['axonops']['cassandra']['jna_tmp_dir'],
+].compact.uniq.each do |tmp_dir|
+  next if tmp_dir.to_s.empty? || tmp_dir == '/tmp'
+
+  directory tmp_dir do
+    owner node['axonops']['cassandra']['user']
+    group node['axonops']['cassandra']['group']
+    mode '1777'
+    recursive true
+  end
+end
+
 # Create data directories (can be multiple)
 node['axonops']['cassandra']['data_file_directories'].each do |dir|
   directory dir do
