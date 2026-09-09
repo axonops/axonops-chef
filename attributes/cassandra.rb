@@ -35,6 +35,15 @@ default['axonops']['cassandra']['dse_version'] = '5.1'
 # doesn't match either default.
 default['axonops']['cassandra']['dse_env_file'] = nil
 default['axonops']['cassandra']['data_root'] = '/var/lib/cassandra'
+# Temporary directories used by the JVM, JNA and Netty. Both default to /tmp,
+# which matches stock Cassandra. On a hardened host where /tmp is mounted
+# noexec the JVM cannot execute the native libraries it unpacks there (JNA's
+# libjnidispatch.so above all), and Cassandra fails to start — point these at a
+# path on an exec-capable filesystem, e.g. /var/lib/cassandra/tmp. Any value
+# other than /tmp is created by recipes/cassandra.rb, owned by the Cassandra
+# user and group, mode 1777.
+default['axonops']['cassandra']['java_tmp_dir'] = '/tmp'
+default['axonops']['cassandra']['jna_tmp_dir'] = '/tmp'
 default['axonops']['cassandra']['local_jmx'] = 'yes'
 
 # cqlsh virtual environment (recipes/cqlsh_venv.rb).

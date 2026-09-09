@@ -24,6 +24,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Both restart `service[opensearch]` on change.
 - Set the attribute to `''` or `/tmp` to keep the OS default; no directory or
   drop-ins are created and any previously written drop-ins are removed.
+#### Cassandra could not start when /tmp is mounted noexec (#47)
+- New `node['axonops']['cassandra']['java_tmp_dir']` and
+  `node['axonops']['cassandra']['jna_tmp_dir']` attributes, both defaulting to
+  `/tmp` so existing nodes render `cassandra-env.sh` byte-identically.
+- When either is set to a path other than `/tmp`, `cassandra-env.sh` now
+  exports `TMPDIR` and adds `-Djava.io.tmpdir`, `-Djna.tmpdir` and
+  `-Dio.netty.native.workdir`, and `recipes/cassandra.rb` creates the
+  directories owned by the Cassandra user and group, mode `1777`. This lets
+  Cassandra start on hardened hosts where the JVM and JNA cannot execute the
+  native libraries (`libjnidispatch.so`) they unpack into `/tmp`.
 
 #### Offline install silently did nothing on Amazon Linux
 - `recipes/server.rb` and `recipes/dashboard.rb` matched only
