@@ -74,12 +74,36 @@ All settings live under `node['axonops']['server']['elastic']`:
 | `listen_port` | `9200` | HTTP port |
 | `install` | `true` | Whether to install OpenSearch at all (`false` to use an external cluster) |
 | `security_plugin_enabled` | `false` | See [Security](#security) |
+| `java_tmp_dir` | `/var/lib/opensearch/tmp` | JVM `java.io.tmpdir` — see [noexec /tmp](#noexec-tmp). Set to `''` or `/tmp` to keep the OS default |
 
 **Production heap sizing**: never exceed 50% of available RAM or 32GB (the
 compressed-oops threshold).
 
 ```ruby
 node.override['axonops']['server']['elastic']['heap_size'] = '4g'
+```
+
+## noexec /tmp
+
+On CIS-hardened hosts (Amazon Linux 2023 and others) `/tmp` is mounted
+`noexec`. The JVM unpacks and executes native libraries into `java.io.tmpdir`
+at startup, so OpenSearch fails to start when that lands on a `noexec` mount.
+
+The cookbook defaults `java_tmp_dir` to `/var/lib/opensearch/tmp`, creates it
+`opensearch:opensearch` `0750`, and writes two drop-ins that restart the
+service on change:
+
+- `/etc/opensearch/jvm.options.d/tmpdir.options` — `-Djava.io.tmpdir=<dir>`
+- `/etc/systemd/system/opensearch.service.d/tmpdir.conf` —
+  `Environment=OPENSEARCH_TMPDIR=<dir>`, since `opensearch-env` otherwise
+  derives `OPENSEARCH_TMPDIR` from `mktemp -d` under `/tmp`.
+
+Keep this directory on a mount that is **not** `noexec`. To opt out and use the
+OS default `/tmp`, set the attribute to `''` or `/tmp`; no directory or
+drop-ins are created.
+
+```ruby
+node.override['axonops']['server']['elastic']['java_tmp_dir'] = '/var/lib/opensearch/tmp'
 ```
 
 ## Using an external OpenSearch cluster

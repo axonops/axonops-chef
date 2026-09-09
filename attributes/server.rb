@@ -22,6 +22,13 @@ default['axonops']['server']['elastic']['logs_dir'] = '/var/log/opensearch'
 default['axonops']['server']['elastic']['listen_address'] = '127.0.0.1'
 default['axonops']['server']['elastic']['listen_port'] = 9200
 default['axonops']['server']['elastic']['install'] = true
+# Java temporary directory (-Djava.io.tmpdir). OpenSearch's JVM unpacks and
+# executes native libraries here at startup; on a CIS-hardened host /tmp is
+# mounted noexec and the JVM fails to load them. Point java.io.tmpdir (and
+# OPENSEARCH_TMPDIR, which the launcher otherwise derives from mktemp under
+# /tmp) at an executable directory the cookbook owns. Set to '' or '/tmp' to
+# keep the OS default and create no directory. See recipes/opensearch.rb.
+default['axonops']['server']['elastic']['java_tmp_dir'] = '/var/lib/opensearch/tmp'
 # OpenSearch's security plugin (auth + TLS) is enabled by default upstream and
 # needs its own certs/admin password setup, unrelated to the manual
 # self-signed-cert approach the old Elasticsearch tarball install used —
