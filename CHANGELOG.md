@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Release version sync workflow
+- New `.github/workflows/release-version-sync.yml`. When a GitHub release is
+  published for a `vX.Y.Z` tag and `metadata.rb` still carries a different
+  version, the workflow bumps `metadata.rb` and the `cookbook_version` fields
+  under `examples/` and opens a pull request against `main`. It never pushes to
+  `main` directly and never rewrites the released tag.
+- Mainly covers releases cut from the GitHub UI, which bypass the tag-vs-
+  metadata guard in `publish.yml`. Also runnable via `workflow_dispatch` with a
+  `tag` input.
+
 ## [0.2.3] - 2026-09-09
 
 ### Fixed
