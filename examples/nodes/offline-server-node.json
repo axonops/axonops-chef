@@ -70,7 +70,7 @@
     }
   },
   "name": "axonops-offline-server",
-  "cookbook_version": "0.2.0",
+  "cookbook_version": "0.2.3",
   "description": "AxonOps server deployment for offline/air-gapped environments",
   "chef_environment": "production",
   "run_list": [

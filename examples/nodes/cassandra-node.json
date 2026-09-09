@@ -45,7 +45,7 @@
     }
   },
   "name": "chef01",
-  "cookbook_version": "0.2.0",
+  "cookbook_version": "0.2.3",
   "description": "Cassandra database node with AxonOps agent monitoring",
   "run_list": [
     "recipe[axonops::java]",

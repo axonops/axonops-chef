@@ -188,7 +188,7 @@
     ]
   },
   "name": "axonops-all-in-one",
-  "cookbook_version": "0.2.0",
+  "cookbook_version": "0.2.3",
   "description": "Complete AxonOps stack on a single node (development/testing)",
   "chef_environment": "development",
   "run_list": [

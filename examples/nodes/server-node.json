@@ -70,7 +70,7 @@
     }
   },
   "name": "axonops-server-01",
-  "cookbook_version": "0.2.0",
+  "cookbook_version": "0.2.3",
   "description": "AxonOps Server node with dashboard and OpenSearch",
   "chef_environment": "production",
   "run_list": [
