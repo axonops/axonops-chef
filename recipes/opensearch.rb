@@ -163,6 +163,71 @@ template '/etc/opensearch/jvm.options.d/heap.options' do
   notifies :restart, 'service[opensearch]', :delayed
 end
 
+# Java temporary directory. On a CIS-hardened host (Amazon Linux 2023 and
+# others) /tmp is mounted noexec, so the JVM cannot execute the native
+# libraries it unpacks into java.io.tmpdir and OpenSearch never starts. Point
+# java.io.tmpdir — and OPENSEARCH_TMPDIR, which opensearch-env otherwise
+# derives from `mktemp -d` under /tmp — at a cookbook-owned executable
+# directory. An empty value or '/tmp' keeps the OS default and manages nothing.
+opensearch_java_tmp_dir = opensearch_config['java_tmp_dir'].to_s
+manage_java_tmp_dir = !opensearch_java_tmp_dir.empty? && opensearch_java_tmp_dir != '/tmp'
+
+directory opensearch_java_tmp_dir do
+  owner 'opensearch'
+  group 'opensearch'
+  mode '0750'
+  recursive true
+  only_if { manage_java_tmp_dir }
+end
+
+# Drop-in read after the package's own jvm.options; the last -D wins, so this
+# needs no patching of the package-owned file. Removed again if the OS default
+# is restored.
+template '/etc/opensearch/jvm.options.d/tmpdir.options' do
+  source 'opensearch-jvm-tmpdir.options.erb'
+  owner 'opensearch'
+  group 'opensearch'
+  mode '0640'
+  variables(java_tmp_dir: opensearch_java_tmp_dir)
+  notifies :restart, 'service[opensearch]', :delayed
+  only_if { manage_java_tmp_dir }
+end
+
+file '/etc/opensearch/jvm.options.d/tmpdir.options' do
+  action :delete
+  notifies :restart, 'service[opensearch]', :delayed
+  not_if { manage_java_tmp_dir }
+end
+
+# systemd drop-in so the launcher and the plugins that read OPENSEARCH_TMPDIR
+# stop defaulting to /tmp as well.
+directory '/etc/systemd/system/opensearch.service.d' do
+  mode '0755'
+  recursive true
+  only_if { manage_java_tmp_dir }
+end
+
+template '/etc/systemd/system/opensearch.service.d/tmpdir.conf' do
+  source 'opensearch-systemd-tmpdir.conf.erb'
+  mode '0644'
+  variables(java_tmp_dir: opensearch_java_tmp_dir)
+  notifies :run, 'execute[opensearch-systemd-daemon-reload]', :immediately
+  notifies :restart, 'service[opensearch]', :delayed
+  only_if { manage_java_tmp_dir }
+end
+
+file '/etc/systemd/system/opensearch.service.d/tmpdir.conf' do
+  action :delete
+  notifies :run, 'execute[opensearch-systemd-daemon-reload]', :immediately
+  notifies :restart, 'service[opensearch]', :delayed
+  not_if { manage_java_tmp_dir }
+end
+
+execute 'opensearch-systemd-daemon-reload' do
+  command 'systemctl daemon-reload'
+  action :nothing
+end
+
 service 'opensearch' do
   supports status: true, restart: true
   action [:enable, :start]

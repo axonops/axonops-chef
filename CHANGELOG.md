@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### OpenSearch failed to start on a noexec /tmp (#46)
+- On CIS-hardened hosts (Amazon Linux 2023 and others) `/tmp` is mounted
+  `noexec`, so the JVM could not execute the native libraries it unpacks into
+  `java.io.tmpdir` and OpenSearch never came up. The cookbook never set
+  `-Djava.io.tmpdir`.
+- New attribute
+  `default['axonops']['server']['elastic']['java_tmp_dir']` (default
+  `/var/lib/opensearch/tmp`, merges through the `opensearch` alias namespace).
+  `recipes/opensearch.rb` creates it `opensearch:opensearch` `0750` and writes
+  `/etc/opensearch/jvm.options.d/tmpdir.options` with
+  `-Djava.io.tmpdir=<dir>`, plus a systemd drop-in setting
+  `OPENSEARCH_TMPDIR=<dir>` so the launcher and plugins stop using `/tmp`.
+  Both restart `service[opensearch]` on change.
+- Set the attribute to `''` or `/tmp` to keep the OS default; no directory or
+  drop-ins are created and any previously written drop-ins are removed.
 #### Cassandra could not start when /tmp is mounted noexec (#47)
 - New `node['axonops']['cassandra']['java_tmp_dir']` and
   `node['axonops']['cassandra']['jna_tmp_dir']` attributes, both defaulting to
