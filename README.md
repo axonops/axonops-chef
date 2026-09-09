@@ -737,6 +737,15 @@ default['axonops']['skip_vm_swappiness'] = false           # DEPRECATED, see dis
 # THP is disabled at the OS level, so the JVM flag is off by default; set it to
 # true only if you also set disable_transparent_hugepages = false.
 default['axonops']['cassandra']['gc_use_transparent_huge_pages'] = false
+
+# Cassandra temporary directories (JVM, JNA, Netty)
+# Leave on /tmp unless /tmp is mounted noexec — the JVM and JNA unpack native
+# libraries (libjnidispatch.so) there and execute them, so Cassandra fails to
+# start on a hardened host. Any value other than /tmp is created by the
+# cookbook, owned by the Cassandra user and group, mode 1777, and the change
+# restarts Cassandra on the next converge.
+default['axonops']['cassandra']['java_tmp_dir'] = '/tmp'  # e.g. '/var/lib/cassandra/tmp'
+default['axonops']['cassandra']['jna_tmp_dir']  = '/tmp'  # e.g. '/var/lib/cassandra/tmp'
 ```
 
 See individual documentation files for complete attribute references.

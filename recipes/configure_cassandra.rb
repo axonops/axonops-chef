@@ -142,6 +142,8 @@ template "#{cassandra_conf_dir}/cassandra-env.sh" do
     jmx_port: node['axonops']['cassandra']['jmx_port'],
     enable_jmx_authentication: node['axonops']['cassandra']['jmx_authentication'],
     gc_log_dir: node['axonops']['cassandra']['directories']['gc_logs'],
+    java_tmp_dir: node['axonops']['cassandra']['java_tmp_dir'],
+    jna_tmp_dir: node['axonops']['cassandra']['jna_tmp_dir'],
     java_major: AxonOpsCassandra.java_major(cassandra_version),
     jemalloc_path: node.run_state['cassandra_jemalloc_path'],
     axon_java_agent_jar: if node['axonops']['agent']['enabled'] && node['axonops']['cassandra']['edition'] != 'dse'

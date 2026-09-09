@@ -315,6 +315,23 @@ if [ "x$MX4J_PORT" != "x" ]; then
     fi
 fi
 
+<% java_tmp = @java_tmp_dir.to_s -%>
+<% jna_tmp = @jna_tmp_dir.to_s -%>
+<% if (!java_tmp.empty? && java_tmp != '/tmp') || (!jna_tmp.empty? && jna_tmp != '/tmp') -%>
+# Temporary directories for the JVM, JNA and Netty. Set when /tmp is mounted
+# noexec: the JVM and JNA unpack native libraries (libjnidispatch.so) into
+# these paths and then execute them.
+<% if !java_tmp.empty? && java_tmp != '/tmp' -%>
+# TMPDIR as well as the -D flags — some of what Cassandra shells out to reads
+# the environment variable rather than the system properties.
+export TMPDIR="<%= java_tmp %>"
+JVM_OPTS="$JVM_OPTS -Djava.io.tmpdir=<%= java_tmp %> -Dio.netty.native.workdir=<%= java_tmp %>"
+<% end -%>
+<% if !jna_tmp.empty? && jna_tmp != '/tmp' -%>
+JVM_OPTS="$JVM_OPTS -Djna.tmpdir=<%= jna_tmp %>"
+<% end -%>
+
+<% end -%>
 JVM_OPTS="$JVM_OPTS $JVM_EXTRA_OPTS"
 
 <% if @axon_java_agent_jar -%>
