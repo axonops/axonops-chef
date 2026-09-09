@@ -133,7 +133,7 @@
     }
   },
   "name": "app-db-monitor-01",
-  "cookbook_version": "0.2.0",
+  "cookbook_version": "0.2.3",
   "description": "Multi-purpose node with application, Cassandra, and monitoring",
   "chef_environment": "staging",
   "run_list": [

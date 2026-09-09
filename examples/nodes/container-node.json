@@ -100,7 +100,7 @@
     }
   },
   "name": "axonops-container-01",
-  "cookbook_version": "0.2.0",
+  "cookbook_version": "0.2.3",
   "description": "AxonOps deployment for containerized/restricted environments",
   "chef_environment": "container",
   "run_list": [
