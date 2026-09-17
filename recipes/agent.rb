@@ -328,26 +328,63 @@ unless java_agent_env_file.nil?
     false
   end
 
+  # When this cookbook installs Cassandra itself, axonops::configure_cassandra
+  # renders cassandra-env.sh from cassandra-env.sh.erb later in the same run,
+  # and that template already wires the agent in (options file, with the
+  # -javaagent line as its runtime fallback). Editing the same file here would
+  # rewrite content the template is about to replace, marking this ruby_block
+  # updated — and so notifying a Cassandra restart — on every single converge.
+  # Only edit a cassandra-env.sh this cookbook does not render.
+  cookbook_renders_env_file = service == 'cassandra' &&
+                              node['axonops']['cassandra']['edition'] != 'dse' &&
+                              (node.recipe?('axonops::cassandra') ||
+                               node.run_list.include?('recipe[axonops::cassandra]'))
+
   ruby_block 'configure-jvm-agent' do
-    # DSE has no /usr/share/axonops/axonops-jvm.options override file (that's
-    # only shipped for the cookbook-managed Cassandra versions its own
-    # cassandra-env.sh.erb sources) — append the -javaagent flag directly,
-    # matching the axon-dse<version>-agent.jar this run installed.
+    # Since agent 1.1.0 every Cassandra agent package (3.11, 4.0, 4.1, 5.0)
+    # ships /usr/share/axonops/axonops-jvm.options; sourcing it is the
+    # supported way to load the agent, so its contents can change without the
+    # env file changing. Older agents only support the raw -javaagent flag, so
+    # fall back to that when the file is absent. DSE agent packages never ship
+    # it. AxonOpsAgentEnv decides which single line applies and, on an
+    # existing install already carrying the legacy line, migrates it in place
+    # rather than appending — so cassandra-env.sh never gets both.
     is_dse = node['axonops']['cassandra']['edition'] == 'dse'
-    agent_line = if is_dse
-                   "JVM_OPTS=\"$JVM_OPTS -javaagent:/usr/share/axonops/#{java_agent_package}.jar=/etc/axonops/axon-agent.yml\""
-                 else
-                   ". /usr/share/axonops/axonops-jvm.options"
-                 end
-    match_pattern = is_dse ? /-javaagent:\/usr\/share\/axonops\/#{Regexp.escape(java_agent_package)}\.jar/ : /axonops-jvm\.options/
+    # Kafka has always been wired in via the options file; keep that path
+    # rather than falling back to a Cassandra-shaped JVM_OPTS line in
+    # kafka-server-start.sh. The line AxonOpsAgentEnv inserts is guarded on
+    # the file existing, so this is safe even when the Kafka agent package
+    # ships no options file.
+    is_kafka = service == 'kafka'
+    pkg = java_agent_package
 
     block do
-      file = Chef::Util::FileEdit.new(java_agent_env_file)
-      file.insert_line_if_no_match(match_pattern, agent_line)
-      file.write_file
+      content = ::File.read(java_agent_env_file)
+      options_present = is_kafka || ::File.exist?(AxonOpsAgentEnv::OPTIONS_FILE)
+      action, pattern_or_line, replacement = AxonOpsAgentEnv.edit_for(
+        content,
+        options_file_present: options_present,
+        package: pkg,
+        prefer_options_file: !is_dse
+      )
+
+      unless action == :none
+        file = Chef::Util::FileEdit.new(java_agent_env_file)
+        case action
+        when :insert
+          # edit_for already established the line is absent; matching on the
+          # literal line keeps FileEdit from appending it twice if that ever
+          # stops being true.
+          file.insert_line_if_no_match(Regexp.new(Regexp.escape(pattern_or_line)), pattern_or_line)
+        when :replace
+          file.search_file_replace_line(pattern_or_line, replacement)
+        end
+        file.write_file
+      end
     end
 
     notifies :restart, "service[#{service}]", :delayed if service_resource_exists
     only_if { java_agent_env_file && ::File.exist?(java_agent_env_file) }
+    not_if { cookbook_renders_env_file }
   end
 end

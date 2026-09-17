@@ -21,6 +21,7 @@ database/broker itself.
   - [Human-readable identifier and hostname override](#human-readable-identifier-and-hostname-override)
   - [Offline / air-gapped install](#offline--air-gapped-install)
   - [Amazon Linux](#amazon-linux)
+- [How the java agent is loaded](#how-the-java-agent-is-loaded)
 - [How detection works](#how-detection-works)
 - [Troubleshooting](#troubleshooting)
 
@@ -33,6 +34,49 @@ database/broker itself.
 2. Installs `axon-agent` and the matching java agent (`axon-cassandra*-agent-jdk*`,
    `axon-dse-agent`, or `axon-kafka3-agent`).
 3. Renders `/etc/axonops/axon-agent.yml` and starts the `axon-agent` service.
+4. Wires the java agent into `cassandra-env.sh` (see
+   [How the java agent is loaded](#how-the-java-agent-is-loaded)).
+
+## How the java agent is loaded
+
+Since agent **1.1.0**, every Cassandra java agent package (3.11, 4.0, 4.1 and
+5.0) ships `/usr/share/axonops/axonops-jvm.options`. That file is the supported
+way to load the agent — AxonOps can change what the JVM gets without a cookbook
+change — so `cassandra-env.sh` sources it:
+
+```sh
+if [ -f /usr/share/axonops/axonops-jvm.options ]; then
+  . /usr/share/axonops/axonops-jvm.options
+else
+  JVM_OPTS="$JVM_OPTS -javaagent:/usr/share/axonops/axon-cassandra4.1-agent.jar=/etc/axonops/axon-agent.yml"
+fi
+```
+
+Agents older than 1.1.0 do not ship the file; the `-javaagent` fallback keeps
+those working. Exactly one of the two ever applies.
+
+On a Cassandra this cookbook does not manage, `axonops::agent` edits the
+existing `cassandra-env.sh` in place, adding the same guard on one line:
+
+```sh
+[ -f /usr/share/axonops/axonops-jvm.options ] && . /usr/share/axonops/axonops-jvm.options
+```
+
+Kafka's `kafka-server-start.sh` gets that same guarded line. If that file
+already carries an old
+`-javaagent:/usr/share/axonops/....jar` line, the line is **replaced** by the
+`axonops-jvm.options` line rather than a second line being appended — an
+upgraded node never loads the agent twice. If the options file is not on the
+node, the existing `-javaagent` line is left exactly as it is.
+
+When this cookbook installs Cassandra itself, `cassandra-env.sh` is rendered
+from the template above, so `axonops::agent` leaves that file alone — only a
+`cassandra-env.sh` the cookbook does not render is edited in place.
+
+DSE agent packages (`axon-dse<version>-agent`) do not ship an options file, so
+DSE keeps the `-javaagent` line — see [DSE.md](DSE.md). Because the jar name
+carries the version, an agent upgrade rewrites that line to the new jar instead
+of leaving a line pointing at a jar the upgrade removed.
 
 ## Requirements
 

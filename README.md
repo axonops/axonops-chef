@@ -782,6 +782,13 @@ features/cassandra_version_support.feature
 
 ### Integration tests (Test Kitchen)
 
+Suites install **Cinc** inside the test instance, not Chef Infra:
+`packages.chef.io` answers HTTP 402 ("License validation failed") for every
+unlicensed omnibus download. Cinc is the same source, built and distributed by
+the community under the Apache licence. Nothing to configure — `kitchen.yml`
+points the omnibus install at `omnitruck.cinc.sh`, and `CINC_VERSION`
+(default `18`) pins the major version. The recipes and InSpec controls are unchanged.
+
 Suites run via the Dokken driver against Ubuntu 22.04, Rocky Linux 9, Amazon
 Linux 2, and Amazon Linux 2023:
 

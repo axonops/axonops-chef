@@ -18,6 +18,7 @@ They are executable via two layers, per the AxonOps BDD standard:
 | 3.11 legacy integer-unit schema | `spec/unit/templates/cassandra_3_11_yaml_spec.rb` |
 | Per-version JVM option files | `test/integration/*/controls/jvm_options_spec.rb` |
 | Temporary directories on/off /tmp (#47) | `spec/unit/templates/cassandra_env_tmpdir_spec.rb` |
+| Agent loaded via axonops-jvm.options (ASB-4712) | `spec/unit/templates/cassandra_env_agent_spec.rb`, `spec/unit/libraries/agent_env_spec.rb` |
 | Unsupported version fails fast | `spec/unit/libraries/cassandra_version_spec.rb` |
 | Converged node layout / service | `test/integration/*/controls/*_spec.rb` |
 

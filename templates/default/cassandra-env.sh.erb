@@ -335,18 +335,18 @@ JVM_OPTS="$JVM_OPTS -Djna.tmpdir=<%= jna_tmp %>"
 JVM_OPTS="$JVM_OPTS $JVM_EXTRA_OPTS"
 
 <% if @axon_java_agent_jar -%>
-<% if node['axonops']['cassandra']['version'].to_s.start_with?('5.') -%>
-# 5.0.x only: the java agent is wired in via this optional override file
-# rather than a -javaagent flag directly (matches the Ansible role). Runtime
-# guarded, not compile-time, since agent/cassandra install ordering across
-# separate converges can't guarantee the file exists when this template
-# renders.
+# Load the AxonOps java agent. Since agent 1.1.0 every Cassandra agent
+# (3.11, 4.0, 4.1, 5.0) ships /usr/share/axonops/axonops-jvm.options, which is
+# the supported way to wire the agent in — the options file can change without
+# this template changing. Older agents do not ship it, so fall back to the
+# raw -javaagent flag. Exactly one of the two is ever applied. Runtime guarded,
+# not compile-time, since agent/cassandra install ordering across separate
+# converges can't guarantee the file exists when this template renders.
 if [ -f /usr/share/axonops/axonops-jvm.options ]; then
   . /usr/share/axonops/axonops-jvm.options
+else
+  JVM_OPTS="$JVM_OPTS -javaagent:/usr/share/axonops/<%= @axon_java_agent_jar %>.jar=/etc/axonops/axon-agent.yml"
 fi
-<% else -%>
-JVM_OPTS="$JVM_OPTS -javaagent:/usr/share/axonops/<%= @axon_java_agent_jar %>.jar=/etc/axonops/axon-agent.yml"
-<% end -%>
 <% end -%>
 
 <% if @jemalloc_path %>

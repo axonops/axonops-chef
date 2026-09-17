@@ -69,6 +69,9 @@ jobs:
             spec/unit/libraries/cassandra_version_spec.rb \
             spec/unit/templates/cassandra_3_11_yaml_spec.rb \
             spec/unit/templates/cassandra_jvm_options_spec.rb \
+            spec/unit/templates/cassandra_env_tmpdir_spec.rb \
+            spec/unit/templates/cassandra_env_agent_spec.rb \
+            spec/unit/libraries/agent_env_spec.rb \
             spec/unit/recipes/offline_platform_family_spec.rb \
             --format documentation --color
 
@@ -81,16 +84,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Chef Workstation
-        run: curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -P chef-workstation -c stable
+      # Cinc Workstation, not Chef Workstation: packages.chef.io answers HTTP
+      # 402 ("License validation failed") for every unlicensed omnibus
+      # download. Cinc is the same source, community-built, with no gate —
+      # `cinc` replaces the `chef` command and `kitchen`/`berks` are shipped
+      # unchanged.
+      - name: Install Cinc Workstation
+        run: curl -L https://omnitruck.cinc.sh/install.sh | sudo bash -s -- -P cinc-workstation -c stable
 
       - name: Install cookbook dependencies
         run: |
-          chef exec bundle install || true
-          chef exec berks install || true
+          cinc exec bundle install || true
+          cinc exec berks install || true
 
       - name: ChefSpec recipe specs
-        run: chef exec rspec spec/unit/recipes --format documentation --color
+        run: cinc exec rspec spec/unit/recipes --format documentation --color
         continue-on-error: true
 
   # Cookstyle lint — informational while the cookbook clears existing lint debt.
@@ -128,8 +136,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Chef Workstation
-        run: curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -P chef-workstation -c stable
+      # Cinc Workstation, not Chef Workstation: packages.chef.io answers HTTP
+      # 402 ("License validation failed") for every unlicensed omnibus
+      # download. Cinc is the same source, community-built, with no gate —
+      # `cinc` replaces the `chef` command and `kitchen`/`berks` are shipped
+      # unchanged.
+      - name: Install Cinc Workstation
+        run: curl -L https://omnitruck.cinc.sh/install.sh | sudo bash -s -- -P cinc-workstation -c stable
 
       - name: kitchen test ${{ matrix.suite }}
         run: |
@@ -149,8 +162,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Chef Workstation
-        run: curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -P chef-workstation -c stable
+      # Cinc Workstation, not Chef Workstation: packages.chef.io answers HTTP
+      # 402 ("License validation failed") for every unlicensed omnibus
+      # download. Cinc is the same source, community-built, with no gate —
+      # `cinc` replaces the `chef` command and `kitchen`/`berks` are shipped
+      # unchanged.
+      - name: Install Cinc Workstation
+        run: curl -L https://omnitruck.cinc.sh/install.sh | sudo bash -s -- -P cinc-workstation -c stable
 
       - name: Stage offline packages (Cassandra + Java tarballs only — no AxonOps credentials needed)
         run: |

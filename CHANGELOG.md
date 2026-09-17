@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+#### Load the java agent from `axonops-jvm.options` on every Cassandra version (ASB-4712)
+- Since agent 1.1.0 the 3.11, 4.0, 4.1 and 5.0 Cassandra agents all ship
+  `/usr/share/axonops/axonops-jvm.options`. `cassandra-env.sh` now sources that
+  file on every version instead of only 5.0.x, so AxonOps can change how the
+  agent is loaded without a cookbook change. Agents older than 1.1.0 do not
+  ship the file, so the template keeps the raw `-javaagent` flag as a runtime
+  fallback — exactly one of the two ever applies.
+- `axonops::agent` editing a `cassandra-env.sh` this cookbook does not render
+  now **replaces** an existing legacy `-javaagent:/usr/share/axonops/....jar`
+  line with the `axonops-jvm.options` line instead of appending a second line,
+  so upgrading an existing install never loads the agent twice. When the
+  options file is absent, an existing `-javaagent` line is left untouched.
+- DSE agent packages ship no options file, so DSE keeps the `-javaagent` line.
+  An agent package upgrade renames the jar (`axon-dse6.8-agent` ->
+  `axon-dse6.9-agent`), so a stale line is now rewritten in place instead of
+  being left pointing at a jar the upgrade removed. The same applies to a
+  Cassandra node running an agent older than 1.1.0.
+- The line `axonops::agent` writes into an env file it edits in place is now
+  guarded (`[ -f <options file> ] && . <options file>`), so a node whose agent
+  package ships no options file never sources a missing path. This also covers
+  `kafka-server-start.sh`, which previously got an unguarded source line.
+- `axonops::agent` no longer edits a `cassandra-env.sh` that this cookbook
+  renders itself: `axonops::configure_cassandra` templates that file later in
+  the same run, so the in-place edit only rewrote content about to be replaced
+  and notified a redundant Cassandra restart on every converge.
+- New `libraries/agent_env.rb` holds the decision logic, covered by
+  `spec/unit/libraries/agent_env_spec.rb` and
+  `spec/unit/templates/cassandra_env_agent_spec.rb` (both run under plain
+  `rspec`). Specified in `features/agent_jvm_options.feature`.
+
+### Fixed
+
+#### Test Kitchen and CI now install Cinc instead of Chef Infra
+- `packages.chef.io` answers HTTP 402 ("License validation failed") for every
+  unlicensed omnibus download, at every version, and the `chefdownload-*`
+  endpoints refuse without a `license_id`. Every `kitchen converge` therefore
+  failed with `Package checksum mismatch!` — the downloaded "package" was the
+  error page.
+- `kitchen.yml` now installs Cinc: `chef_omnibus_url` points at
+  `https://omnitruck.cinc.sh/install.sh`, `chef_omnibus_root` at `/opt/cinc`,
+  and the version comes from `CINC_VERSION` (default `18`). mixlib-install's
+  product matrix has no `cinc` entry, so `product_name: cinc` is not an option
+  ("Unknown product name cinc"). Cinc is the same source, built and
+  distributed by the community under the Apache licence, with no download
+  gate, and ships `chef-client`/`chef-solo` symlinks under `/opt/cinc/bin`.
+  Recipes, templates and InSpec controls are unchanged.
+- `ci.yml` installs Cinc Workstation from `omnitruck.cinc.sh` in place of Chef
+  Workstation and calls `cinc exec` instead of `chef exec`.
+- No licence key or repository secret is needed.
+
 ### Added
 
 #### Release version sync workflow
