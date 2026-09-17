@@ -5,9 +5,21 @@ driver:
 provisioner:
   name: chef_zero
   chef_license: accept-no-persist
-
-verifier:
-  name: inspec
+  # Cinc, not Chef Infra: packages.chef.io now answers HTTP 402 ("License
+  # validation failed") for every omnibus download, at every version, and the
+  # chefdownload-* endpoints refuse without a license_id — so a plain
+  # `kitchen converge` could no longer install Chef at all. Cinc is the same
+  # source, built and distributed by the community under the Apache licence,
+  # with no download gate.
+  #
+  # mixlib-install's product matrix has no `cinc` product, so `product_name`
+  # can't be used here ("Unknown product name cinc"). Point the older
+  # omnibus-script path at Cinc's install.sh instead. Cinc installs under
+  # /opt/cinc and ships chef-client/chef-solo compatibility symlinks there, so
+  # chef_omnibus_root is all test-kitchen needs to find the client.
+  require_chef_omnibus: <%= ENV.fetch('CINC_VERSION', '18') %>
+  chef_omnibus_url: https://omnitruck.cinc.sh/install.sh
+  chef_omnibus_root: /opt/cinc
 
 platforms:
   # AxonOps packages call systemctl in their postinst scripts. kitchen-docker

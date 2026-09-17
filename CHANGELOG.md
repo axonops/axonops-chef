@@ -39,6 +39,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `spec/unit/templates/cassandra_env_agent_spec.rb` (both run under plain
   `rspec`). Specified in `features/agent_jvm_options.feature`.
 
+### Fixed
+
+#### Test Kitchen and CI now install Cinc instead of Chef Infra
+- `packages.chef.io` answers HTTP 402 ("License validation failed") for every
+  unlicensed omnibus download, at every version, and the `chefdownload-*`
+  endpoints refuse without a `license_id`. Every `kitchen converge` therefore
+  failed with `Package checksum mismatch!` — the downloaded "package" was the
+  error page.
+- `kitchen.yml` now installs Cinc: `chef_omnibus_url` points at
+  `https://omnitruck.cinc.sh/install.sh`, `chef_omnibus_root` at `/opt/cinc`,
+  and the version comes from `CINC_VERSION` (default `18`). mixlib-install's
+  product matrix has no `cinc` entry, so `product_name: cinc` is not an option
+  ("Unknown product name cinc"). Cinc is the same source, built and
+  distributed by the community under the Apache licence, with no download
+  gate, and ships `chef-client`/`chef-solo` symlinks under `/opt/cinc/bin`.
+  Recipes, templates and InSpec controls are unchanged.
+- `ci.yml` installs Cinc Workstation from `omnitruck.cinc.sh` in place of Chef
+  Workstation and calls `cinc exec` instead of `chef exec`.
+- No licence key or repository secret is needed.
+
 ### Added
 
 #### Release version sync workflow

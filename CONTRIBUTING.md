@@ -12,6 +12,10 @@ To run Test Kitchen suites:
 bundle exec kitchen test
 ```
 
+Suites install Cinc (see `kitchen.yml`'s `chef_omnibus_url`), not Chef Infra —
+`packages.chef.io` answers HTTP 402 for unlicensed downloads. Override the
+major version with `CINC_VERSION` if needed.
+
 To select Docker instead of Vagrant, use:
 ```bash
 KITCHEN_DRIVER=docker bundle exec kitchen test <suite-name>
