@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+#### Load the java agent from `axonops-jvm.options` on every Cassandra version (ASB-4712)
+- Since agent 1.1.0 the 3.11, 4.0, 4.1 and 5.0 Cassandra agents all ship
+  `/usr/share/axonops/axonops-jvm.options`. `cassandra-env.sh` now sources that
+  file on every version instead of only 5.0.x, so AxonOps can change how the
+  agent is loaded without a cookbook change. Agents older than 1.1.0 do not
+  ship the file, so the template keeps the raw `-javaagent` flag as a runtime
+  fallback — exactly one of the two ever applies.
+- `axonops::agent` editing a `cassandra-env.sh` this cookbook does not render
+  now **replaces** an existing legacy `-javaagent:/usr/share/axonops/....jar`
+  line with the `axonops-jvm.options` line instead of appending a second line,
+  so upgrading an existing install never loads the agent twice. When the
+  options file is absent, an existing `-javaagent` line is left untouched.
+- DSE agent packages ship no options file, so DSE keeps the `-javaagent` line.
+  An agent package upgrade renames the jar (`axon-dse6.8-agent` ->
+  `axon-dse6.9-agent`), so a stale line is now rewritten in place instead of
+  being left pointing at a jar the upgrade removed. The same applies to a
+  Cassandra node running an agent older than 1.1.0.
+- The line `axonops::agent` writes into an env file it edits in place is now
+  guarded (`[ -f <options file> ] && . <options file>`), so a node whose agent
+  package ships no options file never sources a missing path. This also covers
+  `kafka-server-start.sh`, which previously got an unguarded source line.
+- `axonops::agent` no longer edits a `cassandra-env.sh` that this cookbook
+  renders itself: `axonops::configure_cassandra` templates that file later in
+  the same run, so the in-place edit only rewrote content about to be replaced
+  and notified a redundant Cassandra restart on every converge.
+- New `libraries/agent_env.rb` holds the decision logic, covered by
+  `spec/unit/libraries/agent_env_spec.rb` and
+  `spec/unit/templates/cassandra_env_agent_spec.rb` (both run under plain
+  `rspec`). Specified in `features/agent_jvm_options.feature`.
+
 ### Added
 
 #### Release version sync workflow
