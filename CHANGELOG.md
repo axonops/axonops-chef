@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### OpenSearch 3.x repository signing key
+- `axonops::opensearch` imported the 2021 `opensearch.pgp` key for every
+  version. Its self-signature uses SHA-1, which EL9/EL10 crypto policies
+  reject (`Signature not supported. Hash algorithm SHA1 not available.`), and
+  the 3.x yum and apt repositories are signed with the 2025
+  `opensearch-release.pgp` key anyway. 3.x now imports
+  `opensearch-release.pgp` (keyring
+  `/usr/share/keyrings/opensearch-release-keyring` on Debian/Ubuntu); 2.x
+  keeps `opensearch.pgp`. The RPM import is skipped by key ID
+  (`gpg-pubkey-81191457` / `gpg-pubkey-9310d3fc`), not by a name match.
+
 #### `axonops::agent` never installed when Cassandra comes from `axonops::server`
 - The java-agent-package detection in `axonops::agent` matched Cassandra only
   via a literal `'recipe[axonops::cassandra]'` entry in `node.run_list`.
