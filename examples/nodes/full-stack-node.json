@@ -195,9 +195,9 @@
     "recipe[axonops::java]",
     "recipe[axonops::system_tuning]",
     "recipe[axonops::opensearch]",
-    "recipe[axonops::agent]",
     "recipe[axonops::cassandra]",
     "recipe[axonops::server]",
-    "recipe[axonops::dashboard]"
+    "recipe[axonops::dashboard]",
+    "recipe[axonops::agent]"
   ]
 }

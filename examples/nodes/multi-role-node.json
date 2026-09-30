@@ -139,8 +139,8 @@
   "run_list": [
     "recipe[axonops::java]",
     "recipe[axonops::system_tuning]",
-    "recipe[axonops::agent]",
     "recipe[axonops::cassandra]",
+    "recipe[axonops::agent]",
     "recipe[axonops::alert_rules]",
     "role[application]"
   ]
