@@ -49,7 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `insecureSkipVerify` and `callAttempts`
   (`['axonops']['server']['auth']['start_tls' | 'insecure_skip_verify' | 'call_attempts']`).
 - `examples/nodes/axon-server-ldap-node.json`: all-in-one server + OpenLDAP
-  demo, the Chef equivalent of the Ansible collection's `examples/axon-server.yml`.
+  demo, the Chef equivalent of the Ansible collection's `examples/axon-server.yml`,
+  with `examples/nodes/solo.rb` to run it (and the other example nodes) with chef-solo.
 - Kitchen suites `openldap` and `openldap-tls` (Ubuntu 22.04, Rocky Linux 9)
   and a `kitchen-openldap` CI job that also fails on a non-idempotent second
   converge.

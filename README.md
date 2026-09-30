@@ -494,8 +494,12 @@ and license key through `node.run_state` — see [docs/OPENLDAP.md](docs/OPENLDA
 axon-server ignores LDAP auth without a license key.
 
 ```bash
-sudo chef-solo -c solo.rb -j examples/nodes/axon-server-ldap-node.json
+berks vendor /opt/chef/cookbooks
+sudo chef-solo -c examples/nodes/solo.rb -j examples/nodes/axon-server-ldap-node.json
 ```
+
+[`examples/nodes/solo.rb`](examples/nodes/solo.rb) reads cookbooks from
+`/opt/chef/cookbooks`; set `AXONOPS_COOKBOOK_PATH` to use another directory.
 
 ### [full-stack-node.json](examples/nodes/full-stack-node.json)
 All-in-one development/testing setup. Includes:
