@@ -51,9 +51,9 @@
   },
   "run_list": [
     "recipe[axonops::java]",
+    "recipe[axonops::agent]",
     "recipe[axonops::openldap]",
     "recipe[axonops::server]",
-    "recipe[axonops::dashboard]",
-    "recipe[axonops::agent]"
+    "recipe[axonops::dashboard]"
   ]
 }

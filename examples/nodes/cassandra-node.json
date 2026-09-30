@@ -49,7 +49,7 @@
   "description": "Cassandra database node with AxonOps agent monitoring",
   "run_list": [
     "recipe[axonops::java]",
-    "recipe[axonops::cassandra]",
-    "recipe[axonops::agent]"
+    "recipe[axonops::agent]",
+    "recipe[axonops::cassandra]"
   ]
 }
