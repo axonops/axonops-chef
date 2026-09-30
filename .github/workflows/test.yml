@@ -99,3 +99,36 @@ jobs:
       - run: KITCHEN_DRIVER=docker bundle exec kitchen converge cassandra-50-cqlsh-venv-ubuntu-2404
       - run: KITCHEN_DRIVER=docker bundle exec kitchen destroy cassandra-50-cqlsh-venv-ubuntu-2404
         if: always()
+
+  # axonops::openldap on Ubuntu 22.04 and Rocky Linux 9, plain LDAP (openldap)
+  # and self-signed TLS with LDAPS (openldap-tls). Each suite converges twice:
+  # the second converge must update nothing, which proves the cn=config and
+  # entry management is idempotent.
+  kitchen-openldap:
+    runs-on: ubuntu-latest
+    env:
+      CHEF_LICENSE: accept-no-persist
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [ openldap, openldap-tls ]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+      - name: Build systemd-enabled kitchen-docker base images
+        run: |
+          docker build -t axonops-systemd-ubuntu-2204 -f test/docker/Dockerfile.systemd-ubuntu .
+          docker build -t axonops-systemd-rockylinux-9 -f test/docker/Dockerfile.systemd-rockylinux .
+      - run: KITCHEN_DRIVER=docker bundle exec kitchen converge '^${{ matrix.suite }}-(ubuntu-2204|rockylinux-9)$'
+      - name: Second converge changes nothing
+        run: |
+          KITCHEN_DRIVER=docker bundle exec kitchen converge '^${{ matrix.suite }}-(ubuntu-2204|rockylinux-9)$' | tee converge2.log
+          if grep -E 'Infra Phase complete, [1-9][0-9]*/' converge2.log; then
+            echo "::error::second converge updated resources"
+            exit 1
+          fi
+      - run: KITCHEN_DRIVER=docker bundle exec kitchen destroy '^${{ matrix.suite }}-(ubuntu-2204|rockylinux-9)$'
+        if: always()

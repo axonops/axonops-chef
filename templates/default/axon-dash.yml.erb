@@ -4,6 +4,10 @@
 axon-dash:
   host: "<%= @listen_host %>"
   port: <%= @listen_port %>
+<% if @reporting_url && !@reporting_url.to_s.empty? -%>
+  # Reports v2 (AXON_REPORTING_URL): where axon-dash reaches axon-reporting.
+  reporting_url: "<%= @reporting_url %>"
+<% end -%>
 
 axon-server:
   private_endpoints: "<%= @server_endpoint %>"

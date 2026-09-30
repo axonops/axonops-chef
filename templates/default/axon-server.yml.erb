@@ -82,6 +82,12 @@ retention:
     local: <%= @retention['backups']['local'] %>
     remote: <%= @retention['backups']['remote'] %>
 
+<% if @reporting_url && !@reporting_url.to_s.empty? -%>
+# Reports v2 (axon-server >= 2.0.39): where axon-server reaches axon-reporting
+# (AXON_REPORTING_URL). axon-reporting runs alongside axon-dash.
+axon_reporting_url: <%= @reporting_url %>
+
+<% end -%>
 alert_log:
   enabled: <%= node['axonops']['server']['alert_log']['enabled'] %>
   path: <%= node['axonops']['server']['alert_log']['path'] %>
@@ -96,7 +102,7 @@ auth:
   settings:
     base: <%= node['axonops']['server']['auth']['base'] %>
     bindDN: <%= node['axonops']['server']['auth']['bind_dn'] %>
-    bindPassword: <%= node['axonops']['server']['auth']['bind_password'] %>
+    bindPassword: <%= node.run_state['axonops_server_ldap_bind_password'] || node['axonops']['server']['auth']['bind_password'] %>
     host: <%= node['axonops']['server']['auth']['host'] %>
     port: <%= node['axonops']['server']['auth']['port'] %>
     rolesAttribute: <%= node['axonops']['server']['auth']['roles_attribute'] %>
@@ -108,5 +114,14 @@ auth:
 <% end -%>
 <% end -%>
     useSSL: <%= node['axonops']['server']['auth']['use_ssl'] %>
+<% unless node['axonops']['server']['auth']['start_tls'].nil? -%>
+    startTLS: <%= node['axonops']['server']['auth']['start_tls'] %>
+<% end -%>
+<% unless node['axonops']['server']['auth']['insecure_skip_verify'].nil? -%>
+    insecureSkipVerify: <%= node['axonops']['server']['auth']['insecure_skip_verify'] %>
+<% end -%>
+<% unless node['axonops']['server']['auth']['call_attempts'].nil? -%>
+    callAttempts: <%= node['axonops']['server']['auth']['call_attempts'] %>
+<% end -%>
     userFilter: <%= node['axonops']['server']['auth']['user_filter'] %>
 <% end -%>

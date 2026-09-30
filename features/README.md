@@ -84,3 +84,37 @@ chef exec rspec spec/unit/recipes/java_offline_spec.rb   # requires Chef Worksta
 # Integration (Docker + network access to stage packages first):
 kitchen test cassandra-offline
 ```
+
+## Reports v2 (ASB-4652)
+
+`features/reports_v2.feature` covers the `axon-reporting` service.
+
+| Feature scenario | Verified by |
+|------------------|-------------|
+| axon-dash reporting_url (set, empty, independent of install) | `spec/unit/templates/reporting_templates_spec.rb` |
+| axon-server axon_reporting_url gated on 2.0.39 / latest | `spec/unit/libraries/reporting_spec.rb`, `spec/unit/templates/reporting_templates_spec.rb` |
+| Package install / offline skip | not covered — `axon-reporting` is not in the public repositories yet |
+
+## OpenLDAP (`axonops::openldap`)
+
+`features/openldap.feature` covers the local directory.
+
+| Feature scenario | Verified by |
+|------------------|-------------|
+| Invalid settings fail before any change | `spec/unit/libraries/openldap_spec.rb` |
+| Group membership, role mapping, published axon-server setting | `spec/unit/libraries/openldap_spec.rb` |
+| Bootstrap LDIF, systemd listeners | `spec/unit/templates/openldap_templates_spec.rb` |
+| Optional LDAP keys and run_state bind password in axon-server.yml | `spec/unit/templates/reporting_templates_spec.rb` |
+| Fresh host, anonymous limits, wrong password, TLS | `test/integration/openldap` via Kitchen suites `openldap`, `openldap-tls` |
+| Second converge changes nothing | `.github/workflows/test.yml` job `kitchen-openldap` |
+| Existing directory with data is refused | not covered by an automated test |
+
+```bash
+# Unit (no Docker required):
+rspec --options /dev/null spec/unit/libraries/openldap_spec.rb spec/unit/libraries/reporting_spec.rb \
+  spec/unit/templates/openldap_templates_spec.rb spec/unit/templates/reporting_templates_spec.rb
+
+# Integration (Docker required):
+KITCHEN_DRIVER=docker kitchen converge openldap
+KITCHEN_DRIVER=docker kitchen converge openldap-tls
+```

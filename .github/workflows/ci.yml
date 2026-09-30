@@ -73,6 +73,11 @@ jobs:
             spec/unit/templates/cassandra_env_agent_spec.rb \
             spec/unit/libraries/agent_env_spec.rb \
             spec/unit/recipes/offline_platform_family_spec.rb \
+            spec/unit/templates/opensearch_tmpdir_spec.rb \
+            spec/unit/libraries/reporting_spec.rb \
+            spec/unit/templates/reporting_templates_spec.rb \
+            spec/unit/libraries/openldap_spec.rb \
+            spec/unit/templates/openldap_templates_spec.rb \
             --format documentation --color
 
   # ChefSpec recipe specs. Requires a full Chef + cookbook dependency resolve;

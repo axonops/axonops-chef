@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Reports v2: `axon-reporting` service (ASB-4652)
+- New `axonops::reporting` recipe installs and starts `axon-reporting`, which
+  replaces `axon-dash-pdf` / `axon-dash-pdf2`. `axonops::dashboard` includes it
+  when `['axonops']['dashboard']['reporting']['enabled']` is `true` (default),
+  because it must run on the dashboard host. Online and offline installs
+  (`['axonops']['offline_packages']['reporting']`) are supported; old PDF
+  packages are left in place.
+- `axon-dash.yml` gets `axon-dash.reporting_url` from
+  `['axonops']['dashboard']['reporting']['url']` (default
+  `http://127.0.0.1:8081`, independent of the local install; `''` omits it).
+- `axon-server.yml` gets `axon_reporting_url` from
+  `['axonops']['server']['reporting_url']` when the server version is `latest`
+  or 2.0.39 and newer.
+- `axonops::server` adds a systemd drop-in so `axon-server` starts after the
+  `cassandra` and `opensearch` services when both use loopback addresses.
+
+#### `axonops::openldap`: local OpenLDAP directory for AxonOps Server
+- Ports the Ansible collection's `openldap` role. Installs `slapd` (EPEL on
+  RHEL), bootstraps `cn=config` once with `slapadd`, then manages log level,
+  TLS, ACLs, `memberof`/`refint` overlays, passwords and entries online over
+  `ldapi:///` with the new `axonops_ldap_entry` and `axonops_ldap_password`
+  resources, so a second converge updates nothing.
+- TLS modes `disabled`, `generate` (self-signed) and `custom`; LDAPS and
+  StartTLS. Anonymous access is limited to the root DSE and schema.
+- Publishes `node.run_state['axonops_openldap_ldap_setting']`; with
+  `['axonops']['openldap']['configure_server']` it wires `axonops::server`'s
+  LDAP auth to the directory, passing the bind password through
+  `node.run_state` instead of a node attribute.
+- `axon-server.yml` LDAP settings gain optional `startTLS`,
+  `insecureSkipVerify` and `callAttempts`
+  (`['axonops']['server']['auth']['start_tls' | 'insecure_skip_verify' | 'call_attempts']`).
+- Kitchen suites `openldap` and `openldap-tls` (Ubuntu 22.04, Rocky Linux 9)
+  and a `kitchen-openldap` CI job that also fails on a non-idempotent second
+  converge.
+
 ### Changed
 
 #### Load the java agent from `axonops-jvm.options` on every Cassandra version (ASB-4712)

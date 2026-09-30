@@ -20,6 +20,8 @@ The AxonOps Chef cookbook provides flexible, modular recipes for:
 - **AxonOps Agent** - Lightweight agents for Cassandra node monitoring
 - **Apache Cassandra** - Optional Cassandra installation and configuration
 - **OpenSearch** - Search and analytics engine for AxonOps
+- **Reports v2** - `axon-reporting` service installed next to the dashboard
+- **OpenLDAP** - Optional local directory for AxonOps Server LDAP login and RBAC
 - **Java/JDK** - Java runtime management
 - **API Configuration** - Automated configuration via AxonOps APIs
 
@@ -86,10 +88,14 @@ installed or reinstalled. See [docs/DSE.md](docs/DSE.md).
 ### Deploy Self-Hosted AxonOps Server
 
 ```ruby
-# Full server stack with dashboard
+# Full server stack with dashboard (and the axon-reporting service, Reports v2)
 include_recipe 'axonops::server'
 include_recipe 'axonops::dashboard'
 ```
+
+See [docs/SERVER.md](docs/SERVER.md#reporting-service-reports-v2) for Reports v2
+settings, and [docs/OPENLDAP.md](docs/OPENLDAP.md) to add a local LDAP directory
+for AxonOps login.
 
 ### Install Apache Cassandra
 
@@ -407,6 +413,7 @@ Detailed documentation for each component:
 - 🗄️ **[DataStax Enterprise Monitoring](docs/DSE.md)** - Monitor an existing DSE cluster (5.1, 6.7, 6.8, 6.9)
 - 📨 **[Kafka Installation](docs/KAFKA.md)** - Apache Kafka deployment options
 - 📕 **[OpenSearch Setup](docs/OPENSEARCH.md)** - Configure OpenSearch for AxonOps
+- 🔑 **[OpenLDAP for AxonOps Server](docs/OPENLDAP.md)** - Local LDAP directory for AxonOps login and role mapping
 - 🔔 **[Alert Rules & Service Checks](docs/ALERTS.md)** - Configure alerts, checks, and notifications via API
 - 📦 **[Offline Package Downloader](scripts/README.md)** - Mirror AxonOps packages for air-gapped installs (`scripts/download_offline_packages.py`), with per-package and version selection
 
