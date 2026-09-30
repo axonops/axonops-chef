@@ -144,7 +144,18 @@ if node.run_list.include?('recipe[axonops::kafka]') || kafka_detected
   java_agent_package = node['axonops']['java_agent']['kafka']
   java_agent_env_file = "#{kafka_home}/bin/kafka-server-start.sh"
   service = "kafka"
-elsif node.run_list.include?('recipe[axonops::cassandra]') || cassandra_detected ||
+elsif node.run_list.include?('recipe[axonops::cassandra]') ||
+      # axonops::server installs its own metrics-storage Cassandra via a
+      # *nested* include_recipe 'axonops::cassandra' (recipes/server.rb),
+      # which never appears in node.run_list itself — only the literal
+      # 'recipe[axonops::server]' entry does. Without this, a node whose
+      # run_list is just [..., 'recipe[axonops::server]', ...] falls through
+      # to the "Could not detect Cassandra or Kafka" branch below and never
+      # installs the java agent, so axon-server's own Cassandra starts
+      # without it (and, once cassandra-env.sh's axonops-jvm.options guard
+      # finds no such file, without a working -javaagent jar either).
+      (node.run_list.include?('recipe[axonops::server]') && node['axonops']['server']['cassandra']['install']) ||
+      cassandra_detected ||
       node['axonops']['cassandra']['edition'] == 'dse'
   # DSE is force-selectable via node['axonops']['cassandra']['edition'] =
   # 'dse' (see docs/DSE.md) precisely for cases where path-based

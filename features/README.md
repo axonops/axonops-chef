@@ -85,6 +85,20 @@ chef exec rspec spec/unit/recipes/java_offline_spec.rb   # requires Chef Worksta
 kitchen test cassandra-offline
 ```
 
+## Agent detection via a nested Cassandra install
+
+`axonops::agent`'s java-agent-package selection originally matched Cassandra
+only via a literal `recipe[axonops::cassandra]` entry in `node.run_list`. A
+node running `axonops::server` (which installs Cassandra through a *nested*
+`include_recipe`, never itself listed in `node.run_list`) never matched, so
+the agent package — including the java agent — was silently never installed,
+and axon-server's own Cassandra started without it.
+
+| Scenario | Verified by |
+|----------|-------------|
+| `axonops::agent` installs the Cassandra java agent when only `axonops::server` (not `axonops::cassandra`) is in run_list | `spec/unit/recipes/agent_via_server_spec.rb` (ChefSpec; `continue-on-error` in CI like the other recipe specs, alongside `spec/unit/recipes/dse_detection_spec.rb`) |
+| `axonops::agent` still installs it via the pre-existing literal-run_list path | `spec/unit/recipes/dse_detection_spec.rb` |
+
 ## Reports v2 (ASB-4652)
 
 `features/reports_v2.feature` covers the `axon-reporting` service.

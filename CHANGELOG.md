@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+#### `axonops::agent` never installed when Cassandra comes from `axonops::server`
+- The java-agent-package detection in `axonops::agent` matched Cassandra only
+  via a literal `'recipe[axonops::cassandra]'` entry in `node.run_list`.
+  `axonops::server` installs its own metrics-storage Cassandra through a
+  *nested* `include_recipe 'axonops::cassandra'`, which never appears in
+  `node.run_list` itself, so a node whose run_list was just
+  `[..., 'recipe[axonops::server]', ...]` (no separate `axonops::cassandra`
+  entry) fell through to "Could not detect Cassandra or Kafka" and the agent
+  package — including the Cassandra java agent jar — never installed.
+  Cassandra then started without it: `cassandra-env.sh`'s runtime check for
+  `/usr/share/axonops/axonops-jvm.options` found nothing, fell back to a raw
+  `-javaagent:` flag pointing at a jar that was also never installed, and
+  Cassandra failed to start (`Error opening zip file or JAR manifest missing`).
+  `axonops::agent` now also matches when `'recipe[axonops::server]'` is in
+  `node.run_list` and `['axonops']['server']['cassandra']['install']` is true.
+
 ### Added
 
 #### Reports v2: `axon-reporting` service (ASB-4652)
