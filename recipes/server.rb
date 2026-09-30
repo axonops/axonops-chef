@@ -101,9 +101,29 @@ else
   end
 end
 
+org_name = node['axonops']['server']['org_name']
+if org_name.nil? || org_name.to_s.empty?
+  log 'axon-server-org-name-unset' do
+    message 'axonops.server.org_name is not set. Set it to match axonops.agent.org_name.'
+    level :warn
+  end
+end
+
+license_key = node.run_state['axonops_server_license_key'] || node['axonops']['server']['license_key']
+if license_key.nil? || license_key.to_s.empty?
+  log 'axon-server-license-key-unset' do
+    message 'No axon-server license key set: axon-server runs in development mode' \
+            "#{node['axonops']['server']['auth']['enabled'] ? ' and ignores the LDAP auth settings' : ''}. " \
+            "Set node.run_state['axonops_server_license_key'] or axonops.server.license_key."
+    level :warn
+  end
+end
+
 # Generate server configuration
 template '/etc/axonops/axon-server.yml' do
   source 'axon-server.yml.erb'
+  # Holds the license key and CQL/LDAP passwords.
+  sensitive true
   owner node['axonops']['agent']['user']
   group node['axonops']['agent']['group']
   mode '0640'
@@ -128,6 +148,8 @@ template '/etc/axonops/axon-server.yml' do
     tls_key_file: node['axonops']['server']['tls']['key_file'],
     tls_ca_file: node['axonops']['server']['tls']['ca_file'],
     retention: node['axonops']['server']['retention'],
+    org_name: org_name,
+    license_key: license_key,
     # Reports v2: axon_reporting_url only exists from axon-server 2.0.39.
     reporting_url: (node['axonops']['server']['reporting_url'] if AxonOpsReporting.server_supports_reporting_url?(server_version))
   )

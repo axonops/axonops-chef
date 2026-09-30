@@ -120,6 +120,17 @@ Core AxonOps Server settings:
 | `['axonops']['server']['package']` | `axon-server` | Package name (use full filename for offline) |
 | `['axonops']['server']['version']` | `latest` | Version to install (online mode) |
 
+#### Organisation and License
+
+| Attribute | Default | Example | Description |
+|-----------|---------|---------|-------------|
+| `['axonops']['server']['org_name']` | `nil` | `mycompany` | Organisation name, written as `org_name`. Must match `['axonops']['agent']['org_name']`. A warning is logged when unset |
+| `['axonops']['server']['license_key']` | `nil` | — | License key, written as `license_key`. Without it axon-server runs in development mode and ignores LDAP auth |
+
+Prefer `node.run_state['axonops_server_license_key']`, set from chef-vault or
+an encrypted data bag in a wrapper recipe; it takes precedence over the
+attribute, and node attributes are saved to the Chef Server in plain text.
+
 ### OpenSearch Configuration
 
 Settings for embedded OpenSearch:

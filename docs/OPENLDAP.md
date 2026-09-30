@@ -194,6 +194,9 @@ node.override['axonops']['openldap']['axon_server_insecure_skip_verify'] = false
 ```ruby
 node.override['axonops']['openldap']['configure_server'] = true
 node.override['axonops']['openldap']['axon_server_host'] = '127.0.0.1'
+node.override['axonops']['server']['org_name'] = 'mycompany'
+# axon-server ignores LDAP auth without a license key.
+node.run_state['axonops_server_license_key'] = secrets['license_key']
 node.run_state['axonops_openldap_admin_password'] = secrets['admin_password']
 node.run_state['axonops_openldap_users'] = [
   { 'uid' => 'alice', 'password' => secrets['alice_password'], 'groups' => ['axonops_super'] },
@@ -204,6 +207,9 @@ include_recipe 'axonops::openldap'
 include_recipe 'axonops::server'
 include_recipe 'axonops::dashboard'
 ```
+
+The same setup as a node JSON file (demo passwords):
+[`examples/nodes/axon-server-ldap-node.json`](../examples/nodes/axon-server-ldap-node.json).
 
 Manual end-to-end check:
 

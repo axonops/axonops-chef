@@ -480,6 +480,23 @@ Self-hosted AxonOps server with dashboard and OpenSearch. Features:
 knife node from file examples/nodes/server-node.json
 ```
 
+### [axon-server-ldap-node.json](examples/nodes/axon-server-ldap-node.json)
+All-in-one AxonOps Server demo with LDAP login — the Chef equivalent of the
+Ansible collection's `examples/axon-server.yml`. Features:
+- AxonOps Server, dashboard (with `axon-reporting`) and agent on one host
+- Local Cassandra and OpenSearch bound to loopback
+- Local OpenLDAP directory with one user per AxonOps role, wired into
+  axon-server's LDAP auth (`configure_server`)
+
+The passwords in this file are demo values. Node attributes are saved to the
+Chef Server in plain text, so for anything else set the admin password, users
+and license key through `node.run_state` — see [docs/OPENLDAP.md](docs/OPENLDAP.md).
+axon-server ignores LDAP auth without a license key.
+
+```bash
+sudo chef-solo -c solo.rb -j examples/nodes/axon-server-ldap-node.json
+```
+
 ### [full-stack-node.json](examples/nodes/full-stack-node.json)
 All-in-one development/testing setup. Includes:
 - Complete AxonOps stack on single node

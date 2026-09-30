@@ -1,0 +1,59 @@
+{
+  "name": "axon-server",
+  "description": "All-in-one AxonOps Server with local Cassandra, OpenSearch and an OpenLDAP directory for LDAP login (demo). Chef equivalent of the Ansible collection's examples/axon-server.yml.",
+  "cookbook_version": "0.2.3",
+  "chef_environment": "development",
+  "tags": ["axonops-server", "ldap", "demo"],
+  "axonops": {
+    "agent": {
+      "hosts": "localhost",
+      "port": 1888,
+      "tls_mode": "disabled",
+      "org_name": "mycompany"
+    },
+    "cassandra": {
+      "cluster_name": "axonops",
+      "dc": "default",
+      "rack": "rack1",
+      "listen_address": "localhost",
+      "rpc_address": "localhost",
+      "start_on_install": true
+    },
+    "server": {
+      "org_name": "mycompany",
+      "license_key": null,
+      "cassandra": {
+        "install": true,
+        "hosts": ["127.0.0.1:9042"]
+      },
+      "elastic": {
+        "install": true,
+        "listen_address": "127.0.0.1"
+      },
+      "search_db": {
+        "hosts": ["http://127.0.0.1:9200/"]
+      }
+    },
+    "dashboard": {
+      "listen_address": "0.0.0.0"
+    },
+    "openldap": {
+      "admin_password": "changeme",
+      "axon_server_host": "localhost",
+      "configure_server": true,
+      "users": [
+        { "uid": "superuser", "cn": "Super User", "sn": "User", "mail": "superuser@example.com", "password": "changeme-super", "groups": ["axonops_super"] },
+        { "uid": "admin", "cn": "Admin User", "sn": "User", "mail": "admin@example.com", "password": "changeme-admin", "groups": ["axonops_admin"] },
+        { "uid": "readonly", "cn": "Read Only", "sn": "User", "mail": "readonly@example.com", "password": "changeme-readonly", "groups": ["axonops_readonly"] },
+        { "uid": "backup", "cn": "Backup Admin", "sn": "User", "mail": "backup@example.com", "password": "changeme-backup", "groups": ["axonops_backup"] }
+      ]
+    }
+  },
+  "run_list": [
+    "recipe[axonops::java]",
+    "recipe[axonops::openldap]",
+    "recipe[axonops::server]",
+    "recipe[axonops::dashboard]",
+    "recipe[axonops::agent]"
+  ]
+}

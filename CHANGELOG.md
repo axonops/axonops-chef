@@ -25,6 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `axonops::server` adds a systemd drop-in so `axon-server` starts after the
   `cassandra` and `opensearch` services when both use loopback addresses.
 
+#### axon-server `org_name` and `license_key`
+- New `['axonops']['server']['org_name']` and `['axonops']['server']['license_key']`
+  (or `node.run_state['axonops_server_license_key']`), written to
+  `axon-server.yml` when set. Warnings are logged when either is missing,
+  since axon-server ignores LDAP auth without a license key.
+- `/etc/axonops/axon-server.yml` is now a `sensitive` template, so its
+  passwords and license key are not shown in Chef output diffs.
+
 #### `axonops::openldap`: local OpenLDAP directory for AxonOps Server
 - Ports the Ansible collection's `openldap` role. Installs `slapd` (EPEL on
   RHEL), bootstraps `cn=config` once with `slapadd`, then manages log level,
@@ -40,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `axon-server.yml` LDAP settings gain optional `startTLS`,
   `insecureSkipVerify` and `callAttempts`
   (`['axonops']['server']['auth']['start_tls' | 'insecure_skip_verify' | 'call_attempts']`).
+- `examples/nodes/axon-server-ldap-node.json`: all-in-one server + OpenLDAP
+  demo, the Chef equivalent of the Ansible collection's `examples/axon-server.yml`.
 - Kitchen suites `openldap` and `openldap-tls` (Ubuntu 22.04, Rocky Linux 9)
   and a `kitchen-openldap` CI job that also fails on a non-idempotent second
   converge.

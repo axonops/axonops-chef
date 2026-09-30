@@ -1,6 +1,7 @@
-# Render tests for Reports v2 (ASB-4652) and the axon-server LDAP keys that
-# axonops::openldap sets: axon-dash.yml reporting_url and axon-server.yml
-# axon_reporting_url / auth. Plain rspec, no ChefSpec/Berkshelf:
+# Render tests for Reports v2 (ASB-4652), org_name/license_key, and the
+# axon-server LDAP keys that axonops::openldap sets: axon-dash.yml
+# reporting_url and axon-server.yml axon_reporting_url / org_name /
+# license_key / auth. Plain rspec, no ChefSpec/Berkshelf:
 #
 #   rspec --options /dev/null spec/unit/templates/reporting_templates_spec.rb
 #
@@ -77,7 +78,7 @@ RSpec.describe 'Reports v2 templates' do
         'backups' => { 'local' => '10d', 'remote' => '30d' } }
     end
 
-    def render_server(server_version)
+    def render_server(server_version, org_name: nil, license_key: nil)
       url = 'http://127.0.0.1:8081'
       YAML.safe_load(ReportingTemplateContext.new(node).render(
                        'axon-server.yml.erb',
@@ -85,6 +86,7 @@ RSpec.describe 'Reports v2 templates' do
                        search_db_hosts: ['http://localhost:9200/'], cassandra_hosts: ['127.0.0.1:9042'],
                        cassandra_dc: 'dc1', cassandra_username: 'cassandra', cassandra_password: 'cassandra',
                        tls_mode: 'disabled', retention: retention,
+                       org_name: org_name, license_key: license_key,
                        reporting_url: (url if AxonOpsReporting.server_supports_reporting_url?(server_version))
                      ))
     end
@@ -103,6 +105,17 @@ RSpec.describe 'Reports v2 templates' do
 
     it 'never writes the legacy axon_dash_url' do
       expect(render_server('latest')).not_to have_key('axon_dash_url')
+    end
+
+    it 'writes org_name and a quoted license_key when set' do
+      yaml = render_server('latest', org_name: 'mycompany', license_key: 'abc:123')
+      expect(yaml['org_name']).to eq('mycompany')
+      expect(yaml['license_key']).to eq('abc:123')
+    end
+
+    it 'leaves org_name and license_key out when unset or empty' do
+      expect(render_server('latest').keys).not_to include('org_name', 'license_key')
+      expect(render_server('latest', org_name: '', license_key: '').keys).not_to include('org_name', 'license_key')
     end
 
     context 'with LDAP auth enabled' do

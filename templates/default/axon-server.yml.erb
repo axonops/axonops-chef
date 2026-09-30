@@ -82,6 +82,13 @@ retention:
     local: <%= @retention['backups']['local'] %>
     remote: <%= @retention['backups']['remote'] %>
 
+<% if @org_name && !@org_name.to_s.empty? -%>
+org_name: <%= @org_name %>
+<% end -%>
+<% if @license_key && !@license_key.to_s.empty? -%>
+license_key: "<%= @license_key %>"
+<% end -%>
+
 <% if @reporting_url && !@reporting_url.to_s.empty? -%>
 # Reports v2 (axon-server >= 2.0.39): where axon-server reaches axon-reporting
 # (AXON_REPORTING_URL). axon-reporting runs alongside axon-dash.

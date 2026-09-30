@@ -8,6 +8,15 @@
 default['axonops']['server']['version'] = 'latest' # Default to latest version
 default['axonops']['server']['package'] = 'axon-server'
 
+# Organisation name. Must match the agents' ['axonops']['agent']['org_name'].
+# Written to axon-server.yml as org_name when set.
+default['axonops']['server']['org_name'] = nil
+# License key. Without it axon-server runs in development mode and ignores
+# LDAP auth. Prefer node.run_state['axonops_server_license_key'] (from
+# chef-vault or an encrypted data bag): node attributes are saved to the Chef
+# Server in plain text.
+default['axonops']['server']['license_key'] = nil
+
 # Internal OpenSearch for AxonOps Server (previously Elasticsearch — switched
 # to OpenSearch, installed as a real RPM/deb package from OpenSearch's own
 # repo rather than a manually-extracted tarball; see recipes/opensearch.rb
