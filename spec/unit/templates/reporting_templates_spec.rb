@@ -7,6 +7,7 @@
 #
 require 'erb'
 require 'yaml'
+require 'json'
 require_relative '../../../libraries/reporting'
 
 # Hash that also answers node.run_state, which axon-server.yml.erb reads.
@@ -113,6 +114,11 @@ RSpec.describe 'Reports v2 templates' do
       expect(yaml['license_key']).to eq('abc:123')
     end
 
+    it 'writes a license key containing quotes and backslashes verbatim' do
+      key = 'ab"c\\d'
+      expect(render_server('latest', license_key: key)['license_key']).to eq(key)
+    end
+
     it 'leaves org_name and license_key out when unset or empty' do
       expect(render_server('latest').keys).not_to include('org_name', 'license_key')
       expect(render_server('latest', org_name: '', license_key: '').keys).not_to include('org_name', 'license_key')
@@ -132,6 +138,13 @@ RSpec.describe 'Reports v2 templates' do
                                                  'call_attempts' => 3)
         settings = render_server('latest')['auth']['settings']
         expect(settings.values_at('startTLS', 'insecureSkipVerify', 'callAttempts')).to eq([true, false, 3])
+      end
+
+      it 'writes bind passwords with YAML-significant characters verbatim' do
+        ['p@ss #hash', 'a: b', '*anchor', '!tag', '"quoted" \\ back', '{flow}'].each do |password|
+          node.run_state['axonops_server_ldap_bind_password'] = password
+          expect(render_server('latest')['auth']['settings']['bindPassword']).to eq(password)
+        end
       end
 
       it 'prefers the bind password passed through node.run_state' do

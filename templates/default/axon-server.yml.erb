@@ -86,7 +86,7 @@ retention:
 org_name: <%= @org_name %>
 <% end -%>
 <% if @license_key && !@license_key.to_s.empty? -%>
-license_key: "<%= @license_key %>"
+license_key: <%= @license_key.to_s.to_json %>
 <% end -%>
 
 <% if @reporting_url && !@reporting_url.to_s.empty? -%>
@@ -109,7 +109,8 @@ auth:
   settings:
     base: <%= node['axonops']['server']['auth']['base'] %>
     bindDN: <%= node['axonops']['server']['auth']['bind_dn'] %>
-    bindPassword: <%= node.run_state['axonops_server_ldap_bind_password'] || node['axonops']['server']['auth']['bind_password'] %>
+<%# to_json emits a double-quoted, escaped string, which YAML reads verbatim. -%>
+    bindPassword: <%= (node.run_state['axonops_server_ldap_bind_password'] || node['axonops']['server']['auth']['bind_password']).to_s.to_json %>
     host: <%= node['axonops']['server']['auth']['host'] %>
     port: <%= node['axonops']['server']['auth']['port'] %>
     rolesAttribute: <%= node['axonops']['server']['auth']['roles_attribute'] %>

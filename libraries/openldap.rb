@@ -214,7 +214,9 @@ module AxonOpsOpenLDAP
   # Salted SHA-1 hash in the {SSHA} scheme slapd understands. Matches
   # `slappasswd -h {SSHA}` without shelling out with the password.
   def self.ssha(password, salt = SecureRandom.random_bytes(8))
-    '{SSHA}' + Base64.strict_encode64(Digest::SHA1.digest(password + salt) + salt)
+    # .b: hash the password's bytes. A UTF-8 password with non-ASCII
+    # characters cannot be concatenated with the binary salt as a String.
+    '{SSHA}' + Base64.strict_encode64(Digest::SHA1.digest(password.b + salt.b) + salt.b)
   end
 
   # ------------------------------------------------------------------------

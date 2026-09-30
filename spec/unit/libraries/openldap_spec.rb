@@ -211,6 +211,12 @@ RSpec.describe AxonOpsOpenLDAP do
       expect(raw[0, 20]).to eq(Digest::SHA1.digest('secret' + salt))
       expect(raw[20..]).to eq(salt)
     end
+
+    it 'hashes a non-ASCII password as UTF-8 bytes' do
+      salt = 'saltsalt'.b
+      raw = Base64.decode64(described_class.ssha('pässwörd', salt).delete_prefix('{SSHA}'))
+      expect(raw[0, 20]).to eq(Digest::SHA1.digest('pässwörd'.b + salt))
+    end
   end
 
   describe 'LDIF helpers' do
