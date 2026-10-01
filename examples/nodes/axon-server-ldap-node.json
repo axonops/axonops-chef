@@ -1,7 +1,7 @@
 {
   "name": "axon-server",
   "description": "All-in-one AxonOps Server with local Cassandra, OpenSearch and an OpenLDAP directory for LDAP login (demo). Chef equivalent of the Ansible collection's examples/axon-server.yml.",
-  "cookbook_version": "0.2.3",
+  "cookbook_version": "0.2.4",
   "chef_environment": "development",
   "tags": ["axonops-server", "ldap", "demo"],
   "axonops": {
