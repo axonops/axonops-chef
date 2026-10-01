@@ -1,0 +1,68 @@
+name: Release
+
+# Creates the GitHub release for a pushed vX.Y.Z tag, with notes generated
+# from the merged PRs since the previous release.
+#
+# This is separate from publish.yml on purpose: publishing to the Chef Infra
+# Server can be disabled (or fail on credentials) without blocking the GitHub
+# release.
+#
+# Releases created with the default GITHUB_TOKEN do not fire the `release`
+# event for other workflows, so this workflow dispatches release-version-sync.yml
+# explicitly (workflow_dispatch is exempt from that restriction). If
+# metadata.rb already matches the tag, the sync run is a no-op.
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate the tag is vX.Y.Z
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "${TAG}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Tag ${TAG} is not a vX.Y.Z release tag."
+            exit 1
+          fi
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "::notice::Release ${TAG} already exists; leaving it as is."
+            exit 0
+          fi
+          gh release create "${TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "${TAG}" \
+            --generate-notes \
+            --verify-tag
+
+      - name: Sync metadata.rb to the released version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          gh workflow run release-version-sync.yml \
+            --repo "${GITHUB_REPOSITORY}" \
+            --ref main \
+            -f tag="${TAG}"
