@@ -1,5 +1,5 @@
 {
-  "cookbook_version": "0.2.3",
+  "cookbook_version": "0.2.4",
   "axonops": {
       "api": {
       "org": "testorg1",
