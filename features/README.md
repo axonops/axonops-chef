@@ -84,3 +84,51 @@ chef exec rspec spec/unit/recipes/java_offline_spec.rb   # requires Chef Worksta
 # Integration (Docker + network access to stage packages first):
 kitchen test cassandra-offline
 ```
+
+## Agent detection via a nested Cassandra install
+
+`axonops::agent`'s java-agent-package selection originally matched Cassandra
+only via a literal `recipe[axonops::cassandra]` entry in `node.run_list`. A
+node running `axonops::server` (which installs Cassandra through a *nested*
+`include_recipe`, never itself listed in `node.run_list`) never matched, so
+the agent package — including the java agent — was silently never installed,
+and axon-server's own Cassandra started without it.
+
+| Scenario | Verified by |
+|----------|-------------|
+| `axonops::agent` installs the Cassandra java agent when only `axonops::server` (not `axonops::cassandra`) is in run_list | `spec/unit/recipes/agent_via_server_spec.rb` (ChefSpec; `continue-on-error` in CI like the other recipe specs, alongside `spec/unit/recipes/dse_detection_spec.rb`) |
+| `axonops::agent` still installs it via the pre-existing literal-run_list path | `spec/unit/recipes/dse_detection_spec.rb` |
+
+## Reports v2 (ASB-4652)
+
+`features/reports_v2.feature` covers the `axon-reporting` service.
+
+| Feature scenario | Verified by |
+|------------------|-------------|
+| axon-dash reporting_url (set, empty, independent of install) | `spec/unit/templates/reporting_templates_spec.rb` |
+| axon-server axon_reporting_url gated on 2.0.39 / latest | `spec/unit/libraries/reporting_spec.rb`, `spec/unit/templates/reporting_templates_spec.rb` |
+| Package install / offline skip | not covered — `axon-reporting` is not in the public repositories yet |
+
+## OpenLDAP (`axonops::openldap`)
+
+`features/openldap.feature` covers the local directory.
+
+| Feature scenario | Verified by |
+|------------------|-------------|
+| Invalid settings fail before any change | `spec/unit/libraries/openldap_spec.rb` |
+| Group membership, role mapping, published axon-server setting | `spec/unit/libraries/openldap_spec.rb` |
+| Bootstrap LDIF, systemd listeners | `spec/unit/templates/openldap_templates_spec.rb` |
+| Optional LDAP keys and run_state bind password in axon-server.yml | `spec/unit/templates/reporting_templates_spec.rb` |
+| Fresh host, anonymous limits, wrong password, TLS | `test/integration/openldap` via Kitchen suites `openldap`, `openldap-tls` |
+| Second converge changes nothing | `.github/workflows/test.yml` job `kitchen-openldap` |
+| Existing directory with data is refused | not covered by an automated test |
+
+```bash
+# Unit (no Docker required):
+rspec --options /dev/null spec/unit/libraries/openldap_spec.rb spec/unit/libraries/reporting_spec.rb \
+  spec/unit/templates/openldap_templates_spec.rb spec/unit/templates/reporting_templates_spec.rb
+
+# Integration (Docker required):
+KITCHEN_DRIVER=docker kitchen converge openldap
+KITCHEN_DRIVER=docker kitchen converge openldap-tls
+```

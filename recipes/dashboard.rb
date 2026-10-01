@@ -59,9 +59,15 @@ template '/etc/axonops/axon-dash.yml' do
     listen_host: node['axonops']['dashboard']['listen_address'],
     listen_port: node['axonops']['dashboard']['listen_port'],
     server_endpoint: node['axonops']['dashboard']['server_endpoint'],
-    context_path: node['axonops']['dashboard']['context_path']
+    context_path: node['axonops']['dashboard']['context_path'],
+    reporting_url: node['axonops']['dashboard']['reporting']['url']
   )
   notifies :restart, 'service[axon-dash]', :delayed
+end
+
+# Reports v2: axon-reporting must be co-located with axon-dash.
+if node['axonops']['dashboard']['reporting']['enabled']
+  include_recipe 'axonops::reporting'
 end
 
 # Reload systemd

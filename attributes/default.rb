@@ -70,6 +70,9 @@ default['axonops']['offline_packages'] = {
   'agent' => 'axon-agent-2.0.6-1.x86_64.rpm',
   'server' => 'axon-server-2.0.5-1.x86_64.rpm',
   'dashboard' => 'axon-dash-2.0.10-1.x86_64.rpm',
+  # axon-reporting (Reports v2). nil skips the offline reporting install; set
+  # it to the staged .rpm/.deb file name to install it with the dashboard.
+  'reporting' => nil,
   'java_agent' => 'axon-cassandra5.0-agent-jdk17-1.0.10-1.noarch.rpm'
 }
 

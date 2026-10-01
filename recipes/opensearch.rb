@@ -24,6 +24,21 @@ opensearch_version = opensearch_config['version']
 # …/opensearch/3.x). Derive the major from the requested version so the repo
 # matches; fall back to '3' when the version isn't a plain X.Y.Z (e.g. 'latest').
 opensearch_major = opensearch_version.to_s[/\A(\d+)\./, 1] || '3'
+
+# Repository signing key. The 3.x repositories are signed with the 2025
+# release key (opensearch-release.pgp, the key the upstream
+# opensearch-3.x.repo file names). The 2.x repositories still use the 2021
+# key (opensearch.pgp), whose self-signature uses SHA-1 — EL9/EL10 crypto
+# policies reject it: "Signature not supported. Hash algorithm SHA1 not
+# available." rpm_key_id is the rpm gpg-pubkey version (last 8 hex digits
+# of the key ID) used to check the key is already imported.
+opensearch_key = if opensearch_major.to_i >= 3
+                   { 'file' => 'opensearch-release.pgp', 'rpm_key_id' => '81191457' }
+                 else
+                   { 'file' => 'opensearch.pgp', 'rpm_key_id' => '9310d3fc' }
+                 end
+opensearch_key_url = "https://artifacts.opensearch.org/publickeys/#{opensearch_key['file']}"
+opensearch_keyring = "/usr/share/keyrings/#{opensearch_key['file'].sub(/\.pgp\z/, '')}-keyring"
 opensearch_data_dir = opensearch_config['data_dir']
 opensearch_logs_dir = opensearch_config['logs_dir']
 
@@ -71,13 +86,12 @@ else
     end
 
     execute 'add-opensearch-apt-key' do
-      command 'curl -o- https://artifacts.opensearch.org/publickeys/opensearch.pgp | ' \
-              'gpg --dearmor --batch --yes -o /usr/share/keyrings/opensearch-keyring'
-      not_if { ::File.exist?('/usr/share/keyrings/opensearch-keyring') }
+      command "curl -fsSL #{opensearch_key_url} | gpg --dearmor --batch --yes -o #{opensearch_keyring}"
+      not_if { ::File.exist?(opensearch_keyring) }
     end
 
     file "/etc/apt/sources.list.d/opensearch-#{opensearch_major}.x.list" do
-      content 'deb [signed-by=/usr/share/keyrings/opensearch-keyring] ' \
+      content "deb [signed-by=#{opensearch_keyring}] " \
               "https://artifacts.opensearch.org/releases/bundle/opensearch/#{opensearch_major}.x/apt stable main\n"
       mode '0644'
       notifies :run, 'execute[apt-update-opensearch]', :immediately
@@ -95,14 +109,14 @@ else
     end
   when 'rhel', 'fedora', 'amazon'
     execute 'import-opensearch-rpm-key' do
-      command 'rpm --import https://artifacts.opensearch.org/publickeys/opensearch.pgp'
-      not_if 'rpm -q gpg-pubkey --qf "%{summary}\n" | grep -qi opensearch'
+      command "rpm --import #{opensearch_key_url}"
+      not_if "rpm -q gpg-pubkey-#{opensearch_key['rpm_key_id']}"
     end
 
     yum_repository 'opensearch' do
       description "OpenSearch #{opensearch_major}.x"
       baseurl "https://artifacts.opensearch.org/releases/bundle/opensearch/#{opensearch_major}.x/yum"
-      gpgkey 'https://artifacts.opensearch.org/publickeys/opensearch.pgp'
+      gpgkey opensearch_key_url
       gpgcheck true
       action :create
     end

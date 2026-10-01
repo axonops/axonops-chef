@@ -240,3 +240,48 @@ suites:
             type: 'jks'
           start_on_install: false
           wait_for_start: false
+
+  # axonops::openldap — local directory for axon-server LDAP auth. The
+  # passwords below are throwaway test values for a disposable container.
+  - name: openldap
+    excludes:
+      - ubuntu-24.04
+    run_list:
+      - recipe[axonops::openldap]
+    verifier:
+      inspec_tests:
+        - test/integration/openldap
+    attributes:
+      axonops:
+        openldap:
+          admin_password: 'kitchen-admin-pw'
+          users:
+            - uid: 'alice'
+              cn: 'Alice Admin'
+              sn: 'Admin'
+              mail: 'alice@axonops.local'
+              password: 'kitchen-alice-pw'
+              groups: ['axonops_admin']
+            - uid: 'rita'
+              password: 'kitchen-rita-pw'
+              groups: ['axonops_readonly']
+
+  # Self-signed certificate, LDAPS alongside plain LDAP (StartTLS).
+  - name: openldap-tls
+    excludes:
+      - ubuntu-24.04
+    run_list:
+      - recipe[axonops::openldap]
+    verifier:
+      inspec_tests:
+        - test/integration/openldap
+    attributes:
+      axonops:
+        openldap:
+          admin_password: 'kitchen-admin-pw'
+          tls_mode: 'generate'
+          listen_ldaps: true
+          users:
+            - uid: 'alice'
+              password: 'kitchen-alice-pw'
+              groups: ['axonops_admin']

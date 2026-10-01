@@ -8,6 +8,15 @@
 default['axonops']['server']['version'] = 'latest' # Default to latest version
 default['axonops']['server']['package'] = 'axon-server'
 
+# Organisation name. Must match the agents' ['axonops']['agent']['org_name'].
+# Written to axon-server.yml as org_name when set.
+default['axonops']['server']['org_name'] = nil
+# License key. Without it axon-server runs in development mode and ignores
+# LDAP auth. Prefer node.run_state['axonops_server_license_key'] (from
+# chef-vault or an encrypted data bag): node attributes are saved to the Chef
+# Server in plain text.
+default['axonops']['server']['license_key'] = nil
+
 # Internal OpenSearch for AxonOps Server (previously Elasticsearch — switched
 # to OpenSearch, installed as a real RPM/deb package from OpenSearch's own
 # repo rather than a manually-extracted tarball; see recipes/opensearch.rb
@@ -107,6 +116,10 @@ default['axonops']['server']['auth']['port'] = 636
 default['axonops']['server']['auth']['use_ssl'] = true
 default['axonops']['server']['auth']['user_filter'] = '(uid=%s)'
 default['axonops']['server']['auth']['roles_attribute'] = 'memberOf'
+# Optional axon-server LDAP keys. nil leaves the key out of axon-server.yml.
+default['axonops']['server']['auth']['start_tls'] = nil
+default['axonops']['server']['auth']['insecure_skip_verify'] = nil
+default['axonops']['server']['auth']['call_attempts'] = nil
 
 # LDAP Role Mappings
 default['axonops']['server']['auth']['roles_mapping'] = {
@@ -124,6 +137,27 @@ default['axonops']['dashboard']['listen_port'] = 3000
 default['axonops']['dashboard']['server_endpoint'] = 'http://127.0.0.1:8080'
 default['axonops']['dashboard']['context_path'] = ''
 default['axonops']['dashboard']['nginx_proxy'] = false
+
+# Reports v2 (ASB-4652) — axon-reporting replaces axon-dash-pdf/axon-dash-pdf2.
+# It MUST run on the same host as axon-dash, so axonops::dashboard installs it
+# (see recipes/reporting.rb). Set enabled to false when reporting runs
+# elsewhere, for example in a separate container.
+default['axonops']['dashboard']['reporting']['enabled'] = true
+# AXON_REPORTING_URL: where axon-dash reaches the reporting service. Written to
+# axon-dash.yml as axon-dash.reporting_url. Independent of 'enabled' so
+# axon-dash can target a remote reporting service. Set to '' or nil to omit.
+default['axonops']['dashboard']['reporting']['url'] = 'http://127.0.0.1:8081'
+
+# axon-reporting package settings.
+default['axonops']['reporting']['package'] = 'axon-reporting'
+default['axonops']['reporting']['version'] = 'latest'
+default['axonops']['reporting']['state'] = 'present' # 'present' or 'absent'
+default['axonops']['reporting']['start_at_boot'] = true
+
+# URL where axon-server reaches axon-reporting (AXON_REPORTING_URL). Written to
+# axon-server.yml as axon_reporting_url for axon-server >= 2.0.39 (and
+# 'latest'). Override when axon-dash runs on a different host to axon-server.
+default['axonops']['server']['reporting_url'] = 'http://127.0.0.1:8081'
 
 # Nginx proxy configuration for dashboard
 default['axonops']['dashboard']['nginx']['server_name'] = node['fqdn'] || node['hostname']

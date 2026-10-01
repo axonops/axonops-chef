@@ -7,6 +7,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+#### OpenSearch 3.x repository signing key
+- `axonops::opensearch` imported the 2021 `opensearch.pgp` key for every
+  version. Its self-signature uses SHA-1, which EL9/EL10 crypto policies
+  reject (`Signature not supported. Hash algorithm SHA1 not available.`), and
+  the 3.x yum and apt repositories are signed with the 2025
+  `opensearch-release.pgp` key anyway. 3.x now imports
+  `opensearch-release.pgp` (keyring
+  `/usr/share/keyrings/opensearch-release-keyring` on Debian/Ubuntu); 2.x
+  keeps `opensearch.pgp`. The RPM import is skipped by key ID
+  (`gpg-pubkey-81191457` / `gpg-pubkey-9310d3fc`), not by a name match.
+
+#### `axonops::agent` never installed when Cassandra comes from `axonops::server`
+- The java-agent-package detection in `axonops::agent` matched Cassandra only
+  via a literal `'recipe[axonops::cassandra]'` entry in `node.run_list`.
+  `axonops::server` installs its own metrics-storage Cassandra through a
+  *nested* `include_recipe 'axonops::cassandra'`, which never appears in
+  `node.run_list` itself, so a node whose run_list was just
+  `[..., 'recipe[axonops::server]', ...]` (no separate `axonops::cassandra`
+  entry) fell through to "Could not detect Cassandra or Kafka" and the agent
+  package — including the Cassandra java agent jar — never installed.
+  Cassandra then started without it: `cassandra-env.sh`'s runtime check for
+  `/usr/share/axonops/axonops-jvm.options` found nothing, fell back to a raw
+  `-javaagent:` flag pointing at a jar that was also never installed, and
+  Cassandra failed to start (`Error opening zip file or JAR manifest missing`).
+  `axonops::agent` now also matches when `'recipe[axonops::server]'` is in
+  `node.run_list` and `['axonops']['server']['cassandra']['install']` is true.
+
+### Added
+
+#### Reports v2: `axon-reporting` service (ASB-4652)
+- New `axonops::reporting` recipe installs and starts `axon-reporting`, which
+  replaces `axon-dash-pdf` / `axon-dash-pdf2`. `axonops::dashboard` includes it
+  when `['axonops']['dashboard']['reporting']['enabled']` is `true` (default),
+  because it must run on the dashboard host. Online and offline installs
+  (`['axonops']['offline_packages']['reporting']`) are supported; old PDF
+  packages are left in place.
+- `axon-dash.yml` gets `axon-dash.reporting_url` from
+  `['axonops']['dashboard']['reporting']['url']` (default
+  `http://127.0.0.1:8081`, independent of the local install; `''` omits it).
+- `axon-server.yml` gets `axon_reporting_url` from
+  `['axonops']['server']['reporting_url']` when the server version is `latest`
+  or 2.0.39 and newer.
+- `axonops::server` adds a systemd drop-in so `axon-server` starts after the
+  `cassandra` and `opensearch` services when both use loopback addresses.
+
+#### axon-server `org_name` and `license_key`
+- New `['axonops']['server']['org_name']` and `['axonops']['server']['license_key']`
+  (or `node.run_state['axonops_server_license_key']`), written to
+  `axon-server.yml` when set. Warnings are logged when either is missing,
+  since axon-server ignores LDAP auth without a license key.
+- `/etc/axonops/axon-server.yml` is now a `sensitive` template, so its
+  passwords and license key are not shown in Chef output diffs.
+
+#### `axonops::openldap`: local OpenLDAP directory for AxonOps Server
+- Ports the Ansible collection's `openldap` role. Installs `slapd` (EPEL on
+  RHEL), bootstraps `cn=config` once with `slapadd`, then manages log level,
+  TLS, ACLs, `memberof`/`refint` overlays, passwords and entries online over
+  `ldapi:///` with the new `axonops_ldap_entry` and `axonops_ldap_password`
+  resources, so a second converge updates nothing.
+- TLS modes `disabled`, `generate` (self-signed) and `custom`; LDAPS and
+  StartTLS. Anonymous access is limited to the root DSE and schema.
+- Publishes `node.run_state['axonops_openldap_ldap_setting']`; with
+  `['axonops']['openldap']['configure_server']` it wires `axonops::server`'s
+  LDAP auth to the directory, passing the bind password through
+  `node.run_state` instead of a node attribute.
+- `axon-server.yml` LDAP settings gain optional `startTLS`,
+  `insecureSkipVerify` and `callAttempts`
+  (`['axonops']['server']['auth']['start_tls' | 'insecure_skip_verify' | 'call_attempts']`).
+- `examples/nodes/axon-server-ldap-node.json`: all-in-one server + OpenLDAP
+  demo, the Chef equivalent of the Ansible collection's `examples/axon-server.yml`,
+  with `examples/nodes/solo.rb` to run it (and the other example nodes) with chef-solo.
+- Kitchen suites `openldap` and `openldap-tls` (Ubuntu 22.04, Rocky Linux 9)
+  and a `kitchen-openldap` CI job that also fails on a non-idempotent second
+  converge.
+
 ### Changed
 
 #### Load the java agent from `axonops-jvm.options` on every Cassandra version (ASB-4712)
