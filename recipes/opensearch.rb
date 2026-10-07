@@ -39,6 +39,10 @@ opensearch_key = if opensearch_major.to_i >= 3
                  end
 opensearch_key_url = "https://artifacts.opensearch.org/publickeys/#{opensearch_key['file']}"
 opensearch_keyring = "/usr/share/keyrings/#{opensearch_key['file'].sub(/\.pgp\z/, '')}-keyring"
+# The package postinst runs the security plugin's demo installer, which since
+# OpenSearch 2.12 fails without OPENSEARCH_INITIAL_ADMIN_PASSWORD. dpkg treats
+# that as a failed install. This cookbook never uses the demo configuration.
+opensearch_package_env = { 'DISABLE_INSTALL_DEMO_CONFIG' => 'true' }
 opensearch_data_dir = opensearch_config['data_dir']
 opensearch_logs_dir = opensearch_config['logs_dir']
 
@@ -76,12 +80,14 @@ if node['axonops']['offline_install']
   when 'debian'
     dpkg_package 'opensearch' do
       source package_path
+      environment opensearch_package_env
       action :install
       notifies :restart, 'service[opensearch]', :delayed
     end
   when 'rhel', 'fedora', 'amazon'
     rpm_package 'opensearch' do
       source package_path
+      environment opensearch_package_env
       action :install
       notifies :restart, 'service[opensearch]', :delayed
     end
@@ -114,6 +120,7 @@ else
 
     apt_package 'opensearch' do
       version opensearch_version
+      environment opensearch_package_env
       action :install
       notifies :restart, 'service[opensearch]', :delayed
     end
@@ -133,6 +140,7 @@ else
 
     package 'opensearch' do
       version opensearch_version
+      environment opensearch_package_env
       action :install
       flush_cache [:before]
       notifies :restart, 'service[opensearch]', :delayed

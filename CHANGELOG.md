@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### OpenSearch deb install failed in the package postinst
+- Since OpenSearch 2.12 the package postinst runs the security demo installer,
+  which fails without `OPENSEARCH_INITIAL_ADMIN_PASSWORD`; dpkg then marks the
+  package as failed and `axonops::opensearch` stops. The package resources now
+  set `DISABLE_INSTALL_DEMO_CONFIG=true`.
+
 #### OpenSearch 3.x repository signing key
 - `axonops::opensearch` imported the 2021 `opensearch.pgp` key for every
   version. Its self-signature uses SHA-1, which EL9/EL10 crypto policies

@@ -299,6 +299,9 @@ suites:
         - test/integration/opensearch-snapshot
     attributes:
       axonops:
+        # vm.max_map_count belongs to the Docker host, and the Rocky image
+        # has no sysctl binary.
+        skip_vm_max_map_count: true
         server:
           elastic:
             snapshot:
@@ -326,6 +329,9 @@ suites:
         - test/integration/opensearch-snapshot
     attributes:
       axonops:
+        # vm.max_map_count belongs to the Docker host, and the Rocky image
+        # has no sysctl binary.
+        skip_vm_max_map_count: true
         server:
           elastic:
             snapshot:
