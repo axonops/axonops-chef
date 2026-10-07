@@ -38,6 +38,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### OpenSearch snapshot repositories (S3/GCS)
+- `axonops::opensearch` can install the `repository-s3` or `repository-gcs`
+  plugin, load credentials into `opensearch.keystore` and register a snapshot
+  repository plus an optional Snapshot Management policy, under
+  `node['axonops']['server']['elastic']['snapshot']`. Off by default.
+  Works with AWS S3, S3-compatible stores (Hetzner, MinIO, Ceph RGW) and GCS,
+  with static credentials or the instance identity. See
+  [docs/OPENSEARCH.md](docs/OPENSEARCH.md#snapshot-repositories-s3gcs).
+
 #### Reports v2: `axon-reporting` service (ASB-4652)
 - New `axonops::reporting` recipe installs and starts `axon-reporting`, which
   replaces `axon-dash-pdf` / `axon-dash-pdf2`. `axonops::dashboard` includes it

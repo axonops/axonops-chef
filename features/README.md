@@ -109,6 +109,25 @@ and axon-server's own Cassandra started without it.
 | axon-server axon_reporting_url gated on 2.0.39 / latest | `spec/unit/libraries/reporting_spec.rb`, `spec/unit/templates/reporting_templates_spec.rb` |
 | Package install / offline skip | not covered — `axon-reporting` is not in the public repositories yet |
 
+## OpenSearch snapshot repositories (`axonops::opensearch`)
+
+`features/opensearch/snapshot.feature` covers S3/GCS snapshot repositories.
+
+| Feature scenario | Verified by |
+|------------------|-------------|
+| Off by default | `spec/unit/templates/opensearch_snapshot_yml_spec.rb` |
+| Invalid settings fail before any change | `spec/unit/libraries/opensearch_snapshot_spec.rb` |
+| Client settings in opensearch.yml, never credentials | `spec/unit/libraries/opensearch_snapshot_spec.rb`, `spec/unit/templates/opensearch_snapshot_yml_spec.rb` |
+| Keystore entries, instance identity, stale entries removed | `spec/unit/libraries/opensearch_snapshot_spec.rb` |
+| S3 and GCS plugin, keystore and opensearch.yml on a node | `test/integration/opensearch-snapshot` via Kitchen suites `opensearch-snapshot-s3`, `opensearch-snapshot-gcs` |
+| Second converge changes nothing | `.github/workflows/test.yml` job `kitchen-opensearch-snapshot` |
+| Repository and policy registration | `spec/unit/libraries/opensearch_snapshot_spec.rb` (request bodies, policy diff); not covered against a live bucket |
+
+```bash
+rspec --options /dev/null spec/unit/libraries/opensearch_snapshot_spec.rb spec/unit/templates/opensearch_snapshot_yml_spec.rb
+KITCHEN_DRIVER=docker kitchen converge opensearch-snapshot-s3
+```
+
 ## OpenLDAP (`axonops::openldap`)
 
 `features/openldap.feature` covers the local directory.
