@@ -96,7 +96,7 @@ RSpec.describe AxonOpsOpenSearchSnapshot do
         'client' => 'backups',
         's3' => {
           'region' => 'fsn1', 'endpoint' => 'fsn1.your-objectstorage.com', 'protocol' => 'http',
-          'path_style_access' => true, 'extra_settings' => { 'disable_chunked_encoding' => true }
+          'path_style_access' => true, 'extra_settings' => { 'max_retries' => 5 }
         }
       ))
       expect(settings).to eq(
@@ -104,7 +104,7 @@ RSpec.describe AxonOpsOpenSearchSnapshot do
         's3.client.backups.endpoint' => 'fsn1.your-objectstorage.com',
         's3.client.backups.protocol' => 'http',
         's3.client.backups.path_style_access' => true,
-        's3.client.backups.disable_chunked_encoding' => true
+        's3.client.backups.max_retries' => 5
       )
     end
 

@@ -317,7 +317,7 @@ suites:
                 protocol: 'http'
                 path_style_access: true
                 extra_settings:
-                  disable_chunked_encoding: true
+                  max_retries: 5
 
   - name: opensearch-snapshot-gcs
     excludes:

@@ -135,7 +135,7 @@ All settings live under `node['axonops']['server']['elastic']['snapshot']`
 | `s3.endpoint` | string | `''` | `fsn1.your-objectstorage.com` | Endpoint for S3-compatible stores (Hetzner Object Storage, MinIO, Ceph RGW) |
 | `s3.protocol` | string | `''` | `http` | `http` or `https`. Empty keeps the plugin default (`https`) |
 | `s3.path_style_access` | bool | `false` | `true` | Path-style URLs (`https://endpoint/bucket`) instead of virtual-hosted style |
-| `s3.extra_settings` | hash | `{}` | `{ 'disable_chunked_encoding' => true }` | Other non-secret `s3.client.<client>.*` settings (`signer_override`, `disable_chunked_encoding`, timeouts) |
+| `s3.extra_settings` | hash | `{}` | `{ 'max_retries' => 5 }` | Other non-secret `s3.client.<client>.*` settings (`max_retries`, `signer_override`, timeouts). Must be valid for the installed `repository-s3` plugin; OpenSearch fails to start on an unknown setting |
 | `gcs.credentials_json` | string or hash | `''` | `data_bag_item(...)['sa_json']` | Service-account JSON |
 | `gcs.project_id` | string | `''` | `my-project` | GCP project ID |
 | `gcs.endpoint` | string | `''` | `https://storage.example.com` | Custom GCS endpoint |

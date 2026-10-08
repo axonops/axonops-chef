@@ -49,7 +49,7 @@ control 'opensearch-snapshot-settings' do
       its('content') { should include 's3.client.default.endpoint: "minio.kitchen.test:9000"' }
       its('content') { should include 's3.client.default.protocol: "http"' }
       its('content') { should include 's3.client.default.path_style_access: true' }
-      its('content') { should include 's3.client.default.disable_chunked_encoding: true' }
+      its('content') { should include 's3.client.default.max_retries: 5' }
     else
       its('content') { should include 'gcs.client.default.project_id: "kitchen-project"' }
       its('content') { should include 'gcs.client.default.endpoint: "https://gcs.kitchen.test"' }

@@ -75,7 +75,7 @@ default['axonops']['server']['elastic']['snapshot']['s3']['endpoint'] = ''
 default['axonops']['server']['elastic']['snapshot']['s3']['protocol'] = ''
 default['axonops']['server']['elastic']['snapshot']['s3']['path_style_access'] = false
 # Other non-secret s3.client.<client>.* settings, e.g.
-# { 'disable_chunked_encoding' => true }
+# { 'max_retries' => 5 }
 default['axonops']['server']['elastic']['snapshot']['s3']['extra_settings'] = {}
 # Service-account JSON, as a string or a hash. Leave empty to use the GCE/GKE
 # workload identity.
