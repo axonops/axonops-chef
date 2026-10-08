@@ -79,13 +79,13 @@ RSpec.describe 'Reports v2 templates' do
         'backups' => { 'local' => '10d', 'remote' => '30d' } }
     end
 
-    def render_server(server_version, org_name: nil, license_key: nil)
+    def render_server(server_version, org_name: nil, license_key: nil, cassandra_dc: 'dc1')
       url = 'http://127.0.0.1:8081'
       YAML.safe_load(ReportingTemplateContext.new(node).render(
                        'axon-server.yml.erb',
                        listen_address: '0.0.0.0', listen_port: 8080, use_new_format: true,
                        search_db_hosts: ['http://localhost:9200/'], cassandra_hosts: ['127.0.0.1:9042'],
-                       cassandra_dc: 'dc1', cassandra_username: 'cassandra', cassandra_password: 'cassandra',
+                       cassandra_dc: cassandra_dc, cassandra_username: 'cassandra', cassandra_password: 'cassandra',
                        tls_mode: 'disabled', retention: retention,
                        org_name: org_name, license_key: license_key,
                        reporting_url: (url if AxonOpsReporting.server_supports_reporting_url?(server_version))
@@ -122,6 +122,19 @@ RSpec.describe 'Reports v2 templates' do
     it 'leaves org_name and license_key out when unset or empty' do
       expect(render_server('latest').keys).not_to include('org_name', 'license_key')
       expect(render_server('latest', org_name: '', license_key: '').keys).not_to include('org_name', 'license_key')
+    end
+
+    it 'writes cql_local_dc and cql_keyspace_replication when set' do
+      yaml = render_server('latest')
+      expect(yaml['cql_local_dc']).to eq('dc1')
+      expect(yaml['cql_keyspace_replication']).to eq("{ 'class' : 'SimpleStrategy', 'replication_factor' : 1 }")
+    end
+
+    it 'leaves cql_local_dc and cql_keyspace_replication out when unset or empty' do
+      node['axonops']['server']['cassandra']['keyspace_replication'] = nil
+      expect(render_server('latest', cassandra_dc: nil).keys).not_to include('cql_local_dc', 'cql_keyspace_replication')
+      node['axonops']['server']['cassandra']['keyspace_replication'] = ''
+      expect(render_server('latest', cassandra_dc: '').keys).not_to include('cql_local_dc', 'cql_keyspace_replication')
     end
 
     context 'with LDAP auth enabled' do

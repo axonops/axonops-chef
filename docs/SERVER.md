@@ -179,7 +179,8 @@ Settings for embedded Cassandra (metrics storage):
 | `['axonops']['server']['cassandra']['install']` | `true` | Install embedded Cassandra |
 | `['axonops']['server']['cassandra']['hosts']` | `['127.0.0.1']` | Cassandra hosts (if external) |
 | `['axonops']['server']['cassandra']['version']` | `5.0.9` | Cassandra version |
-| `['axonops']['server']['cassandra']['dc']` | `axonops` | Datacenter name |
+| `['axonops']['server']['cassandra']['dc']` | `nil` | Datacenter name; written as `cql_local_dc` only when set |
+| `['axonops']['server']['cassandra']['keyspace_replication']` | `nil` | Keyspace replication map; written as `cql_keyspace_replication` only when set |
 | `['axonops']['server']['cassandra']['username']` | `cassandra` | Username |
 | `['axonops']['server']['cassandra']['password']` | `cassandra` | Password |
 | `['axonops']['server']['cassandra']['data_dir']` | `/var/lib/axonops-data` | Data directory |
