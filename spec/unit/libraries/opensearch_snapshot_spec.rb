@@ -70,6 +70,11 @@ RSpec.describe AxonOpsOpenSearchSnapshot do
         'type' => 'gcs',
         'gcs' => { 'credentials_json' => { 'client_id' => '1', 'client_email' => 'a@b', 'private_key_id' => 'k', 'private_key' => 'dummy' } },
       },
+      'GCS credentials with a PKCS#1 private key' => {
+        'type' => 'gcs',
+        'gcs' => { 'credentials_json' => { 'client_id' => '1', 'client_email' => 'a@b', 'private_key_id' => 'k',
+                                           'private_key' => "-----BEGIN RSA PRIVATE KEY-----\nMII\n-----END RSA PRIVATE KEY-----\n" } },
+      },
       'GCS credentials that are not JSON' => { 'type' => 'gcs', 'gcs' => { 'credentials_json' => 'nope' } },
       'GCS credentials without a private key' => {
         'type' => 'gcs', 'gcs' => { 'credentials_json' => { 'client_id' => '1', 'client_email' => 'a@b', 'private_key_id' => 'k' } }

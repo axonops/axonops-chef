@@ -67,7 +67,8 @@ module AxonOpsOpenSearchSnapshot
   end
 
   # The repository-gcs plugin reads the credentials at startup, so a malformed
-  # service-account JSON stops OpenSearch from starting at all.
+  # service-account JSON stops OpenSearch from starting at all. The plugin
+  # only accepts PKCS#8 keys, so a PKCS#1 "BEGIN RSA PRIVATE KEY" is rejected.
   GCS_CREDENTIAL_FIELDS = %w(client_id client_email private_key private_key_id).freeze
 
   def self.gcs_credentials_errors(json)
@@ -78,7 +79,7 @@ module AxonOpsOpenSearchSnapshot
 
     missing = GCS_CREDENTIAL_FIELDS.reject { |k| parsed[k].is_a?(String) && !parsed[k].empty? }
     return ["gcs.credentials_json lacks #{missing.join(', ')}"] unless missing.empty?
-    return ['gcs.credentials_json private_key is not a PEM private key'] unless parsed['private_key'].match?(/-----BEGIN [A-Z ]*PRIVATE KEY-----/)
+    return ['gcs.credentials_json private_key is not a PKCS#8 PEM private key'] unless parsed['private_key'].include?('-----BEGIN PRIVATE KEY-----')
 
     []
   rescue JSON::ParserError

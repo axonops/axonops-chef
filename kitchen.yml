@@ -348,13 +348,14 @@ suites:
                   private_key_id: 'kitchen-dummy-key-id'
                   # Throwaway key generated on first render and kept under
                   # .kitchen/ so every converge sees the same value: the
-                  # repository-gcs plugin refuses to load without a PEM key.
+                  # repository-gcs plugin refuses to load without a PKCS#8
+                  # PEM key (BEGIN PRIVATE KEY, not BEGIN RSA PRIVATE KEY).
                   private_key: <%=
                     require 'fileutils'; require 'json'; require 'openssl'
                     key_file = '.kitchen/gcs-test-key.pem'
-                    unless File.exist?(key_file)
+                    unless File.exist?(key_file) && File.read(key_file).start_with?('-----BEGIN PRIVATE KEY-----')
                       FileUtils.mkdir_p('.kitchen')
-                      File.write(key_file, OpenSSL::PKey::RSA.new(2048).to_pem, perm: 0o600)
+                      File.write(key_file, OpenSSL::PKey::RSA.new(2048).private_to_pem, perm: 0o600)
                     end
                     File.read(key_file).to_json
                   %>
