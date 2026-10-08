@@ -161,5 +161,10 @@ jobs:
             echo "::error::second converge updated resources"
             exit 1
           fi
+      - name: OpenSearch logs
+        if: failure()
+        run: |
+          KITCHEN_DRIVER=docker bundle exec kitchen exec '^${{ matrix.suite }}-(ubuntu-2204|rockylinux-9)$' -c \
+            'sudo systemctl status opensearch --no-pager; sudo journalctl -u opensearch --no-pager | tail -80; sudo tail -80 /var/log/opensearch/axonops-cluster.log; nproc; free -m'
       - run: KITCHEN_DRIVER=docker bundle exec kitchen destroy '^${{ matrix.suite }}-(ubuntu-2204|rockylinux-9)$'
         if: always()
