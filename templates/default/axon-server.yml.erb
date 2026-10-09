@@ -39,7 +39,9 @@ cql_hosts:
 <% end -%>
 cql_username: "<%= @cassandra_username %>"
 cql_password: "<%= @cassandra_password %>"
+<% if @cassandra_dc && !@cassandra_dc.to_s.empty? -%>
 cql_local_dc: "<%= @cassandra_dc %>"
+<% end -%>
 cql_ssl: <%= node['axonops']['cassandra']['ssl']['enabled'] %>
 cql_skip_verify: <%= node['axonops']['cassandra']['ssl']['cql_skip_verify'] || true %>
 <% if node['axonops']['cassandra']['ssl']['ca_file'] %>
@@ -50,7 +52,9 @@ cql_cert_file: <%= node['axonops']['cassandra']['ssl']['cert_file'] %>
 cql_key_file: <%= node['axonops']['cassandra']['ssl']['key_file'] %>
 <% end %>
 cql_autocreate_tables: <%= node['axonops']['cassandra']['ssl']['autocreate_tables'] || true %>
+<% if node['axonops']['server']['cassandra']['keyspace_replication'] && !node['axonops']['server']['cassandra']['keyspace_replication'].to_s.empty? -%>
 cql_keyspace_replication: "<%= node['axonops']['server']['cassandra']['keyspace_replication'] %>"
+<% end -%>
 cql_read_consistency: <%= node['axonops']['cassandra']['ssl']['read_consistency'] || "LOCAL_ONE" %>
 cql_write_consistency: <%= node['axonops']['cassandra']['ssl']['read_consistency'] || "WRITE_ONE" %>
 

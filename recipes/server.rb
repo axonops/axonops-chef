@@ -140,7 +140,7 @@ template '/etc/axonops/axon-server.yml' do
     elastic_host: elastic_host,
     elastic_port: elastic_port,
     cassandra_hosts: cassandra_hosts,
-    cassandra_dc: node['axonops']['server']['cassandra']['dc'] || node['axonops']['cassandra']['dc'],
+    cassandra_dc: node['axonops']['server']['cassandra']['dc'],
     cassandra_username: node['axonops']['server']['cassandra']['username'],
     cassandra_password: node['axonops']['server']['cassandra']['password'],
     tls_mode: node['axonops']['server']['tls']['mode'],

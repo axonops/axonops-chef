@@ -75,7 +75,7 @@ default['axonops']['server']['cassandra']['data_file_directories'] = ['/var/lib/
 default['axonops']['server']['cassandra']['compaction_strategy'] = 'SizeTieredCompactionStrategy'
 default['axonops']['server']['cassandra']['install'] = true
 default['axonops']['server']['cassandra']['hosts'] = ['127.0.0.1:9042']
-default['axonops']['server']['cassandra']['keyspace_replication'] = "{ 'class' : 'SimpleStrategy', 'replication_factor' : 1 }"
+default['axonops']['server']['cassandra']['keyspace_replication'] = nil
 
 # TLS Configuration
 default['axonops']['server']['tls']['mode'] = 'disabled' # 'disabled', 'TLS', 'mTLS'
