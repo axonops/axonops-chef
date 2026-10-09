@@ -285,3 +285,79 @@ suites:
             - uid: 'alice'
               password: 'kitchen-alice-pw'
               groups: ['axonops_admin']
+
+  # axonops::opensearch with an S3 snapshot repository. The endpoint does not
+  # exist, so registration is off; the controls check the plugin, keystore
+  # and opensearch.yml. The keys are throwaway test values.
+  - name: opensearch-snapshot-s3
+    excludes:
+      - ubuntu-24.04
+    run_list:
+      - recipe[axonops::opensearch]
+    verifier:
+      inspec_tests:
+        - test/integration/opensearch-snapshot
+    attributes:
+      axonops:
+        # vm.max_map_count belongs to the Docker host, and the Rocky image
+        # has no sysctl binary.
+        skip_vm_max_map_count: true
+        server:
+          elastic:
+            snapshot:
+              enabled: true
+              type: 's3'
+              bucket: 'kitchen-snapshots'
+              register: false
+              s3:
+                access_key: 'KITCHENDUMMYACCESSKEY'
+                secret_key: 'kitchen-dummy-secret-key-value'
+                region: 'eu-west-1'
+                endpoint: 'minio.kitchen.test:9000'
+                protocol: 'http'
+                path_style_access: true
+                extra_settings:
+                  max_retries: 5
+
+  - name: opensearch-snapshot-gcs
+    excludes:
+      - ubuntu-24.04
+    run_list:
+      - recipe[axonops::opensearch]
+    verifier:
+      inspec_tests:
+        - test/integration/opensearch-snapshot
+    attributes:
+      axonops:
+        # vm.max_map_count belongs to the Docker host, and the Rocky image
+        # has no sysctl binary.
+        skip_vm_max_map_count: true
+        server:
+          elastic:
+            snapshot:
+              enabled: true
+              type: 'gcs'
+              bucket: 'kitchen-snapshots'
+              register: false
+              gcs:
+                project_id: 'kitchen-project'
+                endpoint: 'https://gcs.kitchen.test'
+                credentials_json:
+                  type: 'service_account'
+                  project_id: 'kitchen-project'
+                  private_key_id: 'kitchen-dummy-key-id'
+                  # Throwaway key generated on first render and kept under
+                  # .kitchen/ so every converge sees the same value: the
+                  # repository-gcs plugin refuses to load without a PKCS#8
+                  # PEM key (BEGIN PRIVATE KEY, not BEGIN RSA PRIVATE KEY).
+                  private_key: <%=
+                    require 'fileutils'; require 'json'; require 'openssl'
+                    key_file = '.kitchen/gcs-test-key.pem'
+                    unless File.exist?(key_file) && File.read(key_file).start_with?('-----BEGIN PRIVATE KEY-----')
+                      FileUtils.mkdir_p('.kitchen')
+                      File.write(key_file, OpenSSL::PKey::RSA.new(2048).private_to_pem, perm: 0o600)
+                    end
+                    File.read(key_file).to_json
+                  %>
+                  client_email: 'kitchen@kitchen-project.iam.gserviceaccount.com'
+                  client_id: '000000000000000000000'

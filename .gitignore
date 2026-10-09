@@ -13,3 +13,6 @@ offline_packages/
 # Editor swap files
 *.swp
 .claude/settings.local.json
+
+# Test Kitchen state, including the generated GCS test key
+.kitchen/

@@ -74,6 +74,8 @@ jobs:
             spec/unit/libraries/agent_env_spec.rb \
             spec/unit/recipes/offline_platform_family_spec.rb \
             spec/unit/templates/opensearch_tmpdir_spec.rb \
+            spec/unit/libraries/opensearch_snapshot_spec.rb \
+            spec/unit/templates/opensearch_snapshot_yml_spec.rb \
             spec/unit/libraries/reporting_spec.rb \
             spec/unit/templates/reporting_templates_spec.rb \
             spec/unit/libraries/openldap_spec.rb \

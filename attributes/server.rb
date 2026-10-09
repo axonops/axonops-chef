@@ -46,6 +46,47 @@ default['axonops']['server']['elastic']['java_tmp_dir'] = '/var/lib/opensearch/t
 # docs/OPENSEARCH.md) for a production-hardened setup.
 default['axonops']['server']['elastic']['security_plugin_enabled'] = false
 
+# Snapshot repository (S3 or GCS). Installs the repository-s3/repository-gcs
+# plugin, loads credentials into opensearch.keystore and registers the
+# repository. Installing the plugin restarts OpenSearch. See
+# docs/OPENSEARCH.md#snapshot-repositories-s3gcs.
+default['axonops']['server']['elastic']['snapshot']['enabled'] = false
+# 's3' (AWS S3 or any S3-compatible store) or 'gcs'
+default['axonops']['server']['elastic']['snapshot']['type'] = 's3'
+# Client name used in the s3.client.<name>.* / gcs.client.<name>.* settings
+default['axonops']['server']['elastic']['snapshot']['client'] = 'default'
+# nil means '<type>-snapshots'
+default['axonops']['server']['elastic']['snapshot']['repository_name'] = nil
+default['axonops']['server']['elastic']['snapshot']['bucket'] = ''
+default['axonops']['server']['elastic']['snapshot']['base_path'] = ''
+# Register the repository and policy through the REST API. Set false when
+# they are managed elsewhere; the plugin and credentials are still installed.
+default['axonops']['server']['elastic']['snapshot']['register'] = true
+# Leave access_key/secret_key empty to use the instance identity (EC2
+# instance profile or IRSA). Keep real keys in an encrypted data bag or vault.
+default['axonops']['server']['elastic']['snapshot']['s3']['access_key'] = ''
+default['axonops']['server']['elastic']['snapshot']['s3']['secret_key'] = ''
+default['axonops']['server']['elastic']['snapshot']['s3']['session_token'] = ''
+default['axonops']['server']['elastic']['snapshot']['s3']['region'] = ''
+# For S3-compatible stores (Hetzner Object Storage, MinIO, Ceph RGW), e.g.
+# 'fsn1.your-objectstorage.com' with region 'fsn1'
+default['axonops']['server']['elastic']['snapshot']['s3']['endpoint'] = ''
+# 'http' or 'https'; empty keeps the plugin default (https)
+default['axonops']['server']['elastic']['snapshot']['s3']['protocol'] = ''
+default['axonops']['server']['elastic']['snapshot']['s3']['path_style_access'] = false
+# Other non-secret s3.client.<client>.* settings, e.g.
+# { 'max_retries' => 5 }
+default['axonops']['server']['elastic']['snapshot']['s3']['extra_settings'] = {}
+# Service-account JSON, as a string or a hash. Leave empty to use the GCE/GKE
+# workload identity.
+default['axonops']['server']['elastic']['snapshot']['gcs']['credentials_json'] = ''
+default['axonops']['server']['elastic']['snapshot']['gcs']['project_id'] = ''
+default['axonops']['server']['elastic']['snapshot']['gcs']['endpoint'] = ''
+# Snapshot Management policy, created or updated when not empty. 'name' is the
+# policy name; the other keys are the _plugins/_sm/policies request body.
+# snapshot_config.repository defaults to the repository name.
+default['axonops']['server']['elastic']['snapshot']['policy'] = {}
+
 # Preferred alias namespace — set any of these to override the matching
 # 'elastic' key above without touching it. recipes/opensearch.rb merges
 # 'elastic' as the base and 'opensearch' as the override (opensearch wins

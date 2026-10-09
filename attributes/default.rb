@@ -73,6 +73,11 @@ default['axonops']['offline_packages'] = {
   # axon-reporting (Reports v2). nil skips the offline reporting install; set
   # it to the staged .rpm/.deb file name to install it with the dashboard.
   'reporting' => nil,
+  # OpenSearch snapshot repository plugin zips, used when
+  # elastic.snapshot.enabled is true. Must match the OpenSearch version, e.g.
+  # https://artifacts.opensearch.org/releases/plugins/repository-s3/3.8.0/repository-s3-3.8.0.zip
+  'opensearch_repository_s3' => 'repository-s3-3.8.0.zip',
+  'opensearch_repository_gcs' => 'repository-gcs-3.8.0.zip',
   'java_agent' => 'axon-cassandra5.0-agent-jdk17-1.0.10-1.noarch.rpm'
 }
 

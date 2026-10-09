@@ -36,3 +36,10 @@ plugins.security.disabled: true
 # reinvent the package's own systemd unit/limits (see recipes/opensearch.rb),
 # so leave this off rather than half-wire memory locking.
 indices.query.bool.max_clause_count: 8192
+<% unless (@snapshot_settings || {}).empty? -%>
+
+# Snapshot repository client. Credentials live in opensearch.keystore.
+<% @snapshot_settings.each do |key, value| -%>
+<%= key %>: <%= value.to_json %>
+<% end -%>
+<% end -%>

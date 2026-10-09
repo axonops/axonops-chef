@@ -16,6 +16,7 @@ something you interact with directly day to day.
 - [Requirements](#requirements)
 - [Basic Installation](#basic-installation)
 - [Configuration Reference](#configuration-reference)
+- [Snapshot repositories (S3/GCS)](#snapshot-repositories-s3gcs)
 - [Using an external OpenSearch cluster](#using-an-external-opensearch-cluster)
 - [Security](#security)
 - [Offline / air-gapped install](#offline--air-gapped-install)
@@ -105,6 +106,121 @@ drop-ins are created.
 ```ruby
 node.override['axonops']['server']['elastic']['java_tmp_dir'] = '/var/lib/opensearch/tmp'
 ```
+
+## Snapshot repositories (S3/GCS)
+
+Back up the AxonOps OpenSearch to an S3 bucket (AWS S3 or any S3-compatible
+store) or a GCS bucket. With `snapshot.enabled` the recipe installs the
+`repository-s3` or `repository-gcs` plugin, writes the credentials to
+`/etc/opensearch/opensearch.keystore`, renders the client settings into
+`opensearch.yml` and registers the repository and an optional Snapshot
+Management policy.
+
+All settings live under `node['axonops']['server']['elastic']['snapshot']`
+(or the `opensearch` alias namespace, merged key by key):
+
+| Attribute | Type | Default | Example | Description |
+|-----------|------|---------|---------|-------------|
+| `enabled` | bool | `false` | `true` | Install the plugin, load credentials and register the repository |
+| `type` | string | `s3` | `gcs` | `s3` (AWS S3 or any S3-compatible store) or `gcs` |
+| `client` | string | `default` | `backups` | Client name in the `s3.client.<client>.*` / `gcs.client.<client>.*` settings |
+| `repository_name` | string | `<type>-snapshots` | `nightly` | Repository name |
+| `bucket` | string | `''` | `opensearch-backups` | Bucket name. Required |
+| `base_path` | string | `''` | `prod/cluster1` | Path prefix inside the bucket |
+| `register` | bool | `true` | `false` | Register the repository and policy through the REST API |
+| `s3.access_key` | string | `''` | `data_bag_item(...)['access_key']` | Static access key. Set together with `s3.secret_key` |
+| `s3.secret_key` | string | `''` | `data_bag_item(...)['secret_key']` | Static secret key |
+| `s3.session_token` | string | `''` | | Optional session token for temporary credentials |
+| `s3.region` | string | `''` | `eu-west-1`, `fsn1` | Signing region |
+| `s3.endpoint` | string | `''` | `fsn1.your-objectstorage.com` | Endpoint for S3-compatible stores (Hetzner Object Storage, MinIO, Ceph RGW) |
+| `s3.protocol` | string | `''` | `http` | `http` or `https`. Empty keeps the plugin default (`https`) |
+| `s3.path_style_access` | bool | `false` | `true` | Path-style URLs (`https://endpoint/bucket`) instead of virtual-hosted style |
+| `s3.extra_settings` | hash | `{}` | `{ 'max_retries' => 5 }` | Other non-secret `s3.client.<client>.*` settings (`max_retries`, `signer_override`, timeouts). Must be valid for the installed `repository-s3` plugin; OpenSearch fails to start on an unknown setting |
+| `gcs.credentials_json` | string or hash | `''` | `data_bag_item(...)['sa_json']` | Service-account JSON |
+| `gcs.project_id` | string | `''` | `my-project` | GCP project ID |
+| `gcs.endpoint` | string | `''` | `https://storage.example.com` | Custom GCS endpoint |
+| `policy` | hash | `{}` | see below | Snapshot Management policy. `name` is the policy name; the other keys are the `_plugins/_sm/policies` request body. `snapshot_config.repository` defaults to the repository name |
+
+S3 example (Hetzner Object Storage; for AWS, drop `endpoint` and
+`path_style_access` and set the AWS region):
+
+```ruby
+creds = data_bag_item('secrets', 'opensearch_s3')
+
+node.override['axonops']['server']['elastic']['snapshot'] = {
+  'enabled' => true,
+  'type' => 's3',
+  'bucket' => 'opensearch-backups',
+  'base_path' => 'axonops-production',
+  's3' => {
+    'access_key' => creds['access_key'],
+    'secret_key' => creds['secret_key'],
+    'region' => 'fsn1',
+    'endpoint' => 'fsn1.your-objectstorage.com',
+    'path_style_access' => true,
+  },
+  'policy' => {
+    'name' => 'daily',
+    'creation' => { 'schedule' => { 'cron' => { 'expression' => '0 2 * * *', 'timezone' => 'UTC' } } },
+    'deletion' => {
+      'schedule' => { 'cron' => { 'expression' => '0 3 * * *', 'timezone' => 'UTC' } },
+      'condition' => { 'max_age' => '14d', 'min_count' => 1 },
+    },
+    'snapshot_config' => { 'indices' => '*' },
+  },
+}
+
+include_recipe 'axonops::server'
+```
+
+GCS example:
+
+```ruby
+node.override['axonops']['server']['elastic']['snapshot'] = {
+  'enabled' => true,
+  'type' => 'gcs',
+  'bucket' => 'opensearch-backups',
+  'gcs' => {
+    'project_id' => 'my-project',
+    'credentials_json' => data_bag_item('secrets', 'opensearch_gcs')['sa_json'],
+  },
+}
+```
+
+Check the repository after the run:
+
+```bash
+curl -X POST http://127.0.0.1:9200/_snapshot/s3-snapshots/_verify
+```
+
+Notes:
+
+- Credentials go only into `opensearch.keystore` (`root:opensearch`, `0640`);
+  they never appear in `opensearch.yml` or the Chef output. The keystore has
+  no password, so it is obfuscated rather than encrypted: keep the source
+  credentials in an encrypted data bag or a secrets manager.
+- Leave the static credentials empty to use the instance identity: an EC2
+  instance profile or IRSA for S3, GCE/GKE workload identity for GCS. Any
+  credentials stored earlier for the client are then removed.
+- Installing the plugin or changing credentials restarts OpenSearch once,
+  before the repository is registered. When `opensearch_version` changes, the
+  plugin is reinstalled to match.
+- The repository-gcs plugin reads the service-account JSON at startup and
+  OpenSearch will not start when it is malformed, so the recipe refuses JSON
+  without `client_id`, `client_email`, `private_key_id` and a PEM
+  `private_key`.
+- With `security_plugin_enabled`, registration uses HTTPS and the
+  `search_db` username and password.
+- Offline installs copy the plugin zip named by
+  `node['axonops']['offline_packages']['opensearch_repository_s3']` or
+  `['opensearch_repository_gcs']` from `offline_packages_path`. Download it
+  from `https://artifacts.opensearch.org/releases/plugins/repository-s3/<version>/repository-s3-<version>.zip`
+  (or `repository-gcs`); it must match the OpenSearch version.
+- Setting `enabled` back to `false` does not remove the plugin, the repository
+  or the keystore credentials. Removing a key from `policy` does not remove it
+  from an existing policy; delete the policy
+  (`DELETE _plugins/_sm/policies/<name>`) and converge again.
+- Restoring snapshots is not automated.
 
 ## Using an external OpenSearch cluster
 

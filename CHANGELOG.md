@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### OpenSearch deb install failed in the package postinst
+- Since OpenSearch 2.12 the package postinst runs the security demo installer,
+  which fails without `OPENSEARCH_INITIAL_ADMIN_PASSWORD`; dpkg then marks the
+  package as failed and `axonops::opensearch` stops. The package resources now
+  set `DISABLE_INSTALL_DEMO_CONFIG=true`.
+
 #### OpenSearch 3.x repository signing key
 - `axonops::opensearch` imported the 2021 `opensearch.pgp` key for every
   version. Its self-signature uses SHA-1, which EL9/EL10 crypto policies
@@ -37,6 +43,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `node.run_list` and `['axonops']['server']['cassandra']['install']` is true.
 
 ### Added
+
+#### OpenSearch snapshot repositories (S3/GCS)
+- `axonops::opensearch` can install the `repository-s3` or `repository-gcs`
+  plugin, load credentials into `opensearch.keystore` and register a snapshot
+  repository plus an optional Snapshot Management policy, under
+  `node['axonops']['server']['elastic']['snapshot']`. Off by default.
+  Works with AWS S3, S3-compatible stores (Hetzner, MinIO, Ceph RGW) and GCS,
+  with static credentials or the instance identity. See
+  [docs/OPENSEARCH.md](docs/OPENSEARCH.md#snapshot-repositories-s3gcs).
 
 #### Reports v2: `axon-reporting` service (ASB-4652)
 - New `axonops::reporting` recipe installs and starts `axon-reporting`, which
